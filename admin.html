@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080a10">
+<title>PULSE ECHO｜運営ワークフロー</title>
+<style>
+:root{
+ --bg:#080a10;--panel:#11151f;--panel2:#191e2b;--line:#30384d;
+ --text:#f8f9ff;--muted:#a7adbd;--purple:#7657ff;--cyan:#00d7d0;
+ --green:#23c55e;--red:#ef4444;--yellow:#f6ad28;--blue:#3b82f6
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:
+ radial-gradient(circle at 10% -5%,rgba(118,87,255,.2),transparent 35rem),
+ radial-gradient(circle at 100% 10%,rgba(0,215,208,.09),transparent 30rem),
+ var(--bg);color:var(--text);
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+a{color:inherit}
+header{position:sticky;top:0;z-index:50;background:rgba(8,10,16,.94);
+ backdrop-filter:blur(15px);border-bottom:1px solid var(--line)}
+.header-in{max-width:1180px;margin:auto;padding:14px 16px;display:flex;
+ align-items:center;justify-content:space-between;gap:16px}
+.brand{font-weight:950;letter-spacing:.13em}.brand span{color:var(--cyan)}
+.header-state{font-size:.78rem;color:var(--muted)}
+main{max-width:1180px;margin:24px auto 100px;padding:0 14px}
+.hero{border:1px solid var(--line);border-radius:22px;padding:24px;
+ background:linear-gradient(135deg,rgba(118,87,255,.17),rgba(0,215,208,.07))}
+.hero h1{margin:0 0 8px;font-size:clamp(1.55rem,4vw,2.45rem)}
+.hero p{margin:0;color:var(--muted);line-height:1.75}
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:18px}
+.flow-step{padding:11px 8px;border-radius:12px;background:rgba(7,9,15,.62);
+ border:1px solid var(--line);text-align:center;font-size:.76rem;color:var(--muted)}
+.flow-step b{display:block;color:#fff;font-size:1rem;margin-bottom:4px}
+.role-title{margin:30px 0 12px;font-size:1rem;color:#d7daE5}
+.roles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.role-btn{min-height:132px;padding:18px;border-radius:18px;border:1px solid var(--line);
+ background:var(--panel);color:#fff;text-align:left;transition:.18s}
+.role-btn:hover,.role-btn.active{transform:translateY(-2px);border-color:var(--purple);
+ box-shadow:0 12px 28px rgba(0,0,0,.25)}
+.role-icon{font-size:2rem}.role-btn strong{display:block;margin:9px 0 5px;font-size:1.02rem}
+.role-btn small{color:var(--muted);line-height:1.5}
+.panel{display:none;margin-top:18px;background:var(--panel);border:1px solid var(--line);
+ border-radius:20px;padding:20px}.panel.active{display:block}
+.panel-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;
+ padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:17px}
+.panel-head h2{margin:0;font-size:1.25rem}.panel-head p{margin:5px 0 0;color:var(--muted);font-size:.82rem}
+.tag{font-size:.7rem;font-weight:900;padding:6px 9px;border-radius:999px;
+ background:rgba(118,87,255,.15);color:#c9c0ff;border:1px solid rgba(118,87,255,.4)}
+.notice{padding:13px 14px;border-radius:12px;border-left:4px solid var(--yellow);
+ background:rgba(246,173,40,.1);color:#f4d39a;line-height:1.65;font-size:.84rem;margin-bottom:15px}
+.notice.red{border-left-color:var(--red);background:rgba(239,68,68,.09);color:#ffb2b2}
+.notice.green{border-left-color:var(--green);background:rgba(35,197,94,.09);color:#a5edb9}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}
+.field label{font-size:.79rem;font-weight:850;color:#d3d6df}
+.hint{font-size:.7rem;color:var(--muted);line-height:1.45}
+.input{width:100%;background:var(--panel2);border:1px solid var(--line);color:#fff;
+ border-radius:10px;padding:11px 12px;outline:none}
+.input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(118,87,255,.13)}
+textarea.input{min-height:90px;resize:vertical}
+.checklist{display:grid;gap:9px;margin-top:12px}
+.check{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:11px;
+ background:var(--panel2);border:1px solid var(--line)}
+.check input{width:21px;height:21px;flex:0 0 auto;margin-top:1px}
+.check b{display:block;font-size:.86rem}.check small{display:block;color:var(--muted);margin-top:3px;line-height:1.45}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}
+.btn{border:0;border-radius:10px;padding:11px 14px;background:#343c50;color:#fff;font-weight:900}
+.btn-primary{background:linear-gradient(135deg,var(--purple),#5a3edc)}
+.btn-green{background:var(--green)}.btn-red{background:var(--red)}
+.btn-yellow{background:var(--yellow);color:#211400}.btn-blue{background:var(--blue)}
+.btn-small{padding:7px 10px;font-size:.74rem}
+.match-selector{display:grid;grid-template-columns:1fr auto;gap:9px;margin-bottom:14px}
+.progress-card{background:var(--panel2);border:1px solid var(--line);border-radius:15px;padding:15px}
+.progress-title{font-weight:950}.progress-meta{font-size:.75rem;color:var(--muted);margin-top:4px}
+.progress-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:13px}
+.pill{padding:8px 6px;border-radius:9px;background:#0d1018;border:1px solid var(--line);
+ text-align:center;font-size:.7rem;color:var(--muted)}
+.pill.done{background:rgba(35,197,94,.11);border-color:rgba(35,197,94,.4);color:#9aeab0}
+.pill.issue{background:rgba(239,68,68,.11);border-color:rgba(239,68,68,.4);color:#ffaaaa}
+.cards{display:grid;gap:10px}.match-card{background:var(--panel2);border:1px solid var(--line);
+ border-radius:14px;padding:14px}.match-card-top{display:flex;justify-content:space-between;gap:12px}
+.match-card-title{font-weight:950}.match-card-meta{color:var(--muted);font-size:.75rem;margin-top:4px}
+.status{font-size:.68rem;border-radius:999px;padding:5px 8px;font-weight:900;white-space:nowrap}
+.s-draft{background:#2b3243;color:#ccd1dd}.s-filming{background:rgba(59,130,246,.16);color:#9ec5ff}
+.s-editing{background:rgba(246,173,40,.14);color:#ffd58e}
+.s-review{background:rgba(118,87,255,.16);color:#c8bdff}
+.s-public{background:rgba(35,197,94,.14);color:#9deab1}
+.s-issue{background:rgba(239,68,68,.14);color:#ffaaaa}
+.divider{height:1px;background:var(--line);margin:18px 0}
+.empty{text-align:center;padding:30px 12px;border:1px dashed var(--line);border-radius:12px;color:var(--muted)}
+.upload-box{border:2px dashed #49526b;border-radius:14px;padding:18px;text-align:center;background:#0d1018}
+.upload-box strong{display:block;margin-bottom:6px}.upload-box small{color:var(--muted);line-height:1.5}
+.file-result{margin-top:9px;color:#a8edbb;font-size:.78rem}
+.terms{font-size:.8rem;line-height:1.75;color:var(--muted);background:#0d1018;border:1px solid var(--line);
+ border-radius:12px;padding:13px;max-height:190px;overflow:auto}
+.bottom{position:fixed;bottom:0;left:0;right:0;z-index:55;background:rgba(8,10,16,.97);
+ border-top:2px solid var(--purple);padding:11px 15px}
+.bottom-in{max-width:1180px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.bottom-note{font-size:.72rem;color:var(--muted);line-height:1.45}
+.toast{position:fixed;right:18px;top:75px;z-index:100;background:#1a1f2b;border:1px solid var(--line);
+ border-radius:11px;padding:12px 15px;opacity:0;transform:translateY(-8px);transition:.18s;
+ pointer-events:none;box-shadow:0 15px 40px rgba(0,0,0,.35)}
+.toast.show{opacity:1;transform:none}
+@media(max-width:860px){.roles{grid-template-columns:repeat(2,1fr)}.flow{grid-template-columns:1fr 1fr}.flow-step:last-child{grid-column:1/-1}.progress-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){main{padding:0 9px;margin-top:12px}.header-in{align-items:flex-start;flex-direction:column;gap:4px}
+ .hero,.panel{padding:15px}.roles{grid-template-columns:1fr}.role-btn{min-height:auto}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}
+ .panel-head{flex-direction:column}.match-selector{grid-template-columns:1fr}.actions .btn{width:100%}.bottom-in{flex-direction:column}.bottom .btn{width:100%}
+ .bottom-note{text-align:center}.input{font-size:16px}.match-card-top{flex-direction:column}.progress-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div class="header-in">
+ <div class="brand">PULSE <span>ECHO</span> WORKFLOW</div>
+ <div class="header-state" id="saveState">この端末へ自動保存</div>
+</div></header>
+
+<main>
+<section class="hero">
+ <h1>みんなでつなぐ、試合公開の管理画面</h1>
+ <p>一人が全部を背負わず、撮影・編集・確認・公開を役割ごとにつなぎます。<br>
+ 撮影素材の不備と編集作業の責任を分け、誰の作業で止まっているかを見えるようにします。</p>
+ <div class="flow">
+  <div class="flow-step"><b>① 試合登録</b>管理者</div>
+  <div class="flow-step"><b>② 撮影・確認</b>チーム関係者</div>
+  <div class="flow-step"><b>③ 素材提出</b>撮影者</div>
+  <div class="flow-step"><b>④ 編集</b>編集担当</div>
+  <div class="flow-step"><b>⑤ 確認・公開</b>確認者／管理者</div>
+ </div>
+</section>
+
+<div class="role-title">今日は何を担当しますか？</div>
+<section class="roles">
+ <button class="role-btn active" data-panel="filmer"><span class="role-icon">📹</span><strong>撮影する人</strong><small>撮影、再生確認、素材提出まで</small></button>
+ <button class="role-btn" data-panel="editor"><span class="role-icon">🎬</span><strong>編集する人</strong><small>編集待ちの素材と動画URLを管理</small></button>
+ <button class="role-btn" data-panel="reviewer"><span class="role-icon">✅</span><strong>確認する人</strong><small>試合情報と動画を最終確認</small></button>
+ <button class="role-btn" data-panel="admin"><span class="role-icon">⚙️</span><strong>全体管理者</strong><small>試合登録、担当割当、公開管理</small></button>
+</section>
+
+<section class="panel active" id="filmer">
+ <div class="panel-head"><div><h2>📹 撮影担当画面</h2><p>基本は出場チームの関係者が担当します。</p></div><span class="tag">撮影責任を明確化</span></div>
+ <div class="match-selector"><select class="input match-select"></select><button class="btn btn-blue" onclick="newFilmingRequest()">撮影依頼を登録</button></div>
+ <div id="filmerProgress"></div>
+ <div class="divider"></div>
+
+ <div class="grid">
+  <div class="field"><label>撮影担当者名</label><input class="input" id="filmerName" placeholder="例：山田 太郎"></div>
+  <div class="field"><label>所属・依頼元チーム</label><input class="input" id="filmerTeam" placeholder="例：NICE GUY"></div>
+  <div class="field"><label>撮影区分</label>
+   <select class="input" id="filmingType">
+    <option value="team">出場チーム関係者が撮影</option>
+    <option value="request">PULSE ECHO側へ撮影を依頼</option>
+    <option value="external">外部撮影者へ依頼</option>
+   </select>
+  </div>
+  <div class="field"><label>現場確認者</label><input class="input" id="onSiteChecker" placeholder="依頼撮影ではチーム側から1名"></div>
+ </div>
+
+ <div id="requestNotice" class="notice" style="margin-top:14px">
+  出場チーム関係者による撮影です。撮影・保存・再生確認・アップロードまで、担当チーム側で確認してください。
+ </div>
+
+ <h3>撮影前チェック</h3>
+ <div class="checklist" id="beforeChecks">
+  <label class="check"><input type="checkbox" data-key="permission"><span><b>会場と対戦相手の撮影許可を確認した</b><small>公開範囲についてもチーム内で周知してください。</small></span></label>
+  <label class="check"><input type="checkbox" data-key="landscape"><span><b>横向き・三脚固定・コート全体を確認した</b><small>人がカメラを持ち続けず、中央付近から広く撮影します。</small></span></label>
+  <label class="check"><input type="checkbox" data-key="battery"><span><b>バッテリーと空き容量を確認した</b><small>通知や電話で止まらない設定も確認してください。</small></span></label>
+  <label class="check"><input type="checkbox" data-key="test"><span><b>10秒の試し撮りを再生した</b><small>画角、音声、保存が正常かを本番前に確認します。</small></span></label>
+ </div>
+
+ <h3>撮影後チェック</h3>
+ <div class="checklist" id="afterChecks">
+  <label class="check"><input type="checkbox" data-key="firstSaved"><span><b>前半動画を保存し、再生確認した</b><small>冒頭・中間・最後が再生できることを確認します。</small></span></label>
+  <label class="check"><input type="checkbox" data-key="secondSaved"><span><b>後半動画を保存し、再生確認した</b><small>途中で録画が止まっていないか確認します。</small></span></label>
+  <label class="check"><input type="checkbox" data-key="soundFrame"><span><b>音声と画角を確認した</b><small>コート全体が映り、試合内容が確認できる状態か見ます。</small></span></label>
+ </div>
+
+ <div class="grid" style="margin-top:14px">
+  <div class="field"><label>前半素材の共有先</label><input class="input" id="sourceFirst" placeholder="Google Drive等の共有URL"></div>
+  <div class="field"><label>後半素材の共有先</label><input class="input" id="sourceSecond" placeholder="Google Drive等の共有URL"></div>
+  <div class="field full"><label>撮影不備・連絡事項</label><textarea class="input" id="filmingIssue" placeholder="問題が無ければ空欄。例：後半12分で一度録画停止"></textarea></div>
+ </div>
+
+ <div class="upload-box" style="margin-top:14px">
+  <strong>動画ファイルを選んで確認</strong>
+  <small>このGitHub Pages版ではファイル名と容量の確認だけを行います。<br>実際のクラウドアップロードは、三賢者が構築するバックエンドへ接続予定です。</small>
+  <input id="localFiles" type="file" accept="video/*" multiple style="margin-top:12px">
+  <div class="file-result" id="fileResult"></div>
+ </div>
+
+ <div class="terms" id="filmingTerms" style="margin-top:14px">
+  撮影担当は、録画開始だけでなく、保存・再生確認・素材共有までを担当します。
+  編集担当は提出された素材を加工する役割であり、未撮影、途中停止、画角不良、容量不足など、
+  元素材の不備を修復できない場合があります。PULSE ECHO側へ撮影を依頼した場合も、
+  機材・会場・第三者・不可抗力による完全な撮影結果を保証するものではありません。
+ </div>
+ <label class="check" style="margin-top:10px"><input type="checkbox" id="filmingAgreement"><span><b>撮影範囲と確認責任について理解しました</b></span></label>
+ <div class="actions"><button class="btn btn-primary" onclick="saveFilming()">撮影・素材提出状況を保存</button><button class="btn btn-red" onclick="markFilmingIssue()">撮影不備として記録</button></div>
+</section>
+
+<section class="panel" id="editor">
+ <div class="panel-head"><div><h2>🎬 編集担当画面</h2><p>撮影済み・素材提出済みの試合だけを扱います。</p></div><span class="tag">元素材の不備は別管理</span></div>
+ <div class="match-selector"><select class="input match-select"></select><button class="btn" onclick="refreshAll()">状態を更新</button></div>
+ <div id="editorProgress"></div>
+ <div class="notice red">素材が不足・破損・途中停止の場合は、無理に編集完了にせず「素材不備」を記録してください。</div>
+ <div class="grid">
+  <div class="field"><label>編集担当者</label><input class="input" id="editorName" placeholder="例：誠"></div>
+  <div class="field"><label>編集状態</label><select class="input" id="editingState"><option value="waiting">未着手</option><option value="editing">編集中</option><option value="done">編集完了</option><option value="issue">素材不備で編集不可</option></select></div>
+  <div class="field"><label>YouTube 前半URL</label><input class="input" id="youtubeFirst" placeholder="https://youtu.be/..."></div>
+  <div class="field"><label>YouTube 後半URL</label><input class="input" id="youtubeSecond" placeholder="https://youtu.be/..."></div>
+  <div class="field full"><label>YouTube ハイライトURL</label><input class="input" id="youtubeHighlight" placeholder="任意"></div>
+  <div class="field full"><label>編集メモ・素材不備の理由</label><textarea class="input" id="editorMemo"></textarea></div>
+ </div>
+ <div class="checklist">
+  <label class="check"><input type="checkbox" id="scoreAdded"><span><b>得点表示・対戦カードを確認した</b></span></label>
+  <label class="check"><input type="checkbox" id="partsChecked"><span><b>前半・後半の区別と動画の最後までを確認した</b></span></label>
+ </div>
+ <div class="actions"><button class="btn btn-primary" onclick="saveEditing()">編集状況を保存</button></div>
+</section>
+
+<section class="panel" id="reviewer">
+ <div class="panel-head"><div><h2>✅ 最終確認担当画面</h2><p>動画と試合情報を確認し、公開可能かを判断します。</p></div><span class="tag">公開前の安全装置</span></div>
+ <div class="match-selector"><select class="input match-select"></select><button class="btn" onclick="openPreview()">公開ページを確認</button></div>
+ <div id="reviewProgress"></div>
+ <div class="grid">
+  <div class="field"><label>確認担当者</label><input class="input" id="reviewerName" placeholder="例：佐藤"></div>
+  <div class="field"><label>確認結果</label><select class="input" id="reviewResult"><option value="waiting">未確認</option><option value="approved">公開OK</option><option value="return">修正依頼</option></select></div>
+  <div class="field full"><label>修正内容・確認メモ</label><textarea class="input" id="reviewMemo"></textarea></div>
+ </div>
+ <div class="checklist">
+  <label class="check"><input type="checkbox" id="checkTeams"><span><b>チーム名、試合日、大会名が正しい</b></span></label>
+  <label class="check"><input type="checkbox" id="checkScore"><span><b>スコアが正しい</b></span></label>
+  <label class="check"><input type="checkbox" id="checkVideos"><span><b>前半・後半の動画が再生できる</b></span></label>
+  <label class="check"><input type="checkbox" id="checkPermission"><span><b>掲載・公開について問題がない</b></span></label>
+ </div>
+ <div class="actions"><button class="btn btn-primary" onclick="saveReview()">最終確認を保存</button></div>
+</section>
+
+<section class="panel" id="admin">
+ <div class="panel-head"><div><h2>⚙️ 全体管理者画面</h2><p>試合登録、担当者、全体進捗、公開状態を管理します。</p></div><span class="tag">管理者のみ</span></div>
+ <div class="notice green">公開は「撮影確認 → 編集完了 → 最終確認OK」が揃った試合だけにしてください。</div>
+
+ <h3>新しい試合を登録</h3>
+ <div class="grid">
+  <div class="field"><label>試合日</label><input class="input" id="matchDate" type="date"></div>
+  <div class="field"><label>大会名・節</label><input class="input" id="competition" placeholder="例：○○リーグ 第3節"></div>
+  <div class="field"><label>左側チーム</label><input class="input" id="home" placeholder="SUNFIRES"></div>
+  <div class="field"><label>右側チーム</label><input class="input" id="away" placeholder="NICE GUY"></div>
+  <div class="field"><label>左側得点</label><input class="input" id="homeScore" type="number" min="0" value="0"></div>
+  <div class="field"><label>右側得点</label><input class="input" id="awayScore" type="number" min="0" value="0"></div>
+  <div class="field"><label>会場</label><input class="input" id="venue"></div>
+  <div class="field"><label>撮影担当チーム</label><input class="input" id="assignedTeam" placeholder="原則、出場チーム関係者"></div>
+  <div class="field full"><label>試合説明</label><textarea class="input" id="description"></textarea></div>
+ </div>
+ <div class="actions"><button class="btn btn-primary" onclick="addMatch()">＋ 試合を登録する</button></div>
+
+ <div class="divider"></div>
+ <h3>全試合の進捗</h3>
+ <div class="cards" id="adminList"></div>
+
+ <div class="divider"></div>
+ <h3>担当者交代・バックアップ</h3>
+ <div class="actions">
+  <button class="btn btn-green" onclick="backupWorkflow()">運営データをバックアップ</button>
+  <label class="btn">バックアップを読み込む<input id="restoreInput" type="file" accept=".json,application/json" hidden></label>
+  <button class="btn btn-red" onclick="resetWorkflow()">この端末の運営データを初期化</button>
+ </div>
+</section>
+</main>
+
+<div class="bottom"><div class="bottom-in">
+ <button class="btn btn-primary" onclick="exportPublicData()">⬇ 公開用 data.js を書き出す</button>
+ <div class="bottom-note">最終確認OK・公開設定済みの試合を<br>GitHub Pages用に書き出します</div>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script>
+const STORAGE="pulse_echo_workflow_v3";
+let state={matches:[],selectedId:""};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const now=()=>new Date().toISOString();
+
+function baseWorkflow(m){
+ return {
+  ...m,
+  id:m.id||makeId(m),
+  published:m.published===true,
+  workflow:m.workflow||{
+   assignedTeam:"",
+   filming:{status:"waiting",type:"team",filmerName:"",filmerTeam:"",onSiteChecker:"",before:{},after:{},sourceFirst:"",sourceSecond:"",issue:"",agreement:false,files:[],updatedAt:""},
+   editing:{status:"waiting",editorName:"",memo:"",scoreAdded:false,partsChecked:false,updatedAt:""},
+   review:{status:"waiting",reviewerName:"",memo:"",checks:{},updatedAt:""}
+  }
+ }
+}
+function slug(s){return String(s||"match").toLowerCase().normalize("NFKC").replace(/[^a-z0-9\u3040-\u30ff\u3400-\u9fff]+/g,"-").replace(/^-|-$/g,"").slice(0,36)||"match"}
+function makeId(m){return `${slug(m.home)}-vs-${slug(m.away)}-${String(m.date||"").replaceAll("-","")||Date.now()}`}
+function load(){
+ try{
+  const saved=JSON.parse(localStorage.getItem(STORAGE)||"null");
+  if(saved&&Array.isArray(saved.matches)) state=saved;
+  else state.matches=(window.PULSE_MATCHES||[]).map(baseWorkflow);
+ }catch{state.matches=(window.PULSE_MATCHES||[]).map(baseWorkflow)}
+ state.matches=state.matches.map(baseWorkflow);
+ if(!state.selectedId&&state.matches[0])state.selectedId=state.matches[0].id;
+ persist(false);refreshAll()
+}
+function persist(show=true){
+ localStorage.setItem(STORAGE,JSON.stringify(state));
+ $("saveState").textContent="✓ 自動保存 "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});
+ if(show)toast("保存しました")
+}
+function toast(msg){$("toast").textContent=msg;$("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),2200)}
+function selected(){return state.matches.find(m=>m.id===state.selectedId)}
+function selectMatch(id){state.selectedId=id;persist(false);refreshAll()}
+function options(){
+ return state.matches.length?state.matches.map(m=>`<option value="${esc(m.id)}" ${m.id===state.selectedId?"selected":""}>${esc(m.date||"日付未定")}｜${esc(m.home)} vs ${esc(m.away)}</option>`).join(""):'<option>試合がありません</option>'
+}
+document.querySelectorAll(".match-select").forEach(s=>s.onchange=e=>selectMatch(e.target.value));
+document.querySelectorAll(".role-btn").forEach(b=>b.onclick=()=>{
+ document.querySelectorAll(".role-btn").forEach(x=>x.classList.remove("active"));b.classList.add("active");
+ document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));$(b.dataset.panel).classList.add("active")
+});
+
+function statusLabel(m){
+ const f=m.workflow.filming.status,e=m.workflow.editing.status,r=m.workflow.review.status;
+ if(m.published)return["公開中","s-public"];
+ if(f==="issue"||e==="issue")return["問題あり","s-issue"];
+ if(r==="approved")return["公開待ち","s-review"];
+ if(e==="done")return["最終確認待ち","s-review"];
+ if(e==="editing")return["編集中","s-editing"];
+ if(f==="done")return["編集待ち","s-filming"];
+ return["準備中","s-draft"]
+}
+function progressHTML(m){
+ if(!m)return'<div class="empty">全体管理者が試合を登録すると、ここに表示されます。</div>';
+ const f=m.workflow.filming,e=m.workflow.editing,r=m.workflow.review;
+ const cls=(ok,issue)=>issue?"issue":ok?"done":"";
+ return `<div class="progress-card"><div class="progress-title">${esc(m.home)} ${m.homeScore??0} - ${m.awayScore??0} ${esc(m.away)}</div>
+ <div class="progress-meta">${esc(m.date||"日付未定")}　${esc(m.competition||"")}</div>
+ <div class="progress-grid">
+ <div class="pill ${cls(true)}">① 試合登録</div>
+ <div class="pill ${cls(f.status==="done",f.status==="issue")}">② 撮影確認</div>
+ <div class="pill ${cls(f.status==="done",f.status==="issue")}">③ 素材提出</div>
+ <div class="pill ${cls(e.status==="done",e.status==="issue")}">④ 編集</div>
+ <div class="pill ${cls(r.status==="approved")}">⑤ 最終確認</div>
+ </div></div>`
+}
+function fillForm(){
+ const m=selected();if(!m)return;
+ const f=m.workflow.filming,e=m.workflow.editing,r=m.workflow.review;
+ $("filmerName").value=f.filmerName||"";$("filmerTeam").value=f.filmerTeam||"";$("filmingType").value=f.type||"team";$("onSiteChecker").value=f.onSiteChecker||"";
+ $("sourceFirst").value=f.sourceFirst||"";$("sourceSecond").value=f.sourceSecond||"";$("filmingIssue").value=f.issue||"";$("filmingAgreement").checked=!!f.agreement;
+ document.querySelectorAll("#beforeChecks input").forEach(x=>x.checked=!!f.before[x.dataset.key]);
+ document.querySelectorAll("#afterChecks input").forEach(x=>x.checked=!!f.after[x.dataset.key]);
+ $("editorName").value=e.editorName||"";$("editingState").value=e.status||"waiting";$("youtubeFirst").value=m.firstHalfVideo||"";$("youtubeSecond").value=m.secondHalfVideo||"";$("youtubeHighlight").value=m.highlightVideo||"";$("editorMemo").value=e.memo||"";$("scoreAdded").checked=!!e.scoreAdded;$("partsChecked").checked=!!e.partsChecked;
+ $("reviewerName").value=r.reviewerName||"";$("reviewResult").value=r.status||"waiting";$("reviewMemo").value=r.memo||"";
+ $("checkTeams").checked=!!r.checks.teams;$("checkScore").checked=!!r.checks.score;$("checkVideos").checked=!!r.checks.videos;$("checkPermission").checked=!!r.checks.permission;
+ updateRequestNotice()
+}
+$("filmingType").onchange=updateRequestNotice;
+function updateRequestNotice(){
+ const t=$("filmingType").value,n=$("requestNotice");
+ if(t==="request"){n.className="notice red";n.innerHTML="<b>PULSE ECHO側への撮影依頼</b><br>依頼チームは、会場・対戦相手への確認と現場確認者の配置を担当します。機材・会場・不可抗力による完全撮影は保証されません。"}
+ else if(t==="external"){n.className="notice";n.innerHTML="<b>外部撮影者への依頼</b><br>依頼条件、納品方法、撮影不備時の扱いを事前に共有してください。"}
+ else{n.className="notice";n.innerHTML="<b>出場チーム関係者による撮影</b><br>撮影・保存・再生確認・アップロードまで、担当チーム側で確認してください。"}
+}
+$("localFiles").onchange=e=>{
+ const files=[...e.target.files];
+ $("fileResult").textContent=files.length?files.map(f=>`${f.name}（${(f.size/1024/1024).toFixed(1)}MB）`).join(" ／ "):"";
+}
+
+function saveFilming(){
+ const m=selected();if(!m)return alert("試合がありません");
+ const f=m.workflow.filming;
+ f.filmerName=$("filmerName").value.trim();f.filmerTeam=$("filmerTeam").value.trim();f.type=$("filmingType").value;f.onSiteChecker=$("onSiteChecker").value.trim();
+ f.sourceFirst=$("sourceFirst").value.trim();f.sourceSecond=$("sourceSecond").value.trim();f.issue=$("filmingIssue").value.trim();f.agreement=$("filmingAgreement").checked;
+ f.before={};document.querySelectorAll("#beforeChecks input").forEach(x=>f.before[x.dataset.key]=x.checked);
+ f.after={};document.querySelectorAll("#afterChecks input").forEach(x=>f.after[x.dataset.key]=x.checked);
+ f.files=[...$("localFiles").files].map(x=>({name:x.name,size:x.size}));
+ const beforeOK=Object.values(f.before).every(Boolean),afterOK=Object.values(f.after).every(Boolean);
+ if(!f.filmerName)return alert("撮影担当者名を入力してください");
+ if(f.type==="request"&&!f.onSiteChecker)return alert("撮影依頼では、依頼チーム側の現場確認者を入力してください");
+ if(!beforeOK||!afterOK||!f.agreement||!f.sourceFirst||!f.sourceSecond){
+  if(!confirm("確認項目または素材共有先が不足しています。未完了として保存しますか？"))return;
+  f.status="working";
+ }else f.status="done";
+ f.updatedAt=now();persist();refreshAll()
+}
+function markFilmingIssue(){
+ const m=selected();if(!m)return;
+ if(!$("filmingIssue").value.trim())return alert("撮影不備の内容を入力してください");
+ m.workflow.filming.issue=$("filmingIssue").value.trim();m.workflow.filming.status="issue";m.workflow.filming.updatedAt=now();m.published=false;
+ persist();refreshAll()
+}
+function saveEditing(){
+ const m=selected();if(!m)return;
+ const e=m.workflow.editing;
+ e.editorName=$("editorName").value.trim();e.status=$("editingState").value;e.memo=$("editorMemo").value.trim();e.scoreAdded=$("scoreAdded").checked;e.partsChecked=$("partsChecked").checked;e.updatedAt=now();
+ m.firstHalfVideo=$("youtubeFirst").value.trim();m.secondHalfVideo=$("youtubeSecond").value.trim();m.highlightVideo=$("youtubeHighlight").value.trim();
+ if(e.status==="done"&&(!e.editorName||!e.scoreAdded||!e.partsChecked||(!m.firstHalfVideo&&!m.secondHalfVideo))){
+  return alert("編集担当者、確認項目、動画URLを確認してください");
+ }
+ if(e.status==="issue")m.published=false;
+ persist();refreshAll()
+}
+function saveReview(){
+ const m=selected();if(!m)return;
+ const r=m.workflow.review;
+ r.reviewerName=$("reviewerName").value.trim();r.status=$("reviewResult").value;r.memo=$("reviewMemo").value.trim();r.updatedAt=now();
+ r.checks={teams:$("checkTeams").checked,score:$("checkScore").checked,videos:$("checkVideos").checked,permission:$("checkPermission").checked};
+ if(r.status==="approved"&&(!r.reviewerName||!Object.values(r.checks).every(Boolean)))return alert("確認担当者名と4つの確認項目が必要です");
+ if(r.status!=="approved")m.published=false;
+ persist();refreshAll()
+}
+function openPreview(){
+ const m=selected();if(!m)return;window.open(`match.html?id=${encodeURIComponent(m.id)}`,"_blank")
+}
+function addMatch(){
+ const m=baseWorkflow({
+  date:$("matchDate").value,competition:$("competition").value.trim(),venue:$("venue").value.trim(),
+  home:$("home").value.trim(),away:$("away").value.trim(),homeScore:Number($("homeScore").value)||0,awayScore:Number($("awayScore").value)||0,
+  description:$("description").value.trim(),firstHalfVideo:"",secondHalfVideo:"",highlightVideo:"",homeLogo:"",awayLogo:"",published:false
+ });
+ if(!m.date||!m.home||!m.away)return alert("試合日と両チーム名は必須です");
+ m.workflow.assignedTeam=$("assignedTeam").value.trim();
+ if(state.matches.some(x=>x.id===m.id))m.id+="-"+Date.now();
+ state.matches.unshift(m);state.selectedId=m.id;
+ ["matchDate","competition","venue","home","away","assignedTeam","description"].forEach(id=>$(id).value="");$("homeScore").value=0;$("awayScore").value=0;
+ persist();refreshAll()
+}
+function newFilmingRequest(){
+ document.querySelector('[data-panel="admin"]').click();
+ $("assignedTeam").focus();
+ toast("全体管理者画面で試合と撮影担当を登録してください")
+}
+function togglePublish(id){
+ const m=state.matches.find(x=>x.id===id);if(!m)return;
+ if(!m.published){
+  if(m.workflow.filming.status!=="done"||m.workflow.editing.status!=="done"||m.workflow.review.status!=="approved")return alert("撮影確認・編集完了・最終確認OKが揃っていません");
+  m.published=true;
+ }else m.published=false;
+ persist();refreshAll()
+}
+function deleteMatch(id){
+ const m=state.matches.find(x=>x.id===id);if(!m)return;
+ if(!confirm(`「${m.home} vs ${m.away}」を削除しますか？`))return;
+ state.matches=state.matches.filter(x=>x.id!==id);state.selectedId=state.matches[0]?.id||"";persist();refreshAll()
+}
+function renderAdmin(){
+ const el=$("adminList");
+ if(!state.matches.length){el.innerHTML='<div class="empty">試合はまだありません。</div>';return}
+ el.innerHTML=state.matches.map(m=>{
+  const [label,cls]=statusLabel(m),f=m.workflow.filming,e=m.workflow.editing,r=m.workflow.review;
+  return `<div class="match-card"><div class="match-card-top"><div><div class="match-card-title">${esc(m.home)} ${m.homeScore??0} - ${m.awayScore??0} ${esc(m.away)}</div>
+  <div class="match-card-meta">${esc(m.date||"")}　${esc(m.competition||"")}<br>撮影：${esc(f.filmerName||m.workflow.assignedTeam||"未設定")} ／ 編集：${esc(e.editorName||"未設定")} ／ 確認：${esc(r.reviewerName||"未設定")}</div></div>
+  <span class="status ${cls}">${label}</span></div>
+  <div class="actions"><button class="btn btn-small ${m.published?"btn-yellow":"btn-green"}" onclick="togglePublish('${m.id}')">${m.published?"公開停止":"公開する"}</button>
+  <button class="btn btn-small" onclick="selectMatch('${m.id}')">この試合を開く</button>
+  <button class="btn btn-small btn-red" onclick="deleteMatch('${m.id}')">削除</button></div></div>`
+ }).join("")
+}
+function refreshAll(){
+ document.querySelectorAll(".match-select").forEach(s=>{s.innerHTML=options();s.disabled=!state.matches.length});
+ const m=selected();
+ $("filmerProgress").innerHTML=progressHTML(m);$("editorProgress").innerHTML=progressHTML(m);$("reviewProgress").innerHTML=progressHTML(m);
+ renderAdmin();fillForm()
+}
+function download(name,text,type){
+ const b=new Blob([text],{type}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1200)
+}
+function exportPublicData(){
+ const publicMatches=state.matches.filter(m=>m.published).map(m=>{
+  const x={...m};delete x.workflow;return x
+ });
+ download("data.js","window.PULSE_MATCHES = "+JSON.stringify(publicMatches,null,2)+";\n","text/javascript;charset=utf-8");
+ toast(`${publicMatches.length}試合をdata.jsへ書き出しました`)
+}
+function backupWorkflow(){download("pulse-echo-workflow-backup.json",JSON.stringify({version:3,exportedAt:now(),...state},null,2),"application/json;charset=utf-8");toast("バックアップを書き出しました")}
+$("restoreInput").onchange=async e=>{
+ const f=e.target.files[0];if(!f)return;
+ try{const obj=JSON.parse(await f.text());if(!Array.isArray(obj.matches))throw 0;if(!confirm(`${obj.matches.length}試合を読み込み、現在のデータを置き換えますか？`))return;state={matches:obj.matches.map(baseWorkflow),selectedId:obj.selectedId||obj.matches[0]?.id||""};persist();refreshAll()}
+ catch{alert("読み込めるバックアップではありません")}e.target.value=""
+};
+function resetWorkflow(){if(!confirm("この端末の運営データを初期化しますか？"))return;localStorage.removeItem(STORAGE);state={matches:(window.PULSE_MATCHES||[]).map(baseWorkflow),selectedId:""};if(state.matches[0])state.selectedId=state.matches[0].id;persist();refreshAll()}
+window.saveFilming=saveFilming;window.markFilmingIssue=markFilmingIssue;window.saveEditing=saveEditing;window.saveReview=saveReview;window.openPreview=openPreview;window.addMatch=addMatch;window.newFilmingRequest=newFilmingRequest;window.selectMatch=selectMatch;window.togglePublish=togglePublish;window.deleteMatch=deleteMatch;window.backupWorkflow=backupWorkflow;window.resetWorkflow=resetWorkflow;window.exportPublicData=exportPublicData;window.refreshAll=refreshAll;
+load();
+</script>
+</body>
+</html>

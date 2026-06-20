@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080a10"><title>試合を見る | PULSE ECHO</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<header class="site-header"><div class="container nav"><a class="brand" href="./">PULSE <span>ECHO</span></a><nav class="navlinks"><a href="./">試合一覧</a><a href="admin.html">管理</a></nav></div></header>
+<main><div class="container match-hero"><a class="back" href="./">← 試合一覧へ戻る</a><div class="scoreboard" id="scoreboard"></div></div>
+<section class="section" style="padding-top:10px"><div class="container">
+<div class="tabs" id="tabs"></div>
+<div class="viewer-layout">
+<div class="viewer-card">
+<div class="video-shell"><div id="player"></div><div class="comment-overlay" id="overlay"></div></div>
+<div class="controls">
+<div class="inputs"><input class="input" id="userName" value="誠" placeholder="名前"><input class="input" id="commentText" placeholder="この瞬間に一言…"><button class="btn btn-primary" id="commentBtn">💬 流す</button></div>
+<div class="reactions"><button class="react hot" data-kind="🔥">🔥 熱狂</button><button class="react laugh" data-kind="😂">😂 珍プレー</button><button class="react respect" data-kind="🫡">🫡 惚れた</button><button class="react ai" data-kind="🤖">🤖 AI評価</button></div>
+</div>
+<div class="heatmap"><div class="heat-title">📊 感情マルチヒートマップ</div><canvas id="chart" height="90"></canvas></div>
+</div>
+<aside class="timeline-card"><div class="timeline-title">ECHO TIMELINE</div>
+<div class="filter"><select class="input" id="viewFilter"><option value="all">👁️ 全員の熱量を表示</option></select></div>
+<div class="timeline" id="timeline"><div class="muted">思い出を読み込み中…</div></div></aside>
+</div></div></section></main>
+<footer class="footer"><div class="container">PULSE ECHO — 鼓動が、記憶になる。</div></footer>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="config.js"></script><script src="data.js"></script>
+<script>
+const qs=new URLSearchParams(location.search), id=qs.get("id");
+const match=(window.PULSE_MATCHES||[]).find(x=>x.id===id)||(window.PULSE_MATCHES||[])[0];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+if(!match){document.body.innerHTML='<div class="container" style="padding:80px 0">試合が見つかりません。</div>';throw new Error("match not found")}
+document.title=`${match.home} vs ${match.away} | PULSE ECHO`;
+document.getElementById("scoreboard").innerHTML=`<div class="match-meta">${esc(match.competition||"MATCH")}　${esc((match.date||"").replaceAll("-","."))}${match.venue?"　"+esc(match.venue):""}</div><div class="scoreline"><div class="club">${esc(match.home)}</div><div class="bigscore">${esc(match.homeScore)} - ${esc(match.awayScore)}</div><div class="club">${esc(match.away)}</div></div>${match.description?`<p class="muted">${esc(match.description)}</p>`:""}`;
+const videos=[["前半",match.firstHalfVideo],["後半",match.secondHalfVideo],["ハイライト",match.highlightVideo]].filter(x=>x[1]);
+let currentPart=videos[0]?.[0]||"前半", player, events=[], chart, supa=null;
+const videoId=v=>{if(!v)return"";let s=String(v);try{let u=new URL(s);return u.hostname.includes("youtu.be")?u.pathname.slice(1):u.searchParams.get("v")||s}catch{return s}};
+document.getElementById("tabs").innerHTML=videos.map((v,i)=>`<button class="tab ${i===0?"active":""}" data-label="${esc(v[0])}" data-video="${esc(videoId(v[1]))}">${esc(v[0])}</button>`).join("");
+function onYouTubeIframeAPIReady(){ if(videos[0]) loadVideo(videoId(videos[0][1])); loadEvents() }
+function loadVideo(v){if(player&&player.loadVideoById)player.loadVideoById(v);else player=new YT.Player("player",{videoId:v,playerVars:{playsinline:1,rel:0,autoplay:0}})}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");currentPart=b.dataset.label;loadVideo(b.dataset.video);loadEvents()});
+const cfg=window.PULSE_CONFIG||{};
+if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase) supa=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
+const key=()=>`pulse_echo_${match.id}_${currentPart}`;
+function nowTime(){try{return Math.floor(player.getCurrentTime()||0)}catch{return 0}}
+function fmt(s){s=Number(s)||0;return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`}
+async function loadEvents(){
+ if(supa){const {data,error}=await supa.from(cfg.tableName||"futsal_goods").select("*").eq("video_id",`${match.id}:${currentPart}`).order("good_time",{ascending:true});events=error?[]:(data||[])}
+ else{events=JSON.parse(localStorage.getItem(key())||"[]")}
+ render()
+}
+async function addEvent(kind,comment=""){
+ const e={good_time:nowTime(),description:kind,user_name:document.getElementById("userName").value.trim()||"匿名",comment,video_id:`${match.id}:${currentPart}`};
+ if(supa){const {error}=await supa.from(cfg.tableName||"futsal_goods").insert(e);if(error){alert("保存に失敗しました: "+error.message);return}}
+ else{events.push({...e,id:Date.now()});localStorage.setItem(key(),JSON.stringify(events))}
+ fly(comment||kind);document.getElementById("commentText").value="";await loadEvents()
+}
+document.querySelectorAll(".react").forEach(b=>b.onclick=()=>addEvent(b.dataset.kind));
+document.getElementById("commentBtn").onclick=()=>{let t=document.getElementById("commentText").value.trim();if(t)addEvent("💬",t)};
+document.getElementById("commentText").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("commentBtn").click()});
+function fly(t){let d=document.createElement("div");d.className="fly";d.textContent=t;d.style.top=(8+Math.random()*72)+"%";document.getElementById("overlay").appendChild(d);setTimeout(()=>d.remove(),4300)}
+document.getElementById("viewFilter").onchange=render;
+function render(){
+ const names=[...new Set(events.map(e=>e.user_name).filter(Boolean))];const sel=document.getElementById("viewFilter"),old=sel.value;
+ sel.innerHTML='<option value="all">👁️ 全員の熱量を表示</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");if([...sel.options].some(o=>o.value===old))sel.value=old;
+ const f=sel.value==="all"?events:events.filter(e=>e.user_name===sel.value);
+ document.getElementById("timeline").innerHTML=f.length?f.slice().sort((a,b)=>b.good_time-a.good_time).map(e=>`<div class="event" data-time="${e.good_time}"><div class="event-top"><span><b>${fmt(e.good_time)}</b>　${esc(e.description)}</span><span class="event-user">${esc(e.user_name)}</span></div>${e.comment?`<div class="event-comment">${esc(e.comment)}</div>`:""}</div>`).join(""):'<div class="muted">まだ足跡はありません。最初の一人になろう。</div>';
+ document.querySelectorAll(".event").forEach(el=>el.onclick=()=>player.seekTo(Number(el.dataset.time),true));draw(f)
+}
+function draw(list){
+ const bins=30,labels=Array.from({length:bins},(_,i)=>i+1),kinds=["🔥","😂","🫡","🤖"],cols=["#ff4757","#ffa502","#2ed573","#00cec9"];
+ const ds=kinds.map((k,j)=>({label:k,data:labels.map((_,i)=>list.filter(e=>e.description===k&&Math.floor((Number(e.good_time)||0)/60)===i).length),borderColor:cols[j],backgroundColor:cols[j]+"33",tension:.35,fill:true}));
+ if(chart)chart.destroy();chart=new Chart(document.getElementById("chart"),{type:"line",data:{labels,datasets:ds},options:{responsive:true,plugins:{legend:{labels:{color:"#aaa"}}},scales:{x:{ticks:{color:"#777",maxTicksLimit:8},grid:{color:"#252a37"}},y:{beginAtZero:true,ticks:{display:false},grid:{color:"#252a37"}}}}})
+}
+</script></body></html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080a10">
+<title>PULSE ECHO | 試合の記憶が響き続ける</title>
+<meta name="description" content="アマチュアスポーツの試合映像に、みんなの感情と記憶を残す共通プラットフォーム。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header"><div class="container nav">
+<a class="brand" href="./">PULSE <span>ECHO</span></a>
+<nav class="navlinks"><a href="#matches">試合を探す</a><a href="#about">PULSE ECHOとは</a><a href="admin.html">管理</a></nav>
+</div></header>
+<main>
+<section class="hero"><div class="container">
+<div class="pulse-mark">📡</div><div class="eyebrow">AMATEUR SPORTS MEMORY PLATFORM</div>
+<h1>PULSE ECHO</h1>
+<p class="hero-copy"><strong>今この瞬間の熱狂が、何年後の未来にも響き続ける。</strong><br>試合映像に、選手・仲間・家族の感情を刻む場所。</p>
+<div class="actions"><a class="btn btn-primary" href="#matches">▶ 最新の試合を見る</a><a class="btn" href="#about">PULSE ECHOを知る</a></div>
+</div></section>
+<section class="section" id="matches"><div class="container">
+<div class="section-head"><div><h2>最新の試合</h2><p class="section-sub">チームではなく、ひとつひとつの「試合」が主役です。</p></div></div>
+<div class="match-grid" id="matchGrid"></div>
+</div></section>
+<section class="section" id="about"><div class="container"><div class="statement">
+<strong>試合を保存するだけではない。<br>その瞬間に生まれた感情まで保存する。</strong>
+<p>🔥熱狂、😂珍プレー、🫡惚れた、🤖AI評価、💬コメント。<br>動画の時間軸にみんなの足跡を残し、あとから何度でも同じ瞬間へ戻れます。</p>
+</div></div></section>
+</main>
+<footer class="footer"><div class="container">PULSE ECHO — 鼓動が、記憶になる。</div></footer>
+<script src="data.js"></script>
+<script>
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const grid=document.getElementById("matchGrid");
+const matches=(window.PULSE_MATCHES||[]).filter(x=>x.published!==false).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+if(!matches.length) grid.innerHTML='<div class="empty">掲載中の試合はまだありません。</div>';
+else grid.innerHTML=matches.map(m=>`<a class="card match-card" href="match.html?id=${encodeURIComponent(m.id)}">
+<div class="card-cover"><div class="teams"><div class="team-name">${esc(m.home)}</div><div><div class="vs">MATCH</div><div class="score">${esc(m.homeScore)} - ${esc(m.awayScore)}</div></div><div class="team-name">${esc(m.away)}</div></div></div>
+<div class="card-body"><div class="meta"><span class="competition">${esc(m.competition||"MATCH")}</span><span>${esc((m.date||"").replaceAll("-","."))}</span></div>
+<div class="echo-counts"><span class="echo-pill">🔥 熱狂</span><span class="echo-pill">😂 珍プレー</span><span class="echo-pill">🫡 惚れた</span><span class="echo-pill">💬 コメント</span></div></div></a>`).join("");
+</script>
+</body></html>
