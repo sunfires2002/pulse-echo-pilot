@@ -26,6 +26,9 @@ header{position:sticky;top:0;z-index:50;background:rgba(8,10,16,.94);
 .header-in{max-width:1180px;margin:auto;padding:14px 16px;display:flex;
  align-items:center;justify-content:space-between;gap:16px}
 .brand{font-weight:950;letter-spacing:.13em}.brand span{color:var(--cyan)}
+.header-actions{display:flex;align-items:center;gap:14px}
+.top-link{font-size:.78rem;font-weight:900;color:#d7dae8;text-decoration:none}
+.top-link:hover{color:#fff}
 .header-state{font-size:.78rem;color:var(--muted)}
 main{max-width:1180px;margin:24px auto 100px;padding:0 14px}
 .hero{border:1px solid var(--line);border-radius:22px;padding:24px;
@@ -107,7 +110,7 @@ textarea.input{min-height:90px;resize:vertical}
  pointer-events:none;box-shadow:0 15px 40px rgba(0,0,0,.35)}
 .toast.show{opacity:1;transform:none}
 @media(max-width:860px){.roles{grid-template-columns:repeat(2,1fr)}.flow{grid-template-columns:1fr 1fr}.flow-step:last-child{grid-column:1/-1}.progress-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:600px){main{padding:0 9px;margin-top:12px}.header-in{align-items:flex-start;flex-direction:column;gap:4px}
+@media(max-width:600px){main{padding:0 9px;margin-top:12px}.header-in{align-items:flex-start;flex-direction:column;gap:4px}.header-actions{width:100%;justify-content:space-between}
  .hero,.panel{padding:15px}.roles{grid-template-columns:1fr}.role-btn{min-height:auto}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}
  .panel-head{flex-direction:column}.match-selector{grid-template-columns:1fr}.actions .btn{width:100%}.bottom-in{flex-direction:column}.bottom .btn{width:100%}
  .bottom-note{text-align:center}.input{font-size:16px}.match-card-top{flex-direction:column}.progress-grid{grid-template-columns:1fr}}
@@ -116,7 +119,7 @@ textarea.input{min-height:90px;resize:vertical}
 <body>
 <header><div class="header-in">
  <div class="brand">PULSE <span>ECHO</span> WORKFLOW</div>
- <div class="header-state" id="saveState">この端末へ自動保存</div>
+ <div class="header-actions"><a class="top-link" href="./">公開画面へ戻る</a><div class="header-state" id="saveState">この端末へ自動保存</div></div>
 </div></header>
 
 <main>
@@ -450,8 +453,9 @@ function togglePublish(id){
 }
 function deleteMatch(id){
  const m=state.matches.find(x=>x.id===id);if(!m)return;
- if(!confirm(`「${m.home} vs ${m.away}」を削除しますか？`))return;
- state.matches=state.matches.filter(x=>x.id!==id);state.selectedId=state.matches[0]?.id||"";persist();refreshAll()
+ if(!confirm(`「${m.home} vs ${m.away}」を削除しますか？\n\nこの端末の管理データから削除します。公開中のサイトから消すには、削除後に「公開用 data.js」を書き出して置き換えてください。`))return;
+ state.matches=state.matches.filter(x=>x.id!==id);state.selectedId=state.matches[0]?.id||"";persist();refreshAll();
+ toast("削除しました。公開サイトへ反映する場合は data.js を書き出してください")
 }
 function renderAdmin(){
  const el=$("adminList");

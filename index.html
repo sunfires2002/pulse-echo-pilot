@@ -10,7 +10,7 @@
 <body>
 <header class="site-header"><div class="container nav">
 <a class="brand" href="./">PULSE <span>ECHO</span></a>
-<nav class="navlinks"><a href="#matches">試合を探す</a><a href="#about">PULSE ECHOとは</a><a href="admin.html">管理</a></nav>
+<nav class="navlinks"><a href="#matches">試合を探す</a><a href="#about">PULSE ECHOとは</a></nav>
 </div></header>
 <main>
 <section class="hero"><div class="container">
@@ -32,8 +32,15 @@
 <script src="data.js"></script>
 <script>
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function adminMatches(){
+ try{
+  const saved=JSON.parse(localStorage.getItem("pulse_echo_workflow_v3")||"null");
+  if(saved&&Array.isArray(saved.matches))return saved.matches.map(m=>{const x={...m};delete x.workflow;return x});
+ }catch{}
+ return null;
+}
 const grid=document.getElementById("matchGrid");
-const matches=(window.PULSE_MATCHES||[]).filter(x=>x.published!==false).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+const matches=(adminMatches()||window.PULSE_MATCHES||[]).filter(x=>x.published!==false).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
 if(!matches.length) grid.innerHTML='<div class="empty">掲載中の試合はまだありません。</div>';
 else grid.innerHTML=matches.map(m=>`<a class="card match-card" href="match.html?id=${encodeURIComponent(m.id)}">
 <div class="card-cover"><div class="teams"><div class="team-name">${esc(m.home)}</div><div><div class="vs">MATCH</div><div class="score">${esc(m.homeScore)} - ${esc(m.awayScore)}</div></div><div class="team-name">${esc(m.away)}</div></div></div>
