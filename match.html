@@ -6,19 +6,21 @@
 <header class="site-header"><div class="container nav"><a class="brand" href="./">PULSE <span>ECHO</span></a><nav class="navlinks"><a href="./">試合一覧</a></nav></div></header>
 <main><div class="container match-hero"><a class="back" href="./">← 試合一覧へ戻る</a><div class="scoreboard" id="scoreboard"></div></div>
 <section class="section" style="padding-top:10px"><div class="container">
-<div class="tabs" id="tabs"></div>
 <div class="viewer-layout">
 <div class="viewer-card">
+<div class="watch-toolbar"><div class="watch-label">見る時間</div><div class="tabs" id="tabs"></div></div>
 <div class="video-shell"><div id="player"></div><div class="comment-overlay" id="overlay"></div></div>
 <div class="controls">
 <div class="inputs"><input class="input" id="userName" value="誠" placeholder="名前"><input class="input" id="commentText" placeholder="この瞬間に一言…"><button class="btn btn-primary" id="commentBtn">💬 流す</button></div>
 <div class="reactions"><button class="react hot" data-kind="🔥">🔥 熱狂</button><button class="react laugh" data-kind="😂">😂 珍プレー</button><button class="react respect" data-kind="🫡">🫡 惚れた</button><button class="react ai" data-kind="🤖">🤖 AI評価</button></div>
 </div>
-<div class="heatmap"><div class="heat-title">📊 感情マルチヒートマップ</div><canvas id="chart" height="90"></canvas></div>
 </div>
+<aside class="side-stack">
+<div class="heatmap"><div class="heat-title">📊 みんなの反応マップ</div><canvas id="chart" height="120"></canvas></div>
 <aside class="timeline-card"><div class="timeline-title">ECHO TIMELINE</div>
 <div class="filter"><select class="input" id="viewFilter"><option value="all">👁️ 全員の熱量を表示</option></select></div>
 <div class="timeline" id="timeline"><div class="muted">思い出を読み込み中…</div></div></aside>
+</aside>
 </div></div></section></main>
 <footer class="footer"><div class="container">PULSE ECHO — 鼓動が、記憶になる。</div></footer>
 <script src="https://www.youtube.com/iframe_api"></script>
