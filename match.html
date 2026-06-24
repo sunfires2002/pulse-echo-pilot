@@ -4,7 +4,7 @@
 <meta name="theme-color" content="#080a10"><title>試合を見る | PULSE ECHO</title>
 <link rel="stylesheet" href="style.css"></head><body>
 <header class="site-header"><div class="container nav"><a class="brand" href="./">PULSE <span>ECHO</span></a><nav class="navlinks"><a href="./">試合一覧</a></nav></div></header>
-<main><div class="container match-hero"><a class="back" href="./">← 試合一覧へ戻る</a><div class="scoreboard" id="scoreboard"></div></div>
+<main><div class="container match-hero"><a class="back" href="./">← 試合一覧へ戻る</a></div>
 <section class="section" style="padding-top:10px"><div class="container">
 <div class="viewer-layout">
 <div class="viewer-card">
@@ -14,6 +14,7 @@
 <div class="inputs"><input class="input" id="userName" value="誠" placeholder="名前"><input class="input" id="commentText" placeholder="この瞬間に一言…"><button class="btn btn-primary" id="commentBtn">💬 流す</button></div>
 <div class="reactions"><button class="react hot" data-kind="🔥 ナイスプレー">🔥 ナイスプレー</button><button class="react laugh" data-kind="😅 あちゃー">😅 あちゃー</button><button class="react respect" data-kind="😳 マジで">😳 マジで</button><button class="react ai" data-kind="🤖 AIにお任せ">🤖 AIにお任せ</button></div>
 </div>
+<div class="scoreboard" id="scoreboard"></div>
 </div>
 <aside class="side-stack">
 <div class="heatmap"><div class="heat-title">📊 みんなの反応マップ</div><canvas id="chart" height="120"></canvas></div>
@@ -28,7 +29,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="config.js"></script><script src="data.js"></script>
 <script>
-const qs=new URLSearchParams(location.search), id=qs.get("id"), canManage=qs.get("admin")==="1";
+const qs=new URLSearchParams(location.search), id=qs.get("id");
 function adminMatches(){
  try{
   const saved=JSON.parse(localStorage.getItem("pulse_echo_workflow_v3")||"null");
@@ -66,7 +67,6 @@ async function addEvent(kind,comment=""){
  fly(comment||kind);document.getElementById("commentText").value="";await loadEvents()
 }
 async function deleteEvent(eventId){
- if(!canManage)return;
  const target=events.find(e=>String(e.id)===String(eventId));if(!target)return;
  if(!confirm(`${fmt(target.good_time)} の反応を削除しますか？`))return;
  if(supa){
@@ -87,7 +87,7 @@ function render(){
  const names=[...new Set(events.map(e=>e.user_name).filter(Boolean))];const sel=document.getElementById("viewFilter"),old=sel.value;
  sel.innerHTML='<option value="all">👁️ 全員の熱量を表示</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");if([...sel.options].some(o=>o.value===old))sel.value=old;
  const f=sel.value==="all"?events:events.filter(e=>e.user_name===sel.value);
- document.getElementById("timeline").innerHTML=f.length?f.slice().sort((a,b)=>b.good_time-a.good_time).map(e=>`<div class="event" data-time="${e.good_time}"><div class="event-top"><span><b>${fmt(e.good_time)}</b>　${esc(e.description)}</span><span class="event-user">${esc(e.user_name)}</span></div>${e.comment?`<div class="event-comment">${esc(e.comment)}</div>`:""}${canManage?`<button class="event-delete" data-id="${esc(e.id)}" type="button">削除</button>`:""}</div>`).join(""):'<div class="muted">まだ足跡はありません。最初の一人になろう。</div>';
+ document.getElementById("timeline").innerHTML=f.length?f.slice().sort((a,b)=>b.good_time-a.good_time).map(e=>`<div class="event" data-time="${e.good_time}"><div class="event-top"><span><b>${fmt(e.good_time)}</b>　${esc(e.description)}</span><span class="event-user">${esc(e.user_name)}</span></div>${e.comment?`<div class="event-comment">${esc(e.comment)}</div>`:""}<button class="event-delete" data-id="${esc(e.id)}" type="button">削除</button></div>`).join(""):'<div class="muted">まだ足跡はありません。最初の一人になろう。</div>';
  document.querySelectorAll(".event").forEach(el=>el.onclick=e=>{if(e.target.closest(".event-delete"))return;player.seekTo(Number(el.dataset.time),true)});
  document.querySelectorAll(".event-delete").forEach(b=>b.onclick=e=>{e.stopPropagation();deleteEvent(b.dataset.id)});
  draw(f)
