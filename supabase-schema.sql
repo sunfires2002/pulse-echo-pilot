@@ -19,5 +19,10 @@ create policy "public can insert futsal goods"
 on public.futsal_goods for insert
 to anon with check (true);
 
+drop policy if exists "public can delete futsal goods" on public.futsal_goods;
+create policy "public can delete futsal goods"
+on public.futsal_goods for delete
+to anon using (true);
+
 create index if not exists futsal_goods_video_id_idx
 on public.futsal_goods(video_id);
