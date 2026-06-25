@@ -261,6 +261,12 @@ textarea.input{min-height:90px;resize:vertical}
  </div>
  <div class="actions"><button class="btn btn-primary" onclick="addMatch()">＋ 試合を登録する</button></div>
 
+
+
+ <div class="divider"></div>
+ <h3>選択中の試合を修正</h3>
+ <div id="matchEditBox"></div>
+
  <div class="divider"></div>
  <h3>全試合の進捗</h3>
  <div class="cards" id="adminList"></div>
@@ -466,6 +472,37 @@ function addMatch(){
  ["matchDate","competition","venue","home","away","assignedTeam","description"].forEach(id=>$(id).value="");$("homeScore").value=0;$("awayScore").value=0;
  persist();refreshAll()
 }
+function renderMatchEditor(){
+ const el=$("matchEditBox"),m=selected();
+ if(!el)return;
+ if(!m){el.innerHTML='<div class="empty">修正する試合を選んでください。</div>';return}
+ el.innerHTML=`<div class="grid">
+  <div class="field"><label>試合日</label><input class="input" id="editMatchDate" type="date" value="${esc(m.date||"")}"></div>
+  <div class="field"><label>大会名・節</label><input class="input" id="editCompetition" value="${esc(m.competition||"")}"></div>
+  <div class="field"><label>左側チーム</label><input class="input" id="editHome" value="${esc(m.home||"")}"></div>
+  <div class="field"><label>右側チーム</label><input class="input" id="editAway" value="${esc(m.away||"")}"></div>
+  <div class="field"><label>左側得点</label><input class="input" id="editHomeScore" type="number" min="0" value="${esc(m.homeScore??0)}"></div>
+  <div class="field"><label>右側得点</label><input class="input" id="editAwayScore" type="number" min="0" value="${esc(m.awayScore??0)}"></div>
+  <div class="field"><label>会場</label><input class="input" id="editVenue" value="${esc(m.venue||"")}"></div>
+  <div class="field"><label>撮影担当チーム</label><input class="input" id="editAssignedTeam" value="${esc(m.workflow.assignedTeam||"")}"></div>
+  <div class="field full"><label>試合説明</label><textarea class="input" id="editDescription">${esc(m.description||"")}</textarea></div>
+ </div>
+ <div class="actions"><button class="btn btn-primary" onclick="saveMatchInfo()">選択中の試合を更新</button></div>`;
+}
+function saveMatchInfo(){
+ const m=selected();if(!m)return alert("試合がありません");
+ m.date=$("editMatchDate").value;
+ m.competition=$("editCompetition").value.trim();
+ m.home=$("editHome").value.trim();
+ m.away=$("editAway").value.trim();
+ m.homeScore=Number($("editHomeScore").value)||0;
+ m.awayScore=Number($("editAwayScore").value)||0;
+ m.venue=$("editVenue").value.trim();
+ m.workflow.assignedTeam=$("editAssignedTeam").value.trim();
+ m.description=$("editDescription").value.trim();
+ if(!m.date||!m.home||!m.away)return alert("試合日と両チーム名は必須です");
+ persist();refreshAll();toast("試合情報を更新しました")
+}
 function newFilmingRequest(){
  document.querySelector('[data-panel="admin"]').click();
  $("assignedTeam").focus();
@@ -508,7 +545,7 @@ function refreshAll(){
  document.querySelectorAll(".match-select").forEach(s=>{s.innerHTML=options();s.disabled=!state.matches.length});
  const m=selected();
  $("filmerProgress").innerHTML=progressHTML(m);$("editorProgress").innerHTML=progressHTML(m);$("reviewProgress").innerHTML=progressHTML(m);
- renderAdmin();fillForm()
+ renderAdmin();fillForm();renderMatchEditor()
 }
 function download(name,text,type){
  const b=new Blob([text],{type}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1200)
@@ -527,7 +564,7 @@ $("restoreInput").onchange=async e=>{
  catch{alert("読み込めるバックアップではありません")}e.target.value=""
 };
 function resetWorkflow(){if(!confirm("この端末の運営データを初期化しますか？"))return;localStorage.removeItem(STORAGE);state={matches:(window.PULSE_MATCHES||[]).map(baseWorkflow),selectedId:""};if(state.matches[0])state.selectedId=state.matches[0].id;persist();refreshAll()}
-window.saveFilming=saveFilming;window.markFilmingIssue=markFilmingIssue;window.saveEditing=saveEditing;window.saveReview=saveReview;window.openPreview=openPreview;window.addMatch=addMatch;window.newFilmingRequest=newFilmingRequest;window.selectMatch=selectMatch;window.togglePublish=togglePublish;window.deleteMatch=deleteMatch;window.backupWorkflow=backupWorkflow;window.resetWorkflow=resetWorkflow;window.exportPublicData=exportPublicData;window.refreshAll=refreshAll;
+window.saveFilming=saveFilming;window.markFilmingIssue=markFilmingIssue;window.saveEditing=saveEditing;window.saveReview=saveReview;window.openPreview=openPreview;window.addMatch=addMatch;window.saveMatchInfo=saveMatchInfo;window.newFilmingRequest=newFilmingRequest;window.selectMatch=selectMatch;window.togglePublish=togglePublish;window.deleteMatch=deleteMatch;window.backupWorkflow=backupWorkflow;window.resetWorkflow=resetWorkflow;window.exportPublicData=exportPublicData;window.refreshAll=refreshAll;
 load();
 </script>
 </body>
