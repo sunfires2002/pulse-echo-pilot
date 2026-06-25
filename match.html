@@ -9,10 +9,11 @@
 <div class="viewer-layout">
 <div class="viewer-card">
 <div class="tabs" id="tabs" aria-hidden="true"></div>
-<div class="video-shell"><div id="player"></div><div class="comment-overlay" id="overlay"></div></div>
+<div class="video-shell" id="videoShell"><div id="player"></div><div class="comment-overlay" id="overlay"></div><div class="tactical-layer" id="tacticalLayer" aria-label="戦術レビュー"></div></div>
 <div class="controls">
 <div class="inputs"><input class="input" id="userName" placeholder="名前を入力"><input class="input" id="commentText" placeholder="この瞬間に一言…"><button class="btn btn-primary" id="commentBtn">💬 残す</button></div>
 <div class="reactions"><button class="react hot" data-kind="🔥 ナイスプレー">🔥 ナイスプレー</button><button class="react laugh" data-kind="😅 あちゃー">😅 あちゃー</button><button class="react respect" data-kind="😳 マジで">😳 マジで</button><button class="react ai" data-kind="🤖 AIにお任せ">🤖 AIにお任せ</button></div>
+<div class="tactical-controls" id="tacticalControls"><button class="btn btn-primary" id="tacticToggle" type="button">戦術レビュー</button><button class="btn tactic-only" data-tactic="home" type="button">味方</button><button class="btn tactic-only" data-tactic="away" type="button">相手</button><button class="btn tactic-only" data-tactic="ball" type="button">ボール</button><button class="btn tactic-only" data-tactic="pass" type="button">パス</button><button class="btn tactic-only" data-tactic="dribble" type="button">ドリブル</button><button class="btn tactic-only" data-tactic="shot" type="button">シュート</button><button class="btn tactic-only" id="tacticReset" type="button">初期配置</button><button class="btn tactic-only" id="tacticDelete" type="button">削除</button></div>
 </div>
 <div class="scoreboard" id="scoreboard"></div>
 </div>
@@ -37,6 +38,7 @@ if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase) supa=window.supabase.c
 const matchesTable=()=>cfg.matchesTableName||"pulse_matches";
 const reactionTable=()=>cfg.tableName||"futsal_goods";
 let match=null,videos=[],currentPart="前半",player,events=[],chart,youtubeReady=false;
+const tactic={open:false,tool:"move",selected:null,drag:null,arrow:null,counts:{home:0,away:0,ball:0}};
 function localMatches(){
  try{
   const saved=JSON.parse(localStorage.getItem("pulse_echo_workflow_v3")||"null");
@@ -60,7 +62,7 @@ async function initMatch(){
  videos=[["前半",match.firstHalfVideo],["後半",match.secondHalfVideo],["ハイライト",match.highlightVideo]].filter(x=>x[1]);
  currentPart=videos[0]?.[0]||"前半";
  document.getElementById("tabs").innerHTML=videos.map((v,i)=>`<button class="tab ${i===0?"active":""}" data-label="${esc(v[0])}" data-video="${esc(videoId(v[1]))}">${esc(v[0])}</button>`).join("");
- document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");currentPart=b.dataset.label;loadVideo(b.dataset.video);loadEvents()});
+ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");currentPart=b.dataset.label;closeTactics();loadVideo(b.dataset.video);loadEvents()});
  if(youtubeReady&&videos[0])loadVideo(videoId(videos[0][1]));
  loadEvents();
 }
@@ -69,6 +71,17 @@ function loadVideo(v){if(!v)return;if(player&&player.loadVideoById)player.loadVi
 const key=()=>`pulse_echo_${match.id}_${currentPart}`;
 function nowTime(){try{return Math.floor(player.getCurrentTime()||0)}catch{return 0}}
 function fmt(s){s=Number(s)||0;return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`}
+function tacticLayer(){return document.getElementById("tacticalLayer")}
+function tacticPoint(e){const r=tacticLayer().getBoundingClientRect();return{x:Math.max(0,Math.min(r.width,e.clientX-r.left)),y:Math.max(0,Math.min(r.height,e.clientY-r.top)),r}}
+function tacticPct(p){return{x:p.x/p.r.width*100,y:p.y/p.r.height*100}}
+function tacticSelect(el){if(tactic.selected)tactic.selected.classList.remove("selected");tactic.selected=el;if(el)el.classList.add("selected")}
+function placeTactic(el){el.style.left=el.dataset.x+"%";el.style.top=el.dataset.y+"%"}
+function placeTacticArrow(el){const l=tacticLayer(),w=l.clientWidth,h=l.clientHeight,x1=+el.dataset.x1/100*w,y1=+el.dataset.y1/100*h,x2=+el.dataset.x2/100*w,y2=+el.dataset.y2/100*h,dx=x2-x1,dy=y2-y1;el.style.left=x1+"px";el.style.top=y1+"px";el.style.width=Math.max(18,Math.hypot(dx,dy))+"px";el.style.transform=`rotate(${Math.atan2(dy,dx)*180/Math.PI}deg)`}
+function addTacticPiece(type,x=50,y=50){tactic.counts[type]=(tactic.counts[type]||0)+1;const el=document.createElement("div");el.className=`t-piece ${type}`;el.dataset.kind="piece";el.dataset.type=type;el.dataset.x=x;el.dataset.y=y;el.textContent=type==="ball"?"●":tactic.counts[type];tacticLayer().appendChild(el);placeTactic(el);return el}
+function addTacticArrow(x1,y1,x2,y2){const el=document.createElement("div");el.className=`t-arrow ${tactic.tool}`;el.dataset.kind="arrow";el.dataset.x1=x1;el.dataset.y1=y1;el.dataset.x2=x2;el.dataset.y2=y2;tacticLayer().appendChild(el);placeTacticArrow(el);return el}
+function resetTactics(){const layer=tacticLayer();layer.innerHTML='<div class="tactic-circle"></div><div class="tactic-goal left"></div><div class="tactic-goal right"></div>';tactic.counts={home:0,away:0,ball:0};tacticSelect(null);[[24,30],[36,44],[36,60],[53,38],[53,64]].forEach(p=>addTacticPiece("home",p[0],p[1]));[[74,30],[64,44],[64,60],[48,40],[48,66]].forEach(p=>addTacticPiece("away",p[0],p[1]));addTacticPiece("ball",50,50)}
+function openTactics(seekTime=null){if(player&&seekTime!=null)player.seekTo(Number(seekTime),true);if(player&&player.pauseVideo)player.pauseVideo();tactic.open=true;document.getElementById("videoShell").classList.add("tactical-on");document.getElementById("tacticalControls").classList.add("is-open");document.getElementById("tacticToggle").textContent="レビュー終了";if(!tacticLayer().querySelector(".t-piece"))resetTactics()}
+function closeTactics(){tactic.open=false;tactic.tool="move";document.getElementById("videoShell").classList.remove("tactical-on");document.getElementById("tacticalControls").classList.remove("is-open");document.getElementById("tacticToggle").textContent="戦術レビュー";document.querySelectorAll("[data-tactic]").forEach(b=>b.classList.remove("active"));tacticSelect(null)}
 async function loadEvents(){
  if(!match)return;
  if(supa){const {data,error}=await supa.from(reactionTable()).select("*").eq("video_id",`${match.id}:${currentPart}`).order("good_time",{ascending:true});events=error?[]:(data||[])}
@@ -91,14 +104,36 @@ async function deleteEvent(eventId){
 document.querySelectorAll(".react").forEach(b=>b.onclick=()=>addEvent(b.dataset.kind));
 document.getElementById("commentBtn").onclick=()=>{let t=document.getElementById("commentText").value.trim();if(t)addEvent("💬",t)};
 document.getElementById("commentText").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("commentBtn").click()});
+document.getElementById("tacticToggle").onclick=()=>tactic.open?closeTactics():openTactics();
+document.getElementById("tacticReset").onclick=resetTactics;
+document.getElementById("tacticDelete").onclick=()=>{if(!tactic.selected)return;tactic.selected.remove();tactic.selected=null};
+document.querySelectorAll("[data-tactic]").forEach(b=>b.onclick=()=>{openTactics();tactic.tool=b.dataset.tactic;document.querySelectorAll("[data-tactic]").forEach(x=>x.classList.remove("active"));b.classList.add("active")});
+tacticLayer().addEventListener("pointerdown",e=>{
+ const target=e.target.closest(".t-piece,.t-arrow"),p=tacticPct(tacticPoint(e));
+ if(["home","away","ball"].includes(tactic.tool)&&!target){tacticSelect(addTacticPiece(tactic.tool,p.x,p.y));return}
+ if(["pass","dribble","shot"].includes(tactic.tool)&&!target){tactic.arrow=addTacticArrow(p.x,p.y,p.x,p.y);tacticSelect(tactic.arrow);tacticLayer().setPointerCapture(e.pointerId);return}
+ if(!target){tacticSelect(null);return}
+ tacticSelect(target);
+ if(target.classList.contains("t-piece")){tactic.drag={el:target};tacticLayer().setPointerCapture(e.pointerId)}
+});
+tacticLayer().addEventListener("pointermove",e=>{
+ const p=tacticPct(tacticPoint(e));
+ if(tactic.arrow){tactic.arrow.dataset.x2=p.x;tactic.arrow.dataset.y2=p.y;placeTacticArrow(tactic.arrow);return}
+ if(tactic.drag){tactic.drag.el.dataset.x=p.x;tactic.drag.el.dataset.y=p.y;placeTactic(tactic.drag.el)}
+});
+tacticLayer().addEventListener("pointerup",e=>{
+ if(tactic.arrow){if(tactic.arrow.offsetWidth<24)tactic.arrow.remove();tactic.arrow=null}
+ if(tactic.drag){tacticLayer().releasePointerCapture(e.pointerId);tactic.drag=null}
+});
 function fly(t){let d=document.createElement("div");d.className="fly";d.textContent=t;d.style.top=(8+Math.random()*72)+"%";document.getElementById("overlay").appendChild(d);setTimeout(()=>d.remove(),4300)}
 document.getElementById("viewFilter").onchange=render;
 function render(){
  const names=[...new Set(events.map(e=>e.user_name).filter(Boolean))];const sel=document.getElementById("viewFilter"),old=sel.value;
  sel.innerHTML='<option value="all">👁️ 全員の熱量を表示</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");if([...sel.options].some(o=>o.value===old))sel.value=old;
  const f=sel.value==="all"?events:events.filter(e=>e.user_name===sel.value);
- document.getElementById("timeline").innerHTML=f.length?f.slice().sort((a,b)=>b.good_time-a.good_time).map(e=>`<div class="event" data-time="${e.good_time}"><div class="event-top"><span><b>${fmt(e.good_time)}</b>　${esc(e.description)}</span><span class="event-user">${esc(e.user_name)}</span></div>${e.comment?`<div class="event-comment">${esc(e.comment)}</div>`:""}<button class="event-delete" data-id="${esc(e.id)}" type="button">削除</button></div>`).join(""):'<div class="muted">まだ足跡はありません。最初の一人になろう。</div>';
+ document.getElementById("timeline").innerHTML=f.length?f.slice().sort((a,b)=>b.good_time-a.good_time).map(e=>`<div class="event" data-time="${e.good_time}"><div class="event-top"><span><b>${fmt(e.good_time)}</b>　${esc(e.description)}</span><span class="event-user">${esc(e.user_name)}</span></div>${e.comment?`<div class="event-comment">${esc(e.comment)}</div>`:""}<button class="event-review" data-time="${esc(e.good_time)}" type="button">戦術レビュー</button><button class="event-delete" data-id="${esc(e.id)}" type="button">削除</button></div>`).join(""):'<div class="muted">まだ足跡はありません。最初の一人になろう。</div>';
  document.querySelectorAll(".event").forEach(el=>el.onclick=e=>{if(e.target.closest(".event-delete"))return;player&&player.seekTo(Number(el.dataset.time),true)});
+ document.querySelectorAll(".event-review").forEach(b=>b.onclick=e=>{e.stopPropagation();openTactics(b.dataset.time)});
  document.querySelectorAll(".event-delete").forEach(b=>b.onclick=e=>{e.stopPropagation();deleteEvent(b.dataset.id)});
  draw(f)
 }
@@ -108,5 +143,6 @@ function draw(list){
  if(chart)chart.destroy();chart=new Chart(document.getElementById("chart"),{type:"line",data:{labels,datasets:ds},options:{responsive:true,plugins:{legend:{labels:{color:"#aaa"}}},scales:{x:{ticks:{color:"#777",maxTicksLimit:8},grid:{color:"#252a37"}},y:{beginAtZero:true,ticks:{display:false},grid:{color:"#252a37"}}}}})
 }
 window.deleteEvent=deleteEvent;
+window.addEventListener("resize",()=>document.querySelectorAll(".t-arrow").forEach(placeTacticArrow));
 initMatch();
 </script></body></html>
