@@ -30,52 +30,62 @@
 <script src="config.js"></script><script src="data.js"></script>
 <script>
 const qs=new URLSearchParams(location.search), id=qs.get("id");
-function adminMatches(){
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const cfg=window.PULSE_CONFIG||{};
+let supa=null;
+if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase) supa=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
+const matchesTable=()=>cfg.matchesTableName||"pulse_matches";
+const reactionTable=()=>cfg.tableName||"futsal_goods";
+let match=null,videos=[],currentPart="前半",player,events=[],chart,youtubeReady=false;
+function localMatches(){
  try{
   const saved=JSON.parse(localStorage.getItem("pulse_echo_workflow_v3")||"null");
   if(saved&&Array.isArray(saved.matches))return saved.matches.map(m=>{const x={...m};delete x.workflow;return x});
  }catch{}
  return null;
 }
-const allMatches=(adminMatches()||window.PULSE_MATCHES||[]).filter(x=>x.published!==false);
-const match=id?allMatches.find(x=>x.id===id):allMatches[0];
-const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-if(!match){document.body.innerHTML='<div class="container" style="padding:80px 0"><a class="back" href="./">← 試合一覧へ戻る</a><div class="scoreboard"><p class="muted">この試合は見つかりません。削除されたか、まだ公開されていない可能性があります。</p></div></div>';throw new Error("match not found")}
-document.title=`${match.home} vs ${match.away} | PULSE ECHO`;
-document.getElementById("scoreboard").innerHTML=`<div class="match-meta">${esc(match.competition||"MATCH")}　${esc((match.date||"").replaceAll("-","."))}${match.venue?"　"+esc(match.venue):""}</div><div class="scoreline"><div class="club">${esc(match.home)}</div><div class="bigscore">${esc(match.homeScore)} - ${esc(match.awayScore)}</div><div class="club">${esc(match.away)}</div></div>${match.description?`<p class="muted">${esc(match.description)}</p>`:""}`;
-const videos=[["前半",match.firstHalfVideo],["後半",match.secondHalfVideo],["ハイライト",match.highlightVideo]].filter(x=>x[1]);
-let currentPart=videos[0]?.[0]||"前半", player, events=[], chart, supa=null;
+async function cloudMatches(){
+ if(!supa)return null;
+ const {data,error}=await supa.from(matchesTable()).select("id,data,updated_at");
+ if(error){console.warn("Supabase matches error",error);return null}
+ return data&&data.length?data.map(row=>({id:row.id,...row.data})):null;
+}
 const videoId=v=>{if(!v)return"";let s=String(v);try{let u=new URL(s);return u.hostname.includes("youtu.be")?u.pathname.slice(1):u.searchParams.get("v")||s}catch{return s}};
-document.getElementById("tabs").innerHTML=videos.map((v,i)=>`<button class="tab ${i===0?"active":""}" data-label="${esc(v[0])}" data-video="${esc(videoId(v[1]))}">${esc(v[0])}</button>`).join("");
-function onYouTubeIframeAPIReady(){ if(videos[0]) loadVideo(videoId(videos[0][1])); loadEvents() }
-function loadVideo(v){if(player&&player.loadVideoById)player.loadVideoById(v);else player=new YT.Player("player",{videoId:v,playerVars:{playsinline:1,rel:0,autoplay:0}})}
-document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");currentPart=b.dataset.label;loadVideo(b.dataset.video);loadEvents()});
-const cfg=window.PULSE_CONFIG||{};
-if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase) supa=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
+async function initMatch(){
+ const allMatches=(await cloudMatches()||localMatches()||window.PULSE_MATCHES||[]).filter(x=>x.published!==false);
+ match=id?allMatches.find(x=>x.id===id):allMatches[0];
+ if(!match){document.body.innerHTML='<div class="container" style="padding:80px 0"><a class="back" href="./">← 試合一覧へ戻る</a><div class="scoreboard"><p class="muted">この試合は見つかりません。削除されたか、まだ公開されていない可能性があります。</p></div></div>';throw new Error("match not found")}
+ document.title=`${match.home} vs ${match.away} | PULSE ECHO`;
+ document.getElementById("scoreboard").innerHTML=`<div class="match-meta">${esc(match.competition||"MATCH")}　${esc((match.date||"").replaceAll("-","."))}${match.venue?"　"+esc(match.venue):""}</div><div class="scoreline"><div class="club">${esc(match.home)}</div><div class="bigscore">${esc(match.homeScore)} - ${esc(match.awayScore)}</div><div class="club">${esc(match.away)}</div></div>${match.description?`<p class="muted">${esc(match.description)}</p>`:""}`;
+ videos=[["前半",match.firstHalfVideo],["後半",match.secondHalfVideo],["ハイライト",match.highlightVideo]].filter(x=>x[1]);
+ currentPart=videos[0]?.[0]||"前半";
+ document.getElementById("tabs").innerHTML=videos.map((v,i)=>`<button class="tab ${i===0?"active":""}" data-label="${esc(v[0])}" data-video="${esc(videoId(v[1]))}">${esc(v[0])}</button>`).join("");
+ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");currentPart=b.dataset.label;loadVideo(b.dataset.video);loadEvents()});
+ if(youtubeReady&&videos[0])loadVideo(videoId(videos[0][1]));
+ loadEvents();
+}
+function onYouTubeIframeAPIReady(){youtubeReady=true;if(match&&videos[0])loadVideo(videoId(videos[0][1]));if(match)loadEvents()}
+function loadVideo(v){if(!v)return;if(player&&player.loadVideoById)player.loadVideoById(v);else player=new YT.Player("player",{videoId:v,playerVars:{playsinline:1,rel:0,autoplay:0}})}
 const key=()=>`pulse_echo_${match.id}_${currentPart}`;
 function nowTime(){try{return Math.floor(player.getCurrentTime()||0)}catch{return 0}}
 function fmt(s){s=Number(s)||0;return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`}
 async function loadEvents(){
- if(supa){const {data,error}=await supa.from(cfg.tableName||"futsal_goods").select("*").eq("video_id",`${match.id}:${currentPart}`).order("good_time",{ascending:true});events=error?[]:(data||[])}
+ if(!match)return;
+ if(supa){const {data,error}=await supa.from(reactionTable()).select("*").eq("video_id",`${match.id}:${currentPart}`).order("good_time",{ascending:true});events=error?[]:(data||[])}
  else{events=JSON.parse(localStorage.getItem(key())||"[]")}
  render()
 }
 async function addEvent(kind,comment=""){
  const e={good_time:nowTime(),description:kind,user_name:document.getElementById("userName").value.trim()||"匿名",comment,video_id:`${match.id}:${currentPart}`};
- if(supa){const {error}=await supa.from(cfg.tableName||"futsal_goods").insert(e);if(error){alert("保存に失敗しました: "+error.message);return}}
+ if(supa){const {error}=await supa.from(reactionTable()).insert(e);if(error){alert("保存に失敗しました: "+error.message);return}}
  else{events.push({...e,id:Date.now()});localStorage.setItem(key(),JSON.stringify(events))}
  fly(comment||kind);document.getElementById("commentText").value="";await loadEvents()
 }
 async function deleteEvent(eventId){
  const target=events.find(e=>String(e.id)===String(eventId));if(!target)return;
  if(!confirm(`${fmt(target.good_time)} の反応を削除しますか？`))return;
- if(supa){
-  const {error}=await supa.from(cfg.tableName||"futsal_goods").delete().eq("id",target.id);
-  if(error){alert("削除に失敗しました: "+error.message);return}
- }else{
-  events=events.filter(e=>String(e.id)!==String(eventId));
-  localStorage.setItem(key(),JSON.stringify(events));
- }
+ if(supa){const {error}=await supa.from(reactionTable()).delete().eq("id",target.id);if(error){alert("削除に失敗しました: "+error.message);return}}
+ else{events=events.filter(e=>String(e.id)!==String(eventId));localStorage.setItem(key(),JSON.stringify(events))}
  await loadEvents()
 }
 document.querySelectorAll(".react").forEach(b=>b.onclick=()=>addEvent(b.dataset.kind));
@@ -88,7 +98,7 @@ function render(){
  sel.innerHTML='<option value="all">👁️ 全員の熱量を表示</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");if([...sel.options].some(o=>o.value===old))sel.value=old;
  const f=sel.value==="all"?events:events.filter(e=>e.user_name===sel.value);
  document.getElementById("timeline").innerHTML=f.length?f.slice().sort((a,b)=>b.good_time-a.good_time).map(e=>`<div class="event" data-time="${e.good_time}"><div class="event-top"><span><b>${fmt(e.good_time)}</b>　${esc(e.description)}</span><span class="event-user">${esc(e.user_name)}</span></div>${e.comment?`<div class="event-comment">${esc(e.comment)}</div>`:""}<button class="event-delete" data-id="${esc(e.id)}" type="button">削除</button></div>`).join(""):'<div class="muted">まだ足跡はありません。最初の一人になろう。</div>';
- document.querySelectorAll(".event").forEach(el=>el.onclick=e=>{if(e.target.closest(".event-delete"))return;player.seekTo(Number(el.dataset.time),true)});
+ document.querySelectorAll(".event").forEach(el=>el.onclick=e=>{if(e.target.closest(".event-delete"))return;player&&player.seekTo(Number(el.dataset.time),true)});
  document.querySelectorAll(".event-delete").forEach(b=>b.onclick=e=>{e.stopPropagation();deleteEvent(b.dataset.id)});
  draw(f)
 }
@@ -98,4 +108,5 @@ function draw(list){
  if(chart)chart.destroy();chart=new Chart(document.getElementById("chart"),{type:"line",data:{labels,datasets:ds},options:{responsive:true,plugins:{legend:{labels:{color:"#aaa"}}},scales:{x:{ticks:{color:"#777",maxTicksLimit:8},grid:{color:"#252a37"}},y:{beginAtZero:true,ticks:{display:false},grid:{color:"#252a37"}}}}})
 }
 window.deleteEvent=deleteEvent;
+initMatch();
 </script></body></html>

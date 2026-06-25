@@ -26,3 +26,31 @@ to anon using (true);
 
 create index if not exists futsal_goods_video_id_idx
 on public.futsal_goods(video_id);
+
+create table if not exists public.pulse_matches (
+  id text primary key,
+  updated_at timestamptz not null default now(),
+  data jsonb not null
+);
+
+alter table public.pulse_matches enable row level security;
+
+drop policy if exists "public can read pulse matches" on public.pulse_matches;
+create policy "public can read pulse matches"
+on public.pulse_matches for select
+to anon using (true);
+
+drop policy if exists "public can insert pulse matches" on public.pulse_matches;
+create policy "public can insert pulse matches"
+on public.pulse_matches for insert
+to anon with check (true);
+
+drop policy if exists "public can update pulse matches" on public.pulse_matches;
+create policy "public can update pulse matches"
+on public.pulse_matches for update
+to anon using (true) with check (true);
+
+drop policy if exists "public can delete pulse matches" on public.pulse_matches;
+create policy "public can delete pulse matches"
+on public.pulse_matches for delete
+to anon using (true);

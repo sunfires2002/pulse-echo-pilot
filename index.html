@@ -35,22 +35,37 @@
 </div></div></section>
 </main>
 <footer class="footer"><div class="container">PULSE ECHO — 鼓動が、記憶になる。</div></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 <script src="data.js"></script>
 <script>
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function adminMatches(){
+const cfg=window.PULSE_CONFIG||{};
+let supa=null;
+if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase) supa=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
+const matchesTable=()=>cfg.matchesTableName||"pulse_matches";
+function localMatches(){
  try{
   const saved=JSON.parse(localStorage.getItem("pulse_echo_workflow_v3")||"null");
   if(saved&&Array.isArray(saved.matches))return saved.matches.map(m=>{const x={...m};delete x.workflow;return x});
  }catch{}
  return null;
 }
-const grid=document.getElementById("matchGrid");
-const matches=(adminMatches()||window.PULSE_MATCHES||[]).filter(x=>x.published!==false).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-if(!matches.length) grid.innerHTML='<div class="empty">掲載中の試合はまだありません。</div>';
-else grid.innerHTML=matches.map(m=>`<a class="card match-card" href="match.html?id=${encodeURIComponent(m.id)}">
+async function cloudMatches(){
+ if(!supa)return null;
+ const {data,error}=await supa.from(matchesTable()).select("id,data,updated_at");
+ if(error){console.warn("Supabase matches error",error);return null}
+ return data&&data.length?data.map(row=>({id:row.id,...row.data})):null;
+}
+function renderMatches(matches){
+ const grid=document.getElementById("matchGrid");
+ const list=(matches||[]).filter(x=>x.published!==false).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+ if(!list.length){grid.innerHTML='<div class="empty">掲載中の試合はまだありません。</div>';return}
+ grid.innerHTML=list.map(m=>`<a class="card match-card" href="match.html?id=${encodeURIComponent(m.id)}">
 <div class="card-cover"><div class="teams"><div class="team-name">${esc(m.home)}</div><div><div class="vs">MATCH</div><div class="score">${esc(m.homeScore)} - ${esc(m.awayScore)}</div></div><div class="team-name">${esc(m.away)}</div></div></div>
 <div class="card-body"><div class="meta"><span class="competition">${esc(m.competition||"MATCH")}</span><span>${esc((m.date||"").replaceAll("-","."))}</span></div>
-<div class="echo-counts"><span class="echo-pill">🔥 熱狂</span><span class="echo-pill">😂 珍プレー</span><span class="echo-pill">🫡 惚れた</span><span class="echo-pill">💬 コメント</span></div></div></a>`).join("");
+<div class="echo-counts"><span class="echo-pill">🔥 ナイスプレー</span><span class="echo-pill">😅 あちゃー</span><span class="echo-pill">😳 マジで</span><span class="echo-pill">💬 コメント</span></div></div></a>`).join("");
+}
+(async()=>{renderMatches(await cloudMatches()||localMatches()||window.PULSE_MATCHES||[])})();
 </script>
 </body></html>

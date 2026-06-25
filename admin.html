@@ -276,11 +276,13 @@ textarea.input{min-height:90px;resize:vertical}
 </main>
 
 <div class="bottom"><div class="bottom-in">
- <button class="btn btn-primary" onclick="exportPublicData()">⬇ 公開用 data.js を書き出す</button>
- <div class="bottom-note">最終確認OK・公開設定済みの試合を<br>GitHub Pages用に書き出します</div>
+ <button class="btn btn-primary" onclick="exportPublicData()">⬇ 保険用 data.js を書き出す</button>
+ <div class="bottom-note">Supabase設定時は保存だけで全端末へ反映。<br>data.js書き出しは保険用です</div>
 </div></div>
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 <script src="data.js"></script>
 <script>
 const STORAGE="pulse_echo_workflow_v3";
@@ -288,6 +290,11 @@ let state={matches:[],selectedId:""};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const now=()=>new Date().toISOString();
+const cfg=window.PULSE_CONFIG||{};
+let supa=null;
+if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase) supa=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
+const matchesTable=()=>cfg.matchesTableName||"pulse_matches";
+
 
 function baseWorkflow(m){
  return {
@@ -304,20 +311,41 @@ function baseWorkflow(m){
 }
 function slug(s){return String(s||"match").toLowerCase().normalize("NFKC").replace(/[^a-z0-9\u3040-\u30ff\u3400-\u9fff]+/g,"-").replace(/^-|-$/g,"").slice(0,36)||"match"}
 function makeId(m){return `${slug(m.home)}-vs-${slug(m.away)}-${String(m.date||"").replaceAll("-","")||Date.now()}`}
-function load(){
- try{
-  const saved=JSON.parse(localStorage.getItem(STORAGE)||"null");
-  if(saved&&Array.isArray(saved.matches)) state=saved;
-  else state.matches=(window.PULSE_MATCHES||[]).map(baseWorkflow);
- }catch{state.matches=(window.PULSE_MATCHES||[]).map(baseWorkflow)}
- state.matches=state.matches.map(baseWorkflow);
+async function load(){
+ let loaded=false;
+ if(supa){
+  const {data,error}=await supa.from(matchesTable()).select("id,data,updated_at");
+  if(error) toast("Supabase読込失敗: "+error.message);
+  else if(data&&data.length){
+   state={matches:data.map(row=>baseWorkflow({id:row.id,...row.data})),selectedId:""};
+   loaded=true;
+  }
+ }
+ if(!loaded){
+  try{
+   const saved=JSON.parse(localStorage.getItem(STORAGE)||"null");
+   if(saved&&Array.isArray(saved.matches)) state=saved;
+   else state.matches=(window.PULSE_MATCHES||[]).map(baseWorkflow);
+  }catch{state.matches=(window.PULSE_MATCHES||[]).map(baseWorkflow)}
+ }
+ state.matches=state.matches.map(baseWorkflow).sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
  if(!state.selectedId&&state.matches[0])state.selectedId=state.matches[0].id;
- persist(false);refreshAll()
+ localStorage.setItem(STORAGE,JSON.stringify(state));
+ $("saveState").textContent=supa?"✓ Supabase共有保存":"この端末へ自動保存";
+ if(supa&&!loaded&&state.matches.length)syncCloud();
+ refreshAll()
 }
 function persist(show=true){
  localStorage.setItem(STORAGE,JSON.stringify(state));
- $("saveState").textContent="✓ 自動保存 "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});
- if(show)toast("保存しました")
+ $("saveState").textContent=(supa?"✓ Supabase共有保存 ":"✓ 自動保存 ")+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});
+ if(show)toast(supa?"保存しました（全端末へ反映）":"保存しました");
+ if(supa)syncCloud()
+}
+async function syncCloud(){
+ const rows=state.matches.map(m=>({id:m.id,data:m,updated_at:now()}));
+ if(!rows.length)return;
+ const {error}=await supa.from(matchesTable()).upsert(rows,{onConflict:"id"});
+ if(error)alert("Supabase保存に失敗しました: "+error.message)
 }
 function toast(msg){$("toast").textContent=msg;$("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),2200)}
 function selected(){return state.matches.find(m=>m.id===state.selectedId)}
@@ -451,11 +479,17 @@ function togglePublish(id){
  }else m.published=false;
  persist();refreshAll()
 }
-function deleteMatch(id){
+async function deleteMatch(id){
  const m=state.matches.find(x=>x.id===id);if(!m)return;
- if(!confirm(`「${m.home} vs ${m.away}」を削除しますか？\n\nこの端末の管理データから削除します。公開中のサイトから消すには、削除後に「公開用 data.js」を書き出して置き換えてください。`))return;
- state.matches=state.matches.filter(x=>x.id!==id);state.selectedId=state.matches[0]?.id||"";persist();refreshAll();
- toast("削除しました。公開サイトへ反映する場合は data.js を書き出してください")
+ if(!confirm(`「${m.home} vs ${m.away}」を削除しますか？`))return;
+ state.matches=state.matches.filter(x=>x.id!==id);state.selectedId=state.matches[0]?.id||"";
+ localStorage.setItem(STORAGE,JSON.stringify(state));
+ if(supa){
+  const {error}=await supa.from(matchesTable()).delete().eq("id",id);
+  if(error){alert("Supabase削除に失敗しました: "+error.message);return}
+ }
+ refreshAll();
+ toast(supa?"削除しました（全端末へ反映）":"削除しました")
 }
 function renderAdmin(){
  const el=$("adminList");

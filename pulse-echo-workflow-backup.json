@@ -1,0 +1,76 @@
+{
+  "version": 3,
+  "exportedAt": "2026-06-24T10:36:14.334Z",
+  "matches": [
+    {
+      "date": "2026-06-21",
+      "competition": "FUN HYOGO FUTSAL LEAGUE 4B 第3戦 前半",
+      "venue": "エスペランサ神戸",
+      "home": "8motion",
+      "away": "神戸オールロックス",
+      "homeScore": 4,
+      "awayScore": 2,
+      "description": "",
+      "firstHalfVideo": "https://youtu.be/LvPMKz-r96E?si=WYB4QlB3GtT2ljVj",
+      "secondHalfVideo": "",
+      "highlightVideo": "",
+      "homeLogo": "",
+      "awayLogo": "",
+      "published": true,
+      "id": "8motion-vs-神戸オールロックス-20260621",
+      "workflow": {
+        "assignedTeam": "8motion",
+        "filming": {
+          "status": "done",
+          "type": "team",
+          "filmerName": "横江",
+          "filmerTeam": "8motion",
+          "onSiteChecker": "横江",
+          "before": {
+            "permission": true,
+            "landscape": true,
+            "battery": true,
+            "test": true
+          },
+          "after": {
+            "firstSaved": true,
+            "secondSaved": true,
+            "soundFrame": true
+          },
+          "sourceFirst": "https://drive.google.com/drive/folders/1cdj1Jy_roaVkJPUc2-4lMvnUqJwapQkV?usp=drive_link",
+          "sourceSecond": "https://drive.google.com/drive/folders/1cdj1Jy_roaVkJPUc2-4lMvnUqJwapQkV?usp=drive_link",
+          "issue": "前半約3分、真ん中のカメラが止まる。",
+          "agreement": true,
+          "files": [
+            {
+              "name": "1st.mov",
+              "size": 9686899307
+            }
+          ],
+          "updatedAt": "2026-06-24T10:34:48.233Z"
+        },
+        "editing": {
+          "status": "done",
+          "editorName": "横江",
+          "memo": "",
+          "scoreAdded": true,
+          "partsChecked": true,
+          "updatedAt": "2026-06-24T10:35:28.228Z"
+        },
+        "review": {
+          "status": "approved",
+          "reviewerName": "横江",
+          "memo": "",
+          "checks": {
+            "teams": true,
+            "score": true,
+            "videos": true,
+            "permission": true
+          },
+          "updatedAt": "2026-06-24T10:35:52.079Z"
+        }
+      }
+    }
+  ],
+  "selectedId": "8motion-vs-神戸オールロックス-20260621"
+}
