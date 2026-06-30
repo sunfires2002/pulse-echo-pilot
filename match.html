@@ -103,7 +103,6 @@ async function deleteEvent(eventId){
 }
 document.querySelectorAll(".react").forEach(b=>b.onclick=()=>addEvent(b.dataset.kind));
 document.getElementById("commentBtn").onclick=()=>{let t=document.getElementById("commentText").value.trim();if(t)addEvent("💬",t)};
-document.getElementById("commentText").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("commentBtn").click()});
 document.getElementById("tacticToggle").onclick=()=>tactic.open?closeTactics():openTactics();
 document.getElementById("tacticReset").onclick=resetTactics;
 document.getElementById("tacticDelete").onclick=()=>{if(!tactic.selected)return;tactic.selected.remove();tactic.selected=null};
