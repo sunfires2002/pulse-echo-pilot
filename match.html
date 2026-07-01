@@ -16,8 +16,8 @@
 <div class="inputs"><input class="input" id="userName" placeholder="名前を入力"><input class="input" id="commentText" placeholder="この瞬間に一言…"><button class="btn btn-primary" id="commentBtn">💬 残す</button></div>
 <div class="reactions"><button class="react hot" id="niceButton" data-kind="🔥 ナイスプレー">🔥 ナイスプレー</button><button class="react miss" data-kind="😫 惜しい">😫 惜しい</button><button class="react laugh" data-kind="😅 あちゃー">😅 あちゃー</button><button class="react respect" data-kind="😳 マジで">😳 マジで</button></div>
 <div class="nice-options" id="niceOptions" aria-hidden="true"><button class="nice-chip" data-kind="🔥 ナイスシュート" type="button">ナイスシュート</button><button class="nice-chip" data-kind="🔥 ナイスキーパー" type="button">ナイスキーパー</button><button class="nice-chip" data-kind="🔥 ナイスパス" type="button">ナイスパス</button><button class="nice-chip" data-kind="🔥 ナイス守備" type="button">ナイス守備</button></div>
-<div class="utility-actions"><button class="react ai" data-kind="🤖 AIにお任せ" type="button">🤖 AIにお任せ</button><button class="btn tactic-toggle" id="tacticToggle" type="button">🎯 戦術レビュー</button></div>
-<div class="tactical-controls" id="tacticalControls"><button class="btn tactic-only" data-tactic="home" type="button">味方</button><button class="btn tactic-only" data-tactic="away" type="button">相手</button><button class="btn tactic-only" data-tactic="ball" type="button">ボール</button><button class="btn tactic-only" data-tactic="pass" type="button">パス</button><button class="btn tactic-only" data-tactic="dribble" type="button">ドリブル</button><button class="btn tactic-only" data-tactic="shot" type="button">シュート</button><button class="btn tactic-only" id="tacticReset" type="button">初期配置</button><button class="btn tactic-only" id="tacticDelete" type="button">削除</button></div>
+<div class="utility-actions"><button class="react ai" data-kind="🤖 AIにお任せ" type="button">🤖 AIにお任せ</button><button class="btn tactic-toggle" id="tacticToggle" type="button">🎯 ここな！</button></div>
+<div class="tactical-controls" id="tacticalControls"><button class="btn tactic-only active" data-review="actual" type="button">実際の動き</button><button class="btn tactic-only" data-review="ideal" type="button">理想の動き</button><button class="btn tactic-only" data-tactic="home" type="button">味方</button><button class="btn tactic-only" data-tactic="away" type="button">相手</button><button class="btn tactic-only" data-tactic="ball" type="button">ボール</button><button class="btn tactic-only" data-tactic="pass" type="button">パス</button><button class="btn tactic-only" data-tactic="move" type="button">移動</button><button class="btn tactic-only" data-tactic="dribble" type="button">ドリブル</button><button class="btn tactic-only" data-tactic="shot" type="button">シュート</button><button class="btn tactic-only" id="tacticMemo" type="button">メモ</button><button class="btn tactic-only" id="tacticReset" type="button">初期配置</button><button class="btn tactic-only" id="tacticDelete" type="button">削除</button></div>
 </div>
 <div class="scoreboard" id="scoreboard"></div>
 </div>
@@ -43,7 +43,7 @@ if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase) supa=window.supabase.c
 const matchesTable=()=>cfg.matchesTableName||"pulse_matches";
 const reactionTable=()=>cfg.tableName||"futsal_goods";
 let match=null,videos=[],currentPart="前半",player,events=[],chart,youtubeReady=false,echoTimer=null,echoPlayed=new Set(),recentManualEchoes=[];
-const tactic={open:false,tool:"move",selected:null,drag:null,arrow:null,counts:{home:0,away:0,ball:0}};
+const tactic={open:false,tool:"move",review:"actual",selected:null,drag:null,arrow:null,counts:{home:0,away:0,ball:0},actions:{actual:{pass:0,move:0},ideal:{pass:0,move:0}}};
 function localMatches(){
  try{
   const saved=JSON.parse(localStorage.getItem("pulse_echo_workflow_v3")||"null");
@@ -74,7 +74,7 @@ async function initMatch(){
 function onYouTubeIframeAPIReady(){youtubeReady=true;if(match&&videos[0])loadVideo(videoId(videos[0][1]));if(match)loadEvents(true)}
 function loadVideo(v){if(!v)return;echoPlayed.clear();if(player&&player.loadVideoById)player.loadVideoById(v);else player=new YT.Player("player",{videoId:v,playerVars:{playsinline:1,rel:0,autoplay:0},events:{onReady:startEchoPlayback,onStateChange:startEchoPlayback}})}
 const key=()=>`pulse_echo_${match.id}_${currentPart}`;
-function nowTime(){try{return Math.floor(player.getCurrentTime()||0)}catch{return 0}}
+function nowTime(back=0){try{return Math.max(0,Math.floor((player.getCurrentTime()||0)-back))}catch{return 0}}
 function fmt(s){s=Number(s)||0;return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`}
 function tacticLayer(){return document.getElementById("tacticalLayer")}
 function tacticPoint(e){const r=tacticLayer().getBoundingClientRect();return{x:Math.max(0,Math.min(r.width,e.clientX-r.left)),y:Math.max(0,Math.min(r.height,e.clientY-r.top)),r}}
@@ -82,19 +82,20 @@ function tacticPct(p){return{x:p.x/p.r.width*100,y:p.y/p.r.height*100}}
 function tacticSelect(el){if(tactic.selected)tactic.selected.classList.remove("selected");tactic.selected=el;if(el)el.classList.add("selected")}
 function placeTactic(el){el.style.left=el.dataset.x+"%";el.style.top=el.dataset.y+"%"}
 function placeTacticArrow(el){const l=tacticLayer(),w=l.clientWidth,h=l.clientHeight,x1=+el.dataset.x1/100*w,y1=+el.dataset.y1/100*h,x2=+el.dataset.x2/100*w,y2=+el.dataset.y2/100*h,dx=x2-x1,dy=y2-y1;el.style.left=x1+"px";el.style.top=y1+"px";el.style.width=Math.max(18,Math.hypot(dx,dy))+"px";el.style.transform=`rotate(${Math.atan2(dy,dx)*180/Math.PI}deg)`}
-function addTacticPiece(type,x=50,y=50){tactic.counts[type]=(tactic.counts[type]||0)+1;const el=document.createElement("div");el.className=`t-piece ${type}`;el.dataset.kind="piece";el.dataset.type=type;el.dataset.x=x;el.dataset.y=y;el.textContent=type==="ball"?"●":tactic.counts[type];tacticLayer().appendChild(el);placeTactic(el);return el}
-function addTacticArrow(x1,y1,x2,y2){const el=document.createElement("div");el.className=`t-arrow ${tactic.tool}`;el.dataset.kind="arrow";el.dataset.x1=x1;el.dataset.y1=y1;el.dataset.x2=x2;el.dataset.y2=y2;tacticLayer().appendChild(el);placeTacticArrow(el);return el}
-function resetTactics(){const layer=tacticLayer();layer.innerHTML='<div class="tactic-circle"></div><div class="tactic-goal left"></div><div class="tactic-goal right"></div>';tactic.counts={home:0,away:0,ball:0};tacticSelect(null);[[24,30],[36,44],[36,60],[53,38],[53,64]].forEach(p=>addTacticPiece("home",p[0],p[1]));[[74,30],[64,44],[64,60],[48,40],[48,66]].forEach(p=>addTacticPiece("away",p[0],p[1]));addTacticPiece("ball",50,50)}
-function openTactics(seekTime=null){if(player&&seekTime!=null)player.seekTo(Number(seekTime),true);if(player&&player.pauseVideo)player.pauseVideo();tactic.open=true;document.getElementById("videoShell").classList.add("tactical-on");document.getElementById("tacticalControls").classList.add("is-open");document.getElementById("tacticToggle").textContent="レビュー終了";if(!tacticLayer().querySelector(".t-piece"))resetTactics()}
-function closeTactics(){tactic.open=false;tactic.tool="move";document.getElementById("videoShell").classList.remove("tactical-on");document.getElementById("tacticalControls").classList.remove("is-open");document.getElementById("tacticToggle").textContent="🎯 戦術レビュー";document.querySelectorAll("[data-tactic]").forEach(b=>b.classList.remove("active"));tacticSelect(null)}
+function addTacticPiece(type,x=50,y=50,label=null){tactic.counts[type]=(tactic.counts[type]||0)+1;const el=document.createElement("div");el.className=`t-piece ${type}`;el.dataset.kind="piece";el.dataset.type=type;el.dataset.x=x;el.dataset.y=y;el.textContent=label||type==="ball"?"●":tactic.counts[type];if(label)el.textContent=label;tacticLayer().appendChild(el);placeTactic(el);return el}
+function addTacticMemo(text,x=50,y=50){const el=document.createElement("div");el.className="t-memo";el.dataset.kind="memo";el.dataset.x=x;el.dataset.y=y;el.textContent=text||"メモ";tacticLayer().appendChild(el);placeTactic(el);return el}
+function addTacticArrow(x1,y1,x2,y2){const el=document.createElement("div"),numbered=["pass","move"].includes(tactic.tool),counts=tactic.actions[tactic.review]||tactic.actions.actual;el.className=`t-arrow ${tactic.tool} ${tactic.review}`;el.dataset.kind="arrow";el.dataset.type=tactic.tool;el.dataset.review=tactic.review;el.dataset.order=numbered?++counts[tactic.tool]:"";el.dataset.x1=x1;el.dataset.y1=y1;el.dataset.x2=x2;el.dataset.y2=y2;tacticLayer().appendChild(el);placeTacticArrow(el);return el}
+function resetTactics(){const layer=tacticLayer();layer.innerHTML='<div class="tactic-circle"></div><div class="tactic-goal left"></div><div class="tactic-goal right"></div>';tactic.counts={home:0,away:0,ball:0};tactic.actions={actual:{pass:0,move:0},ideal:{pass:0,move:0}};tacticSelect(null);[[24,30],[36,44],[36,60],[53,38],[53,64]].forEach(p=>addTacticPiece("home",p[0],p[1]));[[74,30],[64,44],[64,60],[48,40],[48,66]].forEach(p=>addTacticPiece("away",p[0],p[1]));addTacticPiece("ball",50,50)}
+function openTactics(seekTime=null,mark=false){const t=seekTime!=null?Math.max(0,Number(seekTime)):mark?Math.max(0,nowTime()-5):nowTime(0);if(player){if(mark||seekTime!=null)player.seekTo(t,true);player.pauseVideo&&player.pauseVideo()}tactic.open=true;document.getElementById("videoShell").classList.add("tactical-on");document.getElementById("tacticalControls").classList.add("is-open");document.getElementById("tacticToggle").textContent="レビュー終了";if(!tacticLayer().querySelector(".t-piece"))resetTactics();if(mark)addEvent("🎯 ここな！",`起点 ${fmt(t)}`,t)}
+function closeTactics(){tactic.open=false;tactic.tool="move";document.getElementById("videoShell").classList.remove("tactical-on");document.getElementById("tacticalControls").classList.remove("is-open");document.getElementById("tacticToggle").textContent="🎯 ここな！";document.querySelectorAll("[data-tactic]").forEach(b=>b.classList.remove("active"));tacticSelect(null)}
 async function loadEvents(resetEcho=false){
  if(!match)return;
  if(supa){const {data,error}=await supa.from(reactionTable()).select("*").eq("video_id",`${match.id}:${currentPart}`).order("good_time",{ascending:true});events=error?[]:(data||[])}
  else{events=JSON.parse(localStorage.getItem(key())||"[]")}
  if(resetEcho)echoPlayed.clear();startEchoPlayback();render()
 }
-async function addEvent(kind,comment=""){
- const e={good_time:nowTime(),description:kind,user_name:document.getElementById("userName").value.trim()||"匿名",comment,video_id:`${match.id}:${currentPart}`};
+async function addEvent(kind,comment="",timeOverride=null){
+ const isTactic=kind.startsWith("🎯"),e={good_time:timeOverride??(isTactic?nowTime(0):nowTime(3)),description:kind,user_name:document.getElementById("userName").value.trim()||"匿名",comment,video_id:`${match.id}:${currentPart}`};
  recentManualEchoes.push({t:e.good_time,d:e.description,c:e.comment,u:e.user_name,expires:Date.now()+5000});
  if(supa){const {error}=await supa.from(reactionTable()).insert(e);if(error){alert("保存に失敗しました: "+error.message);return}}
  else{events.push({...e,id:Date.now()});localStorage.setItem(key(),JSON.stringify(events))}
@@ -113,17 +114,19 @@ function hideNiceOptions(){niceOptions.classList.remove("is-open");niceOptions.s
 document.querySelectorAll(".react[data-kind]").forEach(b=>b.onclick=()=>{addEvent(b.dataset.kind);if(b.id==="niceButton")showNiceOptions();else hideNiceOptions()});
 document.querySelectorAll(".nice-chip").forEach(b=>b.onclick=()=>{addEvent(b.dataset.kind);hideNiceOptions()});
 document.getElementById("commentBtn").onclick=()=>{let t=document.getElementById("commentText").value.trim();if(t)addEvent("💬",t)};
-document.getElementById("tacticToggle").onclick=()=>tactic.open?closeTactics():openTactics();
+document.getElementById("tacticToggle").onclick=()=>tactic.open?closeTactics():openTactics(null,true);
 document.getElementById("tacticReset").onclick=resetTactics;
 document.getElementById("tacticDelete").onclick=()=>{if(!tactic.selected)return;tactic.selected.remove();tactic.selected=null};
-document.querySelectorAll("[data-tactic]").forEach(b=>b.onclick=()=>{openTactics();tactic.tool=b.dataset.tactic;document.querySelectorAll("[data-tactic]").forEach(x=>x.classList.remove("active"));b.classList.add("active")});
+document.getElementById("tacticMemo").onclick=()=>{openTactics();const text=prompt("戦術メモ")||"";if(text.trim())tacticSelect(addTacticMemo(text.trim(),50,50))};
+document.querySelectorAll("[data-review]").forEach(b=>b.onclick=()=>{openTactics();tactic.review=b.dataset.review;document.querySelectorAll("[data-review]").forEach(x=>x.classList.remove("active"));b.classList.add("active")});
+document.querySelectorAll("[data-tactic]").forEach(b=>b.onclick=()=>{openTactics();const tool=b.dataset.tactic;if(["home","away","ball"].includes(tool)&&tactic.selected&&tactic.selected.dataset.type===tool){const x=Math.min(94,+tactic.selected.dataset.x+7),y=Math.min(94,+tactic.selected.dataset.y+7);tacticSelect(addTacticPiece(tool,x,y,tactic.selected.textContent));return}tactic.tool=tool;document.querySelectorAll("[data-tactic]").forEach(x=>x.classList.remove("active"));b.classList.add("active")});
 tacticLayer().addEventListener("pointerdown",e=>{
- const target=e.target.closest(".t-piece,.t-arrow"),p=tacticPct(tacticPoint(e));
+ const target=e.target.closest(".t-piece,.t-arrow,.t-memo"),p=tacticPct(tacticPoint(e));
  if(["home","away","ball"].includes(tactic.tool)&&!target){tacticSelect(addTacticPiece(tactic.tool,p.x,p.y));return}
- if(["pass","dribble","shot"].includes(tactic.tool)&&!target){tactic.arrow=addTacticArrow(p.x,p.y,p.x,p.y);tacticSelect(tactic.arrow);tacticLayer().setPointerCapture(e.pointerId);return}
+ if(["pass","move","dribble","shot"].includes(tactic.tool)&&!target){tactic.arrow=addTacticArrow(p.x,p.y,p.x,p.y);tacticSelect(tactic.arrow);tacticLayer().setPointerCapture(e.pointerId);return}
  if(!target){tacticSelect(null);return}
  tacticSelect(target);
- if(target.classList.contains("t-piece")){tactic.drag={el:target};tacticLayer().setPointerCapture(e.pointerId)}
+ if(target.classList.contains("t-piece")||target.classList.contains("t-memo")){tactic.drag={el:target};tacticLayer().setPointerCapture(e.pointerId)}
 });
 tacticLayer().addEventListener("pointermove",e=>{
  const p=tacticPct(tacticPoint(e));
@@ -174,7 +177,7 @@ function render(){
  const f=sel.value==="all"?events:events.filter(e=>e.user_name===sel.value);
  document.getElementById("timeline").innerHTML=f.length?f.slice().sort((a,b)=>b.good_time-a.good_time).map(e=>`<div class="event" data-time="${e.good_time}"><div class="event-top"><span><b>${fmt(e.good_time)}</b>　${esc(e.description)}</span><span class="event-user">${esc(e.user_name)}</span></div>${e.comment?`<div class="event-comment">${esc(e.comment)}</div>`:""}<button class="event-review" data-time="${esc(e.good_time)}" type="button">戦術レビュー</button><button class="event-delete" data-id="${esc(e.id)}" type="button">削除</button></div>`).join(""):'<div class="muted">まだ足跡はありません。最初の一人になろう。</div>';
  document.querySelectorAll(".event").forEach(el=>el.onclick=e=>{if(e.target.closest(".event-delete"))return;player&&player.seekTo(Number(el.dataset.time),true)});
- document.querySelectorAll(".event-review").forEach(b=>b.onclick=e=>{e.stopPropagation();openTactics(b.dataset.time)});
+ document.querySelectorAll(".event-review").forEach(b=>b.onclick=e=>{e.stopPropagation();openTactics(b.dataset.time,false)});
  document.querySelectorAll(".event-delete").forEach(b=>b.onclick=e=>{e.stopPropagation();deleteEvent(b.dataset.id)});
  draw(f)
 }
