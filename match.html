@@ -40,7 +40,7 @@ let supa=null;
 if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase) supa=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
 const matchesTable=()=>cfg.matchesTableName||"pulse_matches";
 const reactionTable=()=>cfg.tableName||"futsal_goods";
-let match=null,videos=[],currentPart="前半",player,events=[],chart,youtubeReady=false,echoTimer=null,echoPlayed=new Set();
+let match=null,videos=[],currentPart="前半",player,events=[],chart,youtubeReady=false,echoTimer=null,echoPlayed=new Set(),recentManualEchoes=[];
 const tactic={open:false,tool:"move",selected:null,drag:null,arrow:null,counts:{home:0,away:0,ball:0}};
 function localMatches(){
  try{
@@ -65,11 +65,11 @@ async function initMatch(){
  videos=[["前半",match.firstHalfVideo],["後半",match.secondHalfVideo],["ハイライト",match.highlightVideo]].filter(x=>x[1]);
  currentPart=videos[0]?.[0]||"前半";
  document.getElementById("tabs").innerHTML=videos.map((v,i)=>`<button class="tab ${i===0?"active":""}" data-label="${esc(v[0])}" data-video="${esc(videoId(v[1]))}">${esc(v[0])}</button>`).join("");
- document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");currentPart=b.dataset.label;closeTactics();loadVideo(b.dataset.video);loadEvents()});
+ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");currentPart=b.dataset.label;closeTactics();loadVideo(b.dataset.video);loadEvents(true)});
  if(youtubeReady&&videos[0])loadVideo(videoId(videos[0][1]));
- loadEvents();
+ loadEvents(true);
 }
-function onYouTubeIframeAPIReady(){youtubeReady=true;if(match&&videos[0])loadVideo(videoId(videos[0][1]));if(match)loadEvents()}
+function onYouTubeIframeAPIReady(){youtubeReady=true;if(match&&videos[0])loadVideo(videoId(videos[0][1]));if(match)loadEvents(true)}
 function loadVideo(v){if(!v)return;echoPlayed.clear();if(player&&player.loadVideoById)player.loadVideoById(v);else player=new YT.Player("player",{videoId:v,playerVars:{playsinline:1,rel:0,autoplay:0},events:{onReady:startEchoPlayback,onStateChange:startEchoPlayback}})}
 const key=()=>`pulse_echo_${match.id}_${currentPart}`;
 function nowTime(){try{return Math.floor(player.getCurrentTime()||0)}catch{return 0}}
@@ -85,14 +85,15 @@ function addTacticArrow(x1,y1,x2,y2){const el=document.createElement("div");el.c
 function resetTactics(){const layer=tacticLayer();layer.innerHTML='<div class="tactic-circle"></div><div class="tactic-goal left"></div><div class="tactic-goal right"></div>';tactic.counts={home:0,away:0,ball:0};tacticSelect(null);[[24,30],[36,44],[36,60],[53,38],[53,64]].forEach(p=>addTacticPiece("home",p[0],p[1]));[[74,30],[64,44],[64,60],[48,40],[48,66]].forEach(p=>addTacticPiece("away",p[0],p[1]));addTacticPiece("ball",50,50)}
 function openTactics(seekTime=null){if(player&&seekTime!=null)player.seekTo(Number(seekTime),true);if(player&&player.pauseVideo)player.pauseVideo();tactic.open=true;document.getElementById("videoShell").classList.add("tactical-on");document.getElementById("tacticalControls").classList.add("is-open");document.getElementById("tacticToggle").textContent="レビュー終了";if(!tacticLayer().querySelector(".t-piece"))resetTactics()}
 function closeTactics(){tactic.open=false;tactic.tool="move";document.getElementById("videoShell").classList.remove("tactical-on");document.getElementById("tacticalControls").classList.remove("is-open");document.getElementById("tacticToggle").textContent="🎯 戦術レビュー";document.querySelectorAll("[data-tactic]").forEach(b=>b.classList.remove("active"));tacticSelect(null)}
-async function loadEvents(){
+async function loadEvents(resetEcho=false){
  if(!match)return;
  if(supa){const {data,error}=await supa.from(reactionTable()).select("*").eq("video_id",`${match.id}:${currentPart}`).order("good_time",{ascending:true});events=error?[]:(data||[])}
  else{events=JSON.parse(localStorage.getItem(key())||"[]")}
- echoPlayed.clear();startEchoPlayback();render()
+ if(resetEcho)echoPlayed.clear();startEchoPlayback();render()
 }
 async function addEvent(kind,comment=""){
  const e={good_time:nowTime(),description:kind,user_name:document.getElementById("userName").value.trim()||"匿名",comment,video_id:`${match.id}:${currentPart}`};
+ recentManualEchoes.push({t:e.good_time,d:e.description,c:e.comment,u:e.user_name,expires:Date.now()+5000});
  if(supa){const {error}=await supa.from(reactionTable()).insert(e);if(error){alert("保存に失敗しました: "+error.message);return}}
  else{events.push({...e,id:Date.now()});localStorage.setItem(key(),JSON.stringify(events))}
  fly(comment||kind);document.getElementById("commentText").value="";await loadEvents()
@@ -133,10 +134,14 @@ tacticLayer().addEventListener("pointerup",e=>{
 });
 function fly(t){let d=document.createElement("div");d.className="fly";d.textContent=t;d.style.top=(8+Math.random()*72)+"%";document.getElementById("overlay").appendChild(d);setTimeout(()=>d.remove(),4300)}
 function echoText(e){return e.comment?`${e.user_name||"匿名"}: ${e.comment}`:e.description}
+function isRecentManualEcho(e){
+ const now=Date.now();recentManualEchoes=recentManualEchoes.filter(x=>x.expires>now);
+ return recentManualEchoes.some(x=>x.t===(Number(e.good_time)||0)&&x.d===e.description&&(x.c||"")===(e.comment||"")&&x.u===(e.user_name||"匿名"))
+}
 function startEchoPlayback(){if(echoTimer)return;echoTimer=setInterval(()=>{
  const visible=document.getElementById("echoVisible");if(!visible||!visible.checked||!player||!player.getCurrentTime)return;
  const now=Math.floor(player.getCurrentTime()||0);
- events.forEach((e,i)=>{const t=Number(e.good_time)||0,key=`${e.id||i}:${t}`;if(!echoPlayed.has(key)&&Math.abs(now-t)<=1){echoPlayed.add(key);fly(echoText(e))}})
+ events.forEach((e,i)=>{const t=Number(e.good_time)||0,key=`${e.id||i}:${t}`;if(!echoPlayed.has(key)&&Math.abs(now-t)<=1){echoPlayed.add(key);if(!isRecentManualEcho(e))fly(echoText(e))}})
 },700)}
 document.getElementById("echoVisible").onchange=e=>{if(!e.target.checked)document.getElementById("overlay").innerHTML=""};
 document.getElementById("viewFilter").onchange=render;
