@@ -21,8 +21,9 @@
 <div class="scoreboard" id="scoreboard"></div>
 </div>
 <aside class="side-stack">
-<div class="heatmap"><div class="heat-title">📊 みんなの反応マップ</div><canvas id="chart" height="120"></canvas></div>
-<aside class="timeline-card"><div class="timeline-title">ECHO TIMELINE</div>
+<div class="info-tabs" aria-label="表示切替"><button class="info-tab active" data-info-tab="map" type="button">反応マップ</button><button class="info-tab" data-info-tab="timeline" type="button">タイムライン</button></div>
+<div class="heatmap info-panel is-active" data-info-panel="map"><div class="heat-title">📊 みんなの反応マップ</div><canvas id="chart" height="120"></canvas></div>
+<aside class="timeline-card info-panel" data-info-panel="timeline"><div class="timeline-title">ECHO TIMELINE</div>
 <div class="filter"><select class="input" id="viewFilter"><option value="all">👁️ 全員の熱量を表示</option></select></div>
 <div class="timeline" id="timeline"><div class="muted">思い出を読み込み中…</div></div></aside>
 </aside>
@@ -144,6 +145,13 @@ function startEchoPlayback(){if(echoTimer)return;echoTimer=setInterval(()=>{
  events.forEach((e,i)=>{const t=Number(e.good_time)||0,key=`${e.id||i}:${t}`;if(!echoPlayed.has(key)&&Math.abs(now-t)<=1){echoPlayed.add(key);if(!isRecentManualEcho(e))fly(echoText(e))}})
 },700)}
 document.getElementById("echoVisible").onchange=e=>{if(!e.target.checked)document.getElementById("overlay").innerHTML=""};
+document.querySelectorAll("[data-info-tab]").forEach(b=>b.onclick=()=>{
+ document.querySelectorAll("[data-info-tab]").forEach(x=>x.classList.remove("active"));
+ document.querySelectorAll("[data-info-panel]").forEach(x=>x.classList.remove("is-active"));
+ b.classList.add("active");
+ document.querySelector(`[data-info-panel="${b.dataset.infoTab}"]`)?.classList.add("is-active");
+ setTimeout(()=>chart&&chart.resize(),60);
+});
 document.getElementById("viewFilter").onchange=render;
 function render(){
  const names=[...new Set(events.map(e=>e.user_name).filter(Boolean))];const sel=document.getElementById("viewFilter"),old=sel.value;
