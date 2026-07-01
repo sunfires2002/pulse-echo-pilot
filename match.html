@@ -10,6 +10,7 @@
 <div class="viewer-card">
 <div class="tabs" id="tabs" aria-hidden="true"></div>
 <div class="video-shell" id="videoShell"><div id="player"></div><div class="comment-overlay" id="overlay"></div><div class="tactical-layer" id="tacticalLayer" aria-label="戦術レビュー"></div></div>
+<div class="echo-visibility"><label><input type="checkbox" id="echoVisible" checked> みんなの足跡を表示</label></div>
 <div class="controls">
 <div class="inputs"><input class="input" id="userName" placeholder="名前を入力"><input class="input" id="commentText" placeholder="この瞬間に一言…"><button class="btn btn-primary" id="commentBtn">💬 残す</button></div>
 <div class="reactions"><button class="react hot" id="niceButton" data-kind="🔥 ナイスプレー">🔥 ナイスプレー</button><button class="react miss" data-kind="😫 惜しい">😫 惜しい</button><button class="react laugh" data-kind="😅 あちゃー">😅 あちゃー</button><button class="react respect" data-kind="😳 マジで">😳 マジで</button></div>
@@ -39,7 +40,7 @@ let supa=null;
 if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase) supa=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
 const matchesTable=()=>cfg.matchesTableName||"pulse_matches";
 const reactionTable=()=>cfg.tableName||"futsal_goods";
-let match=null,videos=[],currentPart="前半",player,events=[],chart,youtubeReady=false;
+let match=null,videos=[],currentPart="前半",player,events=[],chart,youtubeReady=false,echoTimer=null,echoPlayed=new Set();
 const tactic={open:false,tool:"move",selected:null,drag:null,arrow:null,counts:{home:0,away:0,ball:0}};
 function localMatches(){
  try{
@@ -69,7 +70,7 @@ async function initMatch(){
  loadEvents();
 }
 function onYouTubeIframeAPIReady(){youtubeReady=true;if(match&&videos[0])loadVideo(videoId(videos[0][1]));if(match)loadEvents()}
-function loadVideo(v){if(!v)return;if(player&&player.loadVideoById)player.loadVideoById(v);else player=new YT.Player("player",{videoId:v,playerVars:{playsinline:1,rel:0,autoplay:0}})}
+function loadVideo(v){if(!v)return;echoPlayed.clear();if(player&&player.loadVideoById)player.loadVideoById(v);else player=new YT.Player("player",{videoId:v,playerVars:{playsinline:1,rel:0,autoplay:0},events:{onReady:startEchoPlayback,onStateChange:startEchoPlayback}})}
 const key=()=>`pulse_echo_${match.id}_${currentPart}`;
 function nowTime(){try{return Math.floor(player.getCurrentTime()||0)}catch{return 0}}
 function fmt(s){s=Number(s)||0;return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`}
@@ -88,7 +89,7 @@ async function loadEvents(){
  if(!match)return;
  if(supa){const {data,error}=await supa.from(reactionTable()).select("*").eq("video_id",`${match.id}:${currentPart}`).order("good_time",{ascending:true});events=error?[]:(data||[])}
  else{events=JSON.parse(localStorage.getItem(key())||"[]")}
- render()
+ echoPlayed.clear();startEchoPlayback();render()
 }
 async function addEvent(kind,comment=""){
  const e={good_time:nowTime(),description:kind,user_name:document.getElementById("userName").value.trim()||"匿名",comment,video_id:`${match.id}:${currentPart}`};
@@ -131,6 +132,13 @@ tacticLayer().addEventListener("pointerup",e=>{
  if(tactic.drag){tacticLayer().releasePointerCapture(e.pointerId);tactic.drag=null}
 });
 function fly(t){let d=document.createElement("div");d.className="fly";d.textContent=t;d.style.top=(8+Math.random()*72)+"%";document.getElementById("overlay").appendChild(d);setTimeout(()=>d.remove(),4300)}
+function echoText(e){return e.comment?`${e.user_name||"匿名"}: ${e.comment}`:e.description}
+function startEchoPlayback(){if(echoTimer)return;echoTimer=setInterval(()=>{
+ const visible=document.getElementById("echoVisible");if(!visible||!visible.checked||!player||!player.getCurrentTime)return;
+ const now=Math.floor(player.getCurrentTime()||0);
+ events.forEach((e,i)=>{const t=Number(e.good_time)||0,key=`${e.id||i}:${t}`;if(!echoPlayed.has(key)&&Math.abs(now-t)<=1){echoPlayed.add(key);fly(echoText(e))}})
+},700)}
+document.getElementById("echoVisible").onchange=e=>{if(!e.target.checked)document.getElementById("overlay").innerHTML=""};
 document.getElementById("viewFilter").onchange=render;
 function render(){
  const names=[...new Set(events.map(e=>e.user_name).filter(Boolean))];const sel=document.getElementById("viewFilter"),old=sel.value;
