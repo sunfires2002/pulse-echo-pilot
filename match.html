@@ -11,6 +11,7 @@
 <div class="tabs" id="tabs" aria-hidden="true"></div>
 <div class="video-shell" id="videoShell"><div id="player"></div><div class="comment-overlay" id="overlay"></div><div class="tactical-layer" id="tacticalLayer" aria-label="戦術レビュー"></div></div>
 <div class="echo-visibility"><label><input type="checkbox" id="echoVisible" checked> みんなの足跡を表示</label></div>
+<div class="mobile-panel-tabs" aria-label="スマホ表示切替"><button class="mobile-panel-tab active" data-mobile-panel="react" type="button">反応する</button><button class="mobile-panel-tab" data-mobile-panel="map" type="button">反応マップ</button><button class="mobile-panel-tab" data-mobile-panel="timeline" type="button">タイムライン</button></div>
 <div class="controls">
 <div class="inputs"><input class="input" id="userName" placeholder="名前を入力"><input class="input" id="commentText" placeholder="この瞬間に一言…"><button class="btn btn-primary" id="commentBtn">💬 残す</button></div>
 <div class="reactions"><button class="react hot" id="niceButton" data-kind="🔥 ナイスプレー">🔥 ナイスプレー</button><button class="react miss" data-kind="😫 惜しい">😫 惜しい</button><button class="react laugh" data-kind="😅 あちゃー">😅 あちゃー</button><button class="react respect" data-kind="😳 マジで">😳 マジで</button></div>
@@ -145,13 +146,27 @@ function startEchoPlayback(){if(echoTimer)return;echoTimer=setInterval(()=>{
  events.forEach((e,i)=>{const t=Number(e.good_time)||0,key=`${e.id||i}:${t}`;if(!echoPlayed.has(key)&&Math.abs(now-t)<=1){echoPlayed.add(key);if(!isRecentManualEcho(e))fly(echoText(e))}})
 },700)}
 document.getElementById("echoVisible").onchange=e=>{if(!e.target.checked)document.getElementById("overlay").innerHTML=""};
-document.querySelectorAll("[data-info-tab]").forEach(b=>b.onclick=()=>{
- document.querySelectorAll("[data-info-tab]").forEach(x=>x.classList.remove("active"));
- document.querySelectorAll("[data-info-panel]").forEach(x=>x.classList.remove("is-active"));
- b.classList.add("active");
- document.querySelector(`[data-info-panel="${b.dataset.infoTab}"]`)?.classList.add("is-active");
+document.body.dataset.mobilePanel="react";
+function setInfoPanel(name){
+ document.querySelectorAll("[data-info-tab]").forEach(x=>x.classList.toggle("active",x.dataset.infoTab===name));
+ document.querySelectorAll("[data-info-panel]").forEach(x=>x.classList.toggle("is-active",x.dataset.infoPanel===name));
  setTimeout(()=>chart&&chart.resize(),60);
-});
+}
+function setMobilePanel(name){
+ document.body.dataset.mobilePanel=name;
+ document.querySelectorAll("[data-mobile-panel]").forEach(x=>x.classList.toggle("active",x.dataset.mobilePanel===name));
+ if(name==="map"||name==="timeline")setTimeout(()=>chart&&chart.resize(),60);
+}
+document.querySelectorAll("[data-info-tab]").forEach(b=>b.onclick=()=>setInfoPanel(b.dataset.infoTab));
+document.querySelectorAll("[data-mobile-panel]").forEach(b=>b.onclick=()=>setMobilePanel(b.dataset.mobilePanel));
+let swipeStart=null;
+document.querySelector(".viewer-layout").addEventListener("touchstart",e=>{const t=e.touches[0];swipeStart={x:t.clientX,y:t.clientY}}, {passive:true});
+document.querySelector(".viewer-layout").addEventListener("touchend",e=>{
+ if(!swipeStart)return;const t=e.changedTouches[0],dx=t.clientX-swipeStart.x,dy=t.clientY-swipeStart.y;swipeStart=null;
+ if(Math.abs(dx)<48||Math.abs(dx)<Math.abs(dy)*1.25)return;
+ const order=["react","map","timeline"],now=document.body.dataset.mobilePanel||"react",i=order.indexOf(now),next=dx<0?Math.min(order.length-1,i+1):Math.max(0,i-1);
+ setMobilePanel(order[next]);
+}, {passive:true});
 document.getElementById("viewFilter").onchange=render;
 function render(){
  const names=[...new Set(events.map(e=>e.user_name).filter(Boolean))];const sel=document.getElementById("viewFilter"),old=sel.value;
