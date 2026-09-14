@@ -16,6 +16,14 @@
 <div class="inputs"><input class="input" id="userName" placeholder="名前を入力"><input class="input" id="commentText" placeholder="この瞬間に一言…"><button class="btn btn-primary" id="commentBtn">💬 残す</button></div>
 <div class="reactions"><button class="react hot" id="niceButton" data-kind="🔥 ナイスプレー">🔥 ナイスプレー</button><button class="react miss" data-kind="😫 惜しい">😫 惜しい</button><button class="react laugh" data-kind="😅 あちゃー">😅 あちゃー</button><button class="react respect" data-kind="😳 マジで">😳 マジで</button></div>
 <div class="nice-options" id="niceOptions" aria-hidden="true"><button class="nice-chip" data-kind="🔥 ナイスシュート" type="button">ナイスシュート</button><button class="nice-chip" data-kind="🔥 ナイスキーパー" type="button">ナイスキーパー</button><button class="nice-chip" data-kind="🔥 ナイスパス" type="button">ナイスパス</button><button class="nice-chip" data-kind="🔥 ナイス守備" type="button">ナイス守備</button></div>
+
+<!-- 🎙️ 音声入力ボタンを追加 -->
+<div class="voice-control-wrap" style="margin-top: 10px;">
+  <button class="btn voice-btn" id="voiceBtn" type="button" style="width:100%; padding:12px; font-size:0.92rem; background:linear-gradient(135deg, var(--cyan), #00a8a2); color:#080a10; font-weight:950; border:0; border-radius:10px; cursor:pointer; transition:all 0.2s;">
+    🎙️ 音声入力をスタート（動画再生して叫ぶだけ！）
+  </button>
+</div>
+
 <div class="utility-actions"><button class="react ai" data-kind="🤖 AIにお任せ" type="button">🤖 AIにお任せ</button><button class="btn tactic-toggle" id="tacticToggle" type="button">🎯 ここな！</button></div>
 <div class="tactical-controls" id="tacticalControls"><button class="btn tactic-only active" data-review="actual" type="button">実際の動き</button><button class="btn tactic-only" data-review="ideal" type="button">理想の動き</button><button class="btn tactic-only" data-tactic="home" type="button">味方</button><button class="btn tactic-only" data-tactic="away" type="button">相手</button><button class="btn tactic-only" data-tactic="ball" type="button">ボール</button><button class="btn tactic-only" data-tactic="pass" type="button">パス</button><button class="btn tactic-only" data-tactic="move" type="button">移動</button><button class="btn tactic-only" data-tactic="dribble" type="button">ドリブル</button><button class="btn tactic-only" data-tactic="shot" type="button">シュート</button><button class="btn tactic-only" id="tacticMemo" type="button">メモ</button><button class="btn tactic-only" id="tacticReset" type="button">初期配置</button><button class="btn tactic-only" id="tacticDelete" type="button">削除</button></div>
 </div>
@@ -64,7 +72,7 @@ async function initMatch(){
  match=id?allMatches.find(x=>x.id===id):allMatches[0];
  if(!match){document.body.innerHTML='<div class="container" style="padding:80px 0"><a class="back" href="./">← 試合一覧へ戻る</a><div class="scoreboard"><p class="muted">この試合は見つかりません。削除されたか、まだ公開されていない可能性があります。</p></div></div>';throw new Error("match not found")}
  document.title=`${match.home} vs ${match.away} | PULSE ECHO`;
- document.getElementById("scoreboard").innerHTML=`<div class="match-meta">${esc(match.competition||"MATCH")}　${esc((match.date||"").replaceAll("-","."))}${match.venue?"　"+esc(match.venue):""}</div><div class="scoreline"><div class="club">${esc(match.home)}</div><div class="bigscore">${esc(match.homeScore)} - ${esc(match.awayScore)}</div><div class="club">${esc(match.away)}</div></div>${match.description?`<p class="muted">${esc(match.description)}</p>`:""}`;
+ document.getElementById("scoreboard").innerHTML=`<div class="match-meta">${esc(match.competition||"MATCH")} ${esc((match.date||"").replaceAll("-","."))}${match.venue?" "+esc(match.venue):""}</div><div class="scoreline"><div class="club">${esc(match.home)}</div><div class="bigscore">${esc(match.homeScore)} - ${esc(match.awayScore)}</div><div class="club">${esc(match.away)}</div></div>${match.description?`<p class="muted">${esc(match.description)}</p>`:""}`;
  videos=[["前半",match.firstHalfVideo],["後半",match.secondHalfVideo],["ハイライト",match.highlightVideo]].filter(x=>x[1]);
  currentPart=videos[0]?.[0]||"前半";
  document.getElementById("tabs").innerHTML=videos.map((v,i)=>`<button class="tab ${i===0?"active":""}" data-label="${esc(v[0])}" data-video="${esc(videoId(v[1]))}">${esc(v[0])}</button>`).join("");
@@ -184,7 +192,7 @@ function render(){
  const names=[...new Set(events.map(e=>e.user_name).filter(Boolean))];const sel=document.getElementById("viewFilter"),old=sel.value;
  sel.innerHTML='<option value="all">👁️ 全員の熱量を表示</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");if([...sel.options].some(o=>o.value===old))sel.value=old;
  const f=sel.value==="all"?events:events.filter(e=>e.user_name===sel.value);
- document.getElementById("timeline").innerHTML=f.length?f.slice().sort((a,b)=>b.good_time-a.good_time).map(e=>`<div class="event" data-time="${e.good_time}"><div class="event-top"><span><b>${fmt(e.good_time)}</b>　${esc(e.description)}</span><span class="event-user">${esc(e.user_name)}</span></div>${e.comment?`<div class="event-comment">${esc(e.comment)}</div>`:""}<button class="event-review" data-time="${esc(e.good_time)}" type="button">戦術レビュー</button><button class="event-delete" data-id="${esc(e.id)}" type="button">削除</button></div>`).join(""):'<div class="muted">まだ足跡はありません。最初の一人になろう。</div>';
+ document.getElementById("timeline").innerHTML=f.length?f.slice().sort((a,b)=>b.good_time-a.good_time).map(e=>`<div class="event" data-time="${e.good_time}"><div class="event-top"><span><b>${fmt(e.good_time)}</b> ${esc(e.description)}</span><span class="event-user">${esc(e.user_name)}</span></div>${e.comment?`<div class="event-comment">${esc(e.comment)}</div>`:""}<button class="event-review" data-time="${esc(e.good_time)}" type="button">戦術レビュー</button><button class="event-delete" data-id="${esc(e.id)}" type="button">削除</button></div>`).join(""):'<div class="muted">まだ足跡はありません。最初の一人になろう。</div>';
  document.querySelectorAll(".event").forEach(el=>el.onclick=e=>{if(e.target.closest(".event-delete"))return;player&&player.seekTo(Number(el.dataset.time),true)});
  document.querySelectorAll(".event-review").forEach(b=>b.onclick=e=>{e.stopPropagation();openTactics(b.dataset.time,false)});
  document.querySelectorAll(".event-delete").forEach(b=>b.onclick=e=>{e.stopPropagation();deleteEvent(b.dataset.id)});
@@ -203,5 +211,119 @@ function draw(list){
 }
 window.deleteEvent=deleteEvent;
 window.addEventListener("resize",()=>document.querySelectorAll(".t-arrow").forEach(placeTacticArrow));
+
+/* ==========================================
+   Voice-First 音声感情検知（三賢者最終確定版）
+   ========================================== */
+let isVoiceActive = false;
+let voiceRecognition = null;
+let lastProcessedText = "";
+let wakeLock = null;
+
+const VOICE_DICTIONARY = {
+  hot: ["ナイス", "よっしゃ", "シュート", "ゴール", "入った", "決めた", "いけー", "イケー", "ええぞ"],
+  miss: ["惜しい", "おしい", "あちゃー", "なんでやねん", "ファール", "もったいない", "あーっ"],
+  respect: ["マジで", "マジか", "すごい", "スゴい", "やばい", "ヤバい", "神"]
+};
+
+// 画面消灯防止（Wake Lock）
+async function requestWakeLock() {
+  if ('wakeLock' in navigator) {
+    try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) { console.warn('Wake Lock Error:', err); }
+  }
+}
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release().then(() => { wakeLock = null; }); }
+}
+
+function initVoiceRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert("お使いのブラウザは音声認識に対応していません。（Chrome/Safari推奨）");
+    return;
+  }
+
+  voiceRecognition = new SpeechRecognition();
+  voiceRecognition.lang = 'ja-JP';
+  voiceRecognition.continuous = true;
+  voiceRecognition.interimResults = false;
+
+  // 重複発火防止 & isFinal チェック
+  voiceRecognition.onresult = (event) => {
+    const lastResultIndex = event.results.length - 1;
+    if (event.results[lastResultIndex] && !event.results[lastResultIndex].isFinal) return;
+    
+    const rawText = event.results[lastResultIndex][0].transcript.trim();
+    if (!rawText || rawText === lastProcessedText) return;
+    
+    lastProcessedText = rawText;
+    processVoiceResult(rawText);
+  };
+
+  // 300msディレイの安定再起動
+  voiceRecognition.onend = () => {
+    if (isVoiceActive) {
+      setTimeout(() => {
+        if (isVoiceActive) {
+          try { voiceRecognition.start(); } catch (e) { console.warn("再起動スキップ:", e); }
+        }
+      }, 300);
+    }
+  };
+}
+
+function processVoiceResult(rawText) {
+  let commentText = rawText;
+
+  // 1. ゆらぎ自動補正
+  if (commentText.includes("欲しい")) commentText = commentText.replace(/欲しい/g, "惜しい");
+  if (commentText.includes("カウント")) commentText = commentText.replace(/カウント/g, "カウンター");
+
+  // 2. 感情タグ判定（フル文字列指定でグラフ・UI非崩れ保証）
+  let kind = "🤖 AIにお任せ";
+  if (VOICE_DICTIONARY.hot.some(w => commentText.includes(w))) {
+    kind = "🔥 ナイスプレー";
+  } else if (VOICE_DICTIONARY.miss.some(w => commentText.includes(w))) {
+    kind = "😅 あちゃー";
+  } else if (VOICE_DICTIONARY.respect.some(w => commentText.includes(w))) {
+    kind = "😳 マジで";
+  }
+
+  // 3. タイムスタンプ（三賢者合意：nowTime() - 1 秒戻し）
+  const voiceTime = typeof nowTime === "function" ? Math.max(0, nowTime() - 1) : 0;
+
+  // 4. デバッグ用ログ出力
+  console.log("[PULSE VOICE LOG]", { rawText, kind, commentText, voiceTime });
+
+  // 5. 既存 addEvent への受け渡し
+  addEvent(kind, commentText, voiceTime);
+}
+
+// ボタンON/OFF制御
+const voiceBtn = document.getElementById("voiceBtn");
+if (voiceBtn) {
+  voiceBtn.onclick = async () => {
+    if (!voiceRecognition) initVoiceRecognition();
+    if (!voiceRecognition) return;
+
+    isVoiceActive = !isVoiceActive;
+    if (isVoiceActive) {
+      try {
+        voiceRecognition.start();
+        await requestWakeLock();
+        voiceBtn.style.background = "linear-gradient(135deg, #ef4444, #dc2626)";
+        voiceBtn.style.color = "#ffffff";
+        voiceBtn.textContent = "🛑 音声入力中（画面を見ずに叫んでOK！）";
+      } catch(e){ console.error(e); }
+    } else {
+      try { voiceRecognition.stop(); } catch(e){}
+      releaseWakeLock();
+      voiceBtn.style.background = "linear-gradient(135deg, var(--cyan), #00a8a2)";
+      voiceBtn.style.color = "#080a10";
+      voiceBtn.textContent = "🎙️ 音声入力をスタート（動画再生して叫ぶだけ！）";
+    }
+  };
+}
+
 initMatch();
 </script></body></html>
