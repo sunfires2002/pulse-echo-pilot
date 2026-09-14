@@ -326,4 +326,17 @@ if (voiceBtn) {
 }
 
 initMatch();
-</script></body></html>
+
+// ▼ Android端末の非表示処理（<script>の内側に追加）
+document.addEventListener('DOMContentLoaded', () => {
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  if (isAndroid) {
+    const voiceBtn = document.getElementById('voiceBtn');
+    if (voiceBtn) {
+      voiceBtn.style.display = 'none';
+      console.log('[PULSE VOICE] Android端末のため音声ボタンを非表示にしました');
+    }
+  }
+});
+</script>
+</body></html>
