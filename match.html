@@ -17,9 +17,9 @@
 <div class="reactions"><button class="react hot" id="niceButton" data-kind="🔥 ナイスプレー">🔥 ナイスプレー</button><button class="react miss" data-kind="😫 惜しい">😫 惜しい</button><button class="react laugh" data-kind="😅 あちゃー">😅 あちゃー</button><button class="react respect" data-kind="😳 マジで">😳 マジで</button></div>
 <div class="nice-options" id="niceOptions" aria-hidden="true"><button class="nice-chip" data-kind="🔥 ナイスシュート" type="button">ナイスシュート</button><button class="nice-chip" data-kind="🔥 ナイスキーパー" type="button">ナイスキーパー</button><button class="nice-chip" data-kind="🔥 ナイスパス" type="button">ナイスパス</button><button class="nice-chip" data-kind="🔥 ナイス守備" type="button">ナイス守備</button></div>
 
-<!-- 🎙️ 音声入力ボタンを追加 -->
+<!-- 🎙️ 音声入力ボタン -->
 <div class="voice-control-wrap" style="margin-top: 10px;">
-  <button class="btn voice-btn" id="voiceBtn" type="button" style="width:100%; padding:12px; font-size:0.92rem; background:linear-gradient(135deg, var(--cyan), #00a8a2); color:#080a10; font-weight:950; border:0; border-radius:10px; cursor:pointer; transition:all 0.2s;">
+  <button class="btn voice-btn" id="voiceBtn" type="button" style="width:100%; padding:12px; font-size:0.92rem; background:linear-gradient(135deg, #10b981, #059669); color:#ffffff; font-weight:950; border:0; border-radius:10px; cursor:pointer; transition:all 0.2s;">
     🎙️ 音声入力をスタート（動画再生して叫ぶだけ！）
   </button>
 </div>
@@ -193,7 +193,16 @@ function render(){
  sel.innerHTML='<option value="all">👁️ 全員の熱量を表示</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");if([...sel.options].some(o=>o.value===old))sel.value=old;
  const f=sel.value==="all"?events:events.filter(e=>e.user_name===sel.value);
  document.getElementById("timeline").innerHTML=f.length?f.slice().sort((a,b)=>b.good_time-a.good_time).map(e=>`<div class="event" data-time="${e.good_time}"><div class="event-top"><span><b>${fmt(e.good_time)}</b> ${esc(e.description)}</span><span class="event-user">${esc(e.user_name)}</span></div>${e.comment?`<div class="event-comment">${esc(e.comment)}</div>`:""}<button class="event-review" data-time="${esc(e.good_time)}" type="button">戦術レビュー</button><button class="event-delete" data-id="${esc(e.id)}" type="button">削除</button></div>`).join(""):'<div class="muted">まだ足跡はありません。最初の一人になろう。</div>';
- document.querySelectorAll(".event").forEach(el=>el.onclick=e=>{if(e.target.closest(".event-delete"))return;player&&player.seekTo(Number(el.dataset.time),true)});
+ 
+ // ▼ タイムラインクリック時の処理（動画シーク ＋ 画面への文字強制表示）
+ document.querySelectorAll(".event").forEach(el=>el.onclick=e=>{
+  if(e.target.closest(".event-delete")||e.target.closest(".event-review"))return;
+  const t=Number(el.dataset.time);
+  if(player)player.seekTo(t,true);
+  const targetEvent=events.find(ev=>Number(ev.good_time)===t);
+  if(targetEvent)fly(echoText(targetEvent));
+ });
+ 
  document.querySelectorAll(".event-review").forEach(b=>b.onclick=e=>{e.stopPropagation();openTactics(b.dataset.time,false)});
  document.querySelectorAll(".event-delete").forEach(b=>b.onclick=e=>{e.stopPropagation();deleteEvent(b.dataset.id)});
  draw(f)
@@ -318,8 +327,8 @@ if (voiceBtn) {
     } else {
       try { voiceRecognition.stop(); } catch(e){}
       releaseWakeLock();
-      voiceBtn.style.background = "linear-gradient(135deg, var(--cyan), #00a8a2)";
-      voiceBtn.style.color = "#080a10";
+      voiceBtn.style.background = "linear-gradient(135deg, #10b981, #059669)";
+      voiceBtn.style.color = "#ffffff";
       voiceBtn.textContent = "🎙️ 音声入力をスタート（動画再生して叫ぶだけ！）";
     }
   };
@@ -327,7 +336,7 @@ if (voiceBtn) {
 
 initMatch();
 
-// ▼ Android端末の非表示処理（<script>の内側に追加）
+// ▼ Android端末の非表示処理
 document.addEventListener('DOMContentLoaded', () => {
   const isAndroid = /Android/i.test(navigator.userAgent);
   if (isAndroid) {
