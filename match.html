@@ -5,6 +5,106 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PULSE ECHO - Match View</title>
   <link rel="stylesheet" href="style.css">
+<style>
+    .pulse-app {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 12px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .video-shell {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      max-height: 600px;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .video-shell iframe {
+      width: 100%;
+      height: 100%;
+    }
+
+    .btn-primary-voice {
+      width: 100%;
+      padding: 16px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .emotion-group {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .sub-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-tertiary {
+      flex: 1;
+      padding: 8px;
+      font-size: 0.8rem;
+      background: rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+    }
+
+    .timeline-panel {
+      display: none;
+    }
+
+    .timeline-panel.active {
+      display: block;
+    }
+
+    .compact-tab-bar {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    @media (min-width: 900px) and (orientation: landscape) {
+      .pulse-app {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 16px;
+        height: 100dvh;
+      }
+
+      .left-column {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        overflow-y: auto;
+      }
+
+      .timeline-panel {
+        display: block !important;
+        background: #1e293b;
+        border-radius: 16px;
+        padding: 16px;
+        overflow-y: auto;
+      }
+
+      .compact-tab-bar {
+        display: none;
+      }
+    }
+  </style>  
 </head>
 <body>
 
