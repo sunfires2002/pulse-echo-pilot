@@ -2,7 +2,32 @@
 <html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080a10"><title>試合を見る | PULSE ECHO</title>
-<link rel="stylesheet" href="style.css"></head><body>
+<link rel="stylesheet" href="style.css">
+<style>
+  /* ボタン文字の改行崩れ（「あちゃー」等）防止＆微調整 */
+  .reactions {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+  }
+  .reactions .react {
+    white-space: nowrap !important;
+    font-size: clamp(0.7rem, 2.5vw, 0.85rem) !important;
+    padding: 10px 2px !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+  .nice-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .nice-options[aria-hidden="true"] {
+    display: none;
+  }
+</style>
+</head><body>
 <header class="site-header"><div class="container nav"><a class="brand" href="./">PULSE <span>ECHO</span></a><nav class="navlinks"><a href="./">試合一覧</a></nav></div></header>
 <main><div class="container match-hero"></div>
 <section class="section" style="padding-top:10px"><div class="container">
@@ -14,7 +39,7 @@
 <div class="mobile-panel-tabs" aria-label="スマホ表示切替"><button class="mobile-panel-tab active" data-mobile-panel="react" type="button">反応する</button><button class="mobile-panel-tab" data-mobile-panel="map" type="button">反応マップ</button><button class="mobile-panel-tab" data-mobile-panel="timeline" type="button">タイムライン</button></div>
 <div class="controls">
 <div class="inputs"><input class="input" id="userName" placeholder="名前を入力"><input class="input" id="commentText" placeholder="この瞬間に一言…"><button class="btn btn-primary" id="commentBtn">💬 残す</button></div>
-<div class="reactions"><button class="react hot" id="niceButton" data-kind="🔥 ナイスプレー">🔥 ナイスプレー</button><button class="react miss" data-kind="😫 惜しい">😫 惜しい</button><button class="react laugh" data-kind="😅 あちゃー">😅 あちゃー</button><button class="react respect" data-kind="😳 マジで">😳 マジで</button></div>
+<div class="reactions"><button class="react hot" id="niceButton" data-kind="🔥 ナイスプレー">🔥 ナイス</button><button class="react miss" data-kind="😫 惜しい">😫 惜しい</button><button class="react laugh" data-kind="😅 あちゃー">😅 あちゃー</button><button class="react respect" data-kind="😳 マジで">😳 マジで</button></div>
 <div class="nice-options" id="niceOptions" aria-hidden="true"><button class="nice-chip" data-kind="🔥 ナイスシュート" type="button">ナイスシュート</button><button class="nice-chip" data-kind="🔥 ナイスキーパー" type="button">ナイスキーパー</button><button class="nice-chip" data-kind="🔥 ナイスパス" type="button">ナイスパス</button><button class="nice-chip" data-kind="🔥 ナイス守備" type="button">ナイス守備</button></div>
 
 <!-- 🎙️ 音声入力ボタン -->
@@ -44,6 +69,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="config.js"></script><script src="data.js"></script>
 <script>
+// 一時セッションID（Realtime重複弾幕防止用）
+const mySessionId = Math.random().toString(36).substring(2, 9);
+
 const qs=new URLSearchParams(location.search), id=qs.get("id");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const cfg=window.PULSE_CONFIG||{};
@@ -52,7 +80,9 @@ if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase) supa=window.supabase.c
 const matchesTable=()=>cfg.matchesTableName||"pulse_matches";
 const reactionTable=()=>cfg.tableName||"futsal_goods";
 let match=null,videos=[],currentPart="前半",player,events=[],chart,youtubeReady=false,echoTimer=null,echoPlayed=new Set(),recentManualEchoes=[];
+let realtimeChannel=null;
 const tactic={open:false,tool:"move",review:"actual",selected:null,drag:null,arrow:null,counts:{home:0,away:0,ball:0},actions:{actual:{pass:0,move:0},ideal:{pass:0,move:0}}};
+
 function localMatches(){
  try{
   const saved=JSON.parse(localStorage.getItem("pulse_echo_workflow_v3")||"null");
@@ -67,6 +97,7 @@ async function cloudMatches(){
  return data&&data.length?data.map(row=>({id:row.id,...row.data})):null;
 }
 const videoId=v=>{if(!v)return"";let s=String(v);try{let u=new URL(s);return u.hostname.includes("youtu.be")?u.pathname.slice(1):u.searchParams.get("v")||s}catch{return s}};
+
 async function initMatch(){
  const allMatches=(await cloudMatches()||localMatches()||window.PULSE_MATCHES||[]).filter(x=>x.published!==false);
  match=id?allMatches.find(x=>x.id===id):allMatches[0];
@@ -80,6 +111,7 @@ async function initMatch(){
  if(youtubeReady&&videos[0])loadVideo(videoId(videos[0][1]));
  loadEvents(true);
 }
+
 function onYouTubeIframeAPIReady(){youtubeReady=true;if(match&&videos[0])loadVideo(videoId(videos[0][1]));if(match)loadEvents(true)}
 function loadVideo(v){if(!v)return;echoPlayed.clear();if(player&&player.loadVideoById)player.loadVideoById(v);else player=new YT.Player("player",{videoId:v,playerVars:{playsinline:1,rel:0,autoplay:0},events:{onReady:startEchoPlayback,onStateChange:startEchoPlayback}})}
 const key=()=>`pulse_echo_${match.id}_${currentPart}`;
@@ -104,19 +136,51 @@ function addTacticArrow(x1,y1,x2,y2){const el=document.createElement("div"),numb
 function resetTactics(){const layer=tacticLayer();layer.innerHTML='<div class="tactic-circle"></div><div class="tactic-goal left"></div><div class="tactic-goal right"></div>';tactic.counts={home:0,away:0,ball:0};tactic.actions={actual:{pass:0,move:0},ideal:{pass:0,move:0}};tacticSelect(null);[[24,30],[36,44],[36,60],[53,38],[53,64]].forEach(p=>addTacticPiece("home",p[0],p[1]));[[74,30],[64,44],[64,60],[48,40],[48,66]].forEach(p=>addTacticPiece("away",p[0],p[1]));addTacticPiece("ball",50,50)}
 function openTactics(seekTime=null,mark=false){const t=seekTime!=null?Math.max(0,Number(seekTime)):mark?Math.max(0,nowTime()-5):nowTime(0);if(player){if(mark||seekTime!=null)player.seekTo(t,true);player.pauseVideo&&player.pauseVideo()}tactic.open=true;document.body.classList.add("tactics-open");document.getElementById("videoShell").classList.add("tactical-on");document.getElementById("tacticalControls").classList.add("is-open");document.getElementById("tacticToggle").textContent="レビュー終了";if(!tacticLayer().querySelector(".t-piece"))resetTactics();if(mark)addEvent("🎯 ここな！",`起点 ${fmt(t)}`,t)}
 function closeTactics(){tactic.open=false;tactic.tool="move";document.body.classList.remove("tactics-open");document.getElementById("videoShell").classList.remove("tactical-on");document.getElementById("tacticalControls").classList.remove("is-open");document.getElementById("tacticToggle").textContent="🎯 ここな！";document.querySelectorAll("[data-tactic]").forEach(b=>b.classList.remove("active"));tacticSelect(null)}
+
+// Supabase Realtime 同期機能の初期化
+function initRealtimeSubscription(){
+ if(!supa||!match)return;
+ if(realtimeChannel) supa.removeChannel(realtimeChannel);
+ realtimeChannel = supa
+  .channel(`match-realtime-${match.id}-${currentPart}`)
+  .on(
+   'postgres_changes',
+   {
+    event:'INSERT',
+    schema:'public',
+    table:reactionTable(),
+    filter:`video_id=eq.${match.id}:${currentPart}`
+   },
+   (payload)=>{
+    const newEvent = payload.new;
+    // 他ユーザーが送信したリアクションのみ即時画面へ流す
+    if(newEvent.sender_id !== mySessionId){
+     fly(echoText(newEvent));
+     events.push(newEvent);
+     render();
+    }
+   }
+  )
+  .subscribe();
+}
+
 async function loadEvents(resetEcho=false){
  if(!match)return;
  if(supa){const {data,error}=await supa.from(reactionTable()).select("*").eq("video_id",`${match.id}:${currentPart}`).order("good_time",{ascending:true});events=error?[]:(data||[])}
  else{events=JSON.parse(localStorage.getItem(key())||"[]")}
- if(resetEcho)echoPlayed.clear();startEchoPlayback();render()
+ if(resetEcho)echoPlayed.clear();startEchoPlayback();render();
+ initRealtimeSubscription();
 }
+
 async function addEvent(kind,comment="",timeOverride=null){
- const isTactic=kind.startsWith("🎯"),e={good_time:timeOverride??(isTactic?nowTime(0):nowTime(3)),description:kind,user_name:document.getElementById("userName").value.trim()||"匿名",comment,video_id:`${match.id}:${currentPart}`};
+ const isTactic=kind.startsWith("🎯"),e={good_time:timeOverride??(isTactic?nowTime(0):nowTime(3)),description:kind,user_name:document.getElementById("userName").value.trim()||"匿名",comment,video_id:`${match.id}:${currentPart}`,sender_id:mySessionId};
  recentManualEchoes.push({t:e.good_time,d:e.description,c:e.comment,u:e.user_name,expires:Date.now()+5000});
+ fly(comment||kind);document.getElementById("commentText").value="";
  if(supa){const {error}=await supa.from(reactionTable()).insert(e);if(error){alert("保存に失敗しました: "+error.message);return}}
  else{events.push({...e,id:Date.now()});localStorage.setItem(key(),JSON.stringify(events))}
- fly(comment||kind);document.getElementById("commentText").value="";await loadEvents()
+ await loadEvents()
 }
+
 async function deleteEvent(eventId){
  const target=events.find(e=>String(e.id)===String(eventId));if(!target)return;
  if(!confirm(`${fmt(target.good_time)} の反応を削除しますか？`))return;
@@ -124,6 +188,7 @@ async function deleteEvent(eventId){
  else{events=events.filter(e=>String(e.id)!==String(eventId));localStorage.setItem(key(),JSON.stringify(events))}
  await loadEvents()
 }
+
 const niceOptions=document.getElementById("niceOptions");
 function showNiceOptions(){niceOptions.classList.add("is-open");niceOptions.setAttribute("aria-hidden","false")}
 function hideNiceOptions(){niceOptions.classList.remove("is-open");niceOptions.setAttribute("aria-hidden","true")}
@@ -194,7 +259,6 @@ function render(){
  const f=sel.value==="all"?events:events.filter(e=>e.user_name===sel.value);
  document.getElementById("timeline").innerHTML=f.length?f.slice().sort((a,b)=>b.good_time-a.good_time).map(e=>`<div class="event" data-time="${e.good_time}"><div class="event-top"><span><b>${fmt(e.good_time)}</b> ${esc(e.description)}</span><span class="event-user">${esc(e.user_name)}</span></div>${e.comment?`<div class="event-comment">${esc(e.comment)}</div>`:""}<button class="event-review" data-time="${esc(e.good_time)}" type="button">戦術レビュー</button><button class="event-delete" data-id="${esc(e.id)}" type="button">削除</button></div>`).join(""):'<div class="muted">まだ足跡はありません。最初の一人になろう。</div>';
  
- // ▼ タイムラインクリック時の処理（動画シーク ＋ 画面への文字強制表示）
  document.querySelectorAll(".event").forEach(el=>el.onclick=e=>{
   if(e.target.closest(".event-delete")||e.target.closest(".event-review"))return;
   const t=Number(el.dataset.time);
@@ -207,22 +271,49 @@ function render(){
  document.querySelectorAll(".event-delete").forEach(b=>b.onclick=e=>{e.stopPropagation();deleteEvent(b.dataset.id)});
  draw(f)
 }
+
+/* 📊 反応マップ（Chart.js）描画関数：凡例ズレ修正版 */
 function draw(list){
  const bins=30,labels=Array.from({length:bins},(_,i)=>i+1),groups=[
-  {label:"🔥 ナイスプレー",color:"#ff4757",match:d=>String(d).startsWith("🔥 ナイス")},
+  {label:"🔥 ナイス",color:"#ff4757",match:d=>String(d).startsWith("🔥 ナイス")},
   {label:"😫 惜しい",color:"#8b5cf6",match:d=>d==="😫 惜しい"},
   {label:"😅 あちゃー",color:"#ffa502",match:d=>d==="😅 あちゃー"},
   {label:"😳 マジで",color:"#2ed573",match:d=>d==="😳 マジで"},
-  {label:"🤖 AIにお任せ",color:"#00cec9",match:d=>d==="🤖 AIにお任せ"}
+  {label:"🤖 AI任せ",color:"#00cec9",match:d=>d==="🤖 AIにお任せ"}
  ];
  const ds=groups.map(g=>({label:g.label,data:labels.map((_,i)=>list.filter(e=>g.match(e.description)&&Math.floor((Number(e.good_time)||0)/60)===i).length),borderColor:g.color,backgroundColor:g.color+"33",tension:.35,fill:true}));
- if(chart)chart.destroy();chart=new Chart(document.getElementById("chart"),{type:"line",data:{labels,datasets:ds},options:{responsive:true,plugins:{legend:{labels:{color:"#aaa"}}},scales:{x:{ticks:{color:"#777",maxTicksLimit:8},grid:{color:"#252a37"}},y:{beginAtZero:true,ticks:{display:false},grid:{color:"#252a37"}}}}})
+ if(chart)chart.destroy();
+ chart=new Chart(document.getElementById("chart"),{
+  type:"line",
+  data:{labels,datasets:ds},
+  options:{
+   responsive:true,
+   plugins:{
+    legend:{
+     display:true,
+     labels:{
+      color:"#aaa",
+      boxWidth:8,
+      boxHeight:8,
+      padding:6,
+      usePointStyle:true,
+      font:{size:10}
+     }
+    }
+   },
+   scales:{
+    x:{ticks:{color:"#777",maxTicksLimit:8},grid:{color:"#252a37"}},
+    y:{beginAtZero:true,ticks:{display:false},grid:{color:"#252a37"}}
+   }
+  }
+ })
 }
+
 window.deleteEvent=deleteEvent;
 window.addEventListener("resize",()=>document.querySelectorAll(".t-arrow").forEach(placeTacticArrow));
 
 /* ==========================================
-   Voice-First 音声感情検知（三賢者最終確定版）
+   Voice-First 音声感情検知
    ========================================== */
 let isVoiceActive = false;
 let voiceRecognition = null;
@@ -257,7 +348,6 @@ function initVoiceRecognition() {
   voiceRecognition.continuous = true;
   voiceRecognition.interimResults = false;
 
-  // 重複発火防止 & isFinal チェック
   voiceRecognition.onresult = (event) => {
     const lastResultIndex = event.results.length - 1;
     if (event.results[lastResultIndex] && !event.results[lastResultIndex].isFinal) return;
@@ -269,7 +359,6 @@ function initVoiceRecognition() {
     processVoiceResult(rawText);
   };
 
-  // 300msディレイの安定再起動
   voiceRecognition.onend = () => {
     if (isVoiceActive) {
       setTimeout(() => {
@@ -284,11 +373,9 @@ function initVoiceRecognition() {
 function processVoiceResult(rawText) {
   let commentText = rawText;
 
-  // 1. ゆらぎ自動補正
   if (commentText.includes("欲しい")) commentText = commentText.replace(/欲しい/g, "惜しい");
   if (commentText.includes("カウント")) commentText = commentText.replace(/カウント/g, "カウンター");
 
-  // 2. 感情タグ判定（フル文字列指定でグラフ・UI非崩れ保証）
   let kind = "🤖 AIにお任せ";
   if (VOICE_DICTIONARY.hot.some(w => commentText.includes(w))) {
     kind = "🔥 ナイスプレー";
@@ -298,17 +385,11 @@ function processVoiceResult(rawText) {
     kind = "😳 マジで";
   }
 
-  // 3. タイムスタンプ（三賢者合意：nowTime() - 1 秒戻し）
   const voiceTime = typeof nowTime === "function" ? Math.max(0, nowTime() - 1) : 0;
-
-  // 4. デバッグ用ログ出力
   console.log("[PULSE VOICE LOG]", { rawText, kind, commentText, voiceTime });
-
-  // 5. 既存 addEvent への受け渡し
   addEvent(kind, commentText, voiceTime);
 }
 
-// ボタンON/OFF制御
 const voiceBtn = document.getElementById("voiceBtn");
 if (voiceBtn) {
   voiceBtn.onclick = async () => {
@@ -336,7 +417,6 @@ if (voiceBtn) {
 
 initMatch();
 
-// ▼ Android端末の非表示処理
 document.addEventListener('DOMContentLoaded', () => {
   const isAndroid = /Android/i.test(navigator.userAgent);
   if (isAndroid) {
@@ -346,6 +426,10 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('[PULSE VOICE] Android端末のため音声ボタンを非表示にしました');
     }
   }
+});
+
+window.addEventListener('beforeunload', () => {
+  if (supa && realtimeChannel) supa.removeChannel(realtimeChannel);
 });
 </script>
 </body></html>
