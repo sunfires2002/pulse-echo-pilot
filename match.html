@@ -1,40 +1,73 @@
-<div class="pulse-app">
-  <!-- 左カラム（コンパクト時は全体 / スプリット時は左側） -->
-  <div class="left-column">
-    <div class="video-shell">
-      <!-- 16:9 保持のYouTube Player -->
-      <iframe src="..." frameborder="0" allowfullscreen></iframe>
-    </div>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PULSE ECHO - Match View</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-    <div class="controls-container">
-      <!-- Primary: 音声入力 -->
-      <button class="btn-primary-voice">🎙️ 音声入力をスタート</button>
-
-      <!-- Secondary: 感情ボタン -->
-      <div class="emotion-group">
-        <button class="btn-emotion">🔥 ナイス</button>
-        <button class="btn-emotion">😢 惜しい</button>
-        <button class="btn-emotion">😅 あちゃー</button>
-        <button class="btn-emotion">😳 マジで</button>
+  <div class="pulse-app">
+    <!-- 左カラム（コンパクト時は全体 / スプリット時は左側） -->
+    <div class="left-column">
+      <div class="video-shell">
+        <!-- 16:9 保持のYouTube Player -->
+        <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID" frameborder="0" allowfullscreen></iframe>
       </div>
 
-      <!-- Tertiary: サブ機能 -->
-      <div class="sub-actions">
-        <button class="btn-tertiary">🤖 AIにお任せ</button>
-        <button class="btn-tertiary">🎯 ここな！</button>
+      <div class="controls-container">
+        <!-- Primary: 音声入力 -->
+        <button class="btn-primary-voice">🎙️ 音声入力をスタート</button>
+
+        <!-- Secondary: 感情ボタン -->
+        <div class="emotion-group">
+          <button class="btn-emotion">🔥 ナイス</button>
+          <button class="btn-emotion">😢 惜しい</button>
+          <button class="btn-emotion">😅 あちゃー</button>
+          <button class="btn-emotion">😳 マジで</button>
+        </div>
+
+        <!-- Tertiary: サブ機能 -->
+        <div class="sub-actions">
+          <button class="btn-tertiary">🤖 AIにお任せ</button>
+          <button class="btn-tertiary">🎯 ここな！</button>
+        </div>
+      </div>
+
+      <!-- Compact UI用 タブ切り替えボタン（スマホ時のみ表示） -->
+      <div class="compact-tab-bar">
+        <button class="tab-btn active" onclick="toggleTimeline(false)">操作パネル</button>
+        <button class="tab-btn" onclick="toggleTimeline(true)">📊 タイムライン</button>
       </div>
     </div>
 
-    <!-- Compact UI用 タブ切り替えボタン（スマホ時のみ表示） -->
-    <div class="compact-tab-bar">
-      <button class="tab-btn active" onclick="toggleTimeline(false)">操作パネル</button>
-      <button class="tab-btn" onclick="toggleTimeline(true)">📊 タイムライン</button>
+    <!-- 右カラム（コンパクト時はタブ切替 / スプリット時は常時右側表示） -->
+    <div class="right-column timeline-panel" id="timelinePanel">
+      <div class="reaction-map">/* 反応マップ */</div>
+      <div class="echo-timeline">/* ECHO TIMELINE */</div>
     </div>
   </div>
 
-  <!-- 右カラム（コンパクト時はタブ切替 / スプリット時は常時右側表示） -->
-  <div class="right-column timeline-panel" id="timelinePanel">
-    <div class="reaction-map">/* 反応マップ */</div>
-    <div class="echo-timeline">/* ECHO TIMELINE */</div>
-  </div>
-</div>
+  <!-- スマホ用 タブ切り替え制御スクリプト -->
+  <script>
+    function toggleTimeline(showTimeline) {
+      const panel = document.getElementById('timelinePanel');
+      const tabs = document.querySelectorAll('.tab-btn');
+      const controls = document.querySelector('.controls-container');
+
+      if (showTimeline) {
+        panel.classList.add('active');
+        controls.style.display = 'none'; // タイムライン表示時は操作パネルを非表示
+        tabs[0].classList.remove('active');
+        tabs[1].classList.add('active');
+      } else {
+        panel.classList.remove('active');
+        controls.style.display = 'block'; // 操作パネルを表示
+        tabs[0].classList.add('active');
+        tabs[1].classList.remove('active');
+      }
+    }
+  </script>
+</body>
+</html>
