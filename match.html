@@ -4,8 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PULSE ECHO - Match View</title>
-  <link rel="stylesheet" href="style.css">
   <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #0b1329;
+      color: #fff;
+      font-family: sans-serif;
+    }
+
     .pulse-app {
       display: flex;
       flex-direction: column;
@@ -13,8 +24,6 @@
       padding: 12px;
       max-width: 1400px;
       margin: 0 auto;
-      color: #fff;
-      background-color: #0f172a;
       min-height: 100vh;
     }
 
@@ -34,30 +43,30 @@
 
     .btn-primary-voice {
       width: 100%;
-      padding: 16px;
-      font-size: 1.1rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: bold;
+      background: #1d4ed8;
       color: #fff;
       border: none;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      border-radius: 10px;
       cursor: pointer;
     }
 
     .emotion-group {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin: 12px 0;
+      gap: 6px;
+      margin: 10px 0;
     }
 
     .btn-emotion {
-      padding: 12px 8px;
-      font-size: 0.9rem;
-      background: rgba(255, 255, 255, 0.1);
+      padding: 10px 4px;
+      font-size: 0.8rem; /* 文字がはみ出ないよう調整 */
+      white-space: nowrap; /* 改行を防止 */
+      background: #1e293b;
       color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid #334155;
       border-radius: 8px;
       cursor: pointer;
     }
@@ -71,15 +80,18 @@
       flex: 1;
       padding: 8px;
       font-size: 0.8rem;
-      background: rgba(255, 255, 255, 0.08);
+      background: #1e293b;
       color: #94a3b8;
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      border: 1px solid #334155;
       border-radius: 8px;
       cursor: pointer;
     }
 
     .timeline-panel {
       display: none;
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 16px;
     }
 
     .timeline-panel.active {
@@ -89,13 +101,13 @@
     .compact-tab-bar {
       display: flex;
       gap: 8px;
-      margin-top: 12px;
+      margin-top: 8px;
     }
 
     .tab-btn {
       flex: 1;
       padding: 10px;
-      background: rgba(255, 255, 255, 0.1);
+      background: #1e293b;
       color: #94a3b8;
       border: none;
       border-radius: 8px;
@@ -108,12 +120,13 @@
       color: #fff;
     }
 
+    /* 900px以上の横画面：スプリット表示 */
     @media (min-width: 900px) and (orientation: landscape) {
       .pulse-app {
         display: grid;
-        grid-template-columns: 1fr 360px;
+        grid-template-columns: 1fr 340px;
         gap: 16px;
-        height: 100dvh;
+        height: 100vh;
       }
 
       .left-column {
@@ -125,9 +138,6 @@
 
       .timeline-panel {
         display: block !important;
-        background: #1e293b;
-        border-radius: 16px;
-        padding: 16px;
         overflow-y: auto;
       }
 
@@ -135,23 +145,19 @@
         display: none;
       }
     }
-  </style>  
+  </style>
 </head>
 <body>
 
   <div class="pulse-app">
-    <!-- 左カラム（コンパクト時は全体 / スプリット時は左側） -->
     <div class="left-column">
       <div class="video-shell">
-        <!-- 16:9 保持のYouTube Player -->
-        <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID" frameborder="0" allowfullscreen></iframe>
+        <iframe id="player" src="https://www.youtube.com/embed/YOUR_VIDEO_ID" frameborder="0" allowfullscreen></iframe>
       </div>
 
-      <div class="controls-container">
-        <!-- Primary: 音声入力 -->
+      <div class="controls-container" id="controlsContainer">
         <button class="btn-primary-voice">🎙️ 音声入力をスタート</button>
 
-        <!-- Secondary: 感情ボタン -->
         <div class="emotion-group">
           <button class="btn-emotion">🔥 ナイス</button>
           <button class="btn-emotion">😢 惜しい</button>
@@ -159,42 +165,41 @@
           <button class="btn-emotion">😳 マジで</button>
         </div>
 
-        <!-- Tertiary: サブ機能 -->
         <div class="sub-actions">
           <button class="btn-tertiary">🤖 AIにお任せ</button>
           <button class="btn-tertiary">🎯 ここな！</button>
         </div>
       </div>
 
-      <!-- Compact UI用 タブ切り替えボタン（スマホ時のみ表示） -->
       <div class="compact-tab-bar">
         <button class="tab-btn active" onclick="toggleTimeline(false)">操作パネル</button>
         <button class="tab-btn" onclick="toggleTimeline(true)">📊 タイムライン</button>
       </div>
     </div>
 
-    <!-- 右カラム（コンパクト時はタブ切替 / スプリット時は常時右側表示） -->
+    <!-- 実際のデータが入る右カラムエリア -->
     <div class="right-column timeline-panel" id="timelinePanel">
-      <div class="reaction-map">/* 反応マップ */</div>
-      <div class="echo-timeline">/* ECHO TIMELINE */</div>
+      <h3>ヒートマップ</h3>
+      <div id="reactionMap"><!-- ここにSupabaseのヒートマップ描画処理が入る --></div>
+      <h3 style="margin-top:16px;">タイムライン</h3>
+      <div id="echoTimeline"><!-- ここにSupabaseのタイムラインリストが入る --></div>
     </div>
   </div>
 
-  <!-- スマホ用 タブ切り替え制御スクリプト -->
   <script>
     function toggleTimeline(showTimeline) {
       const panel = document.getElementById('timelinePanel');
+      const controls = document.getElementById('controlsContainer');
       const tabs = document.querySelectorAll('.tab-btn');
-      const controls = document.querySelector('.controls-container');
 
       if (showTimeline) {
         panel.classList.add('active');
-        controls.style.display = 'none'; // タイムライン表示時は操作パネルを非表示
+        controls.style.display = 'none';
         tabs[0].classList.remove('active');
         tabs[1].classList.add('active');
       } else {
         panel.classList.remove('active');
-        controls.style.display = 'block'; // 操作パネルを表示
+        controls.style.display = 'block';
         tabs[0].classList.add('active');
         tabs[1].classList.remove('active');
       }
