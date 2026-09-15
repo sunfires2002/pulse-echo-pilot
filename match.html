@@ -1,340 +1,351 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PULSE ECHO - Voice Lab</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --fire: #ff4757;
-      --sweat: #70a1ff;
-      --shock: #ffa502;
-      --bot: #2ed573;
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080a10"><title>試合を見る | PULSE ECHO</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<header class="site-header"><div class="container nav"><a class="brand" href="./">PULSE <span>ECHO</span></a><nav class="navlinks"><a href="./">試合一覧</a></nav></div></header>
+<main><div class="container match-hero"></div>
+<section class="section" style="padding-top:10px"><div class="container">
+<div class="viewer-layout">
+<div class="viewer-card">
+<div class="tabs" id="tabs" aria-hidden="true"></div>
+<div class="video-shell" id="videoShell"><div id="player"></div><div class="comment-overlay" id="overlay"></div><div class="tactical-layer" id="tacticalLayer" aria-label="戦術レビュー"></div></div>
+<div class="echo-visibility"><label><input type="checkbox" id="echoVisible" checked> みんなの足跡を表示</label></div>
+<div class="mobile-panel-tabs" aria-label="スマホ表示切替"><button class="mobile-panel-tab active" data-mobile-panel="react" type="button">反応する</button><button class="mobile-panel-tab" data-mobile-panel="map" type="button">反応マップ</button><button class="mobile-panel-tab" data-mobile-panel="timeline" type="button">タイムライン</button></div>
+<div class="controls">
+<div class="inputs"><input class="input" id="userName" placeholder="名前を入力"><input class="input" id="commentText" placeholder="この瞬間に一言…"><button class="btn btn-primary" id="commentBtn">💬 残す</button></div>
+<div class="reactions"><button class="react hot" id="niceButton" data-kind="🔥 ナイスプレー">🔥 ナイスプレー</button><button class="react miss" data-kind="😫 惜しい">😫 惜しい</button><button class="react laugh" data-kind="😅 あちゃー">😅 あちゃー</button><button class="react respect" data-kind="😳 マジで">😳 マジで</button></div>
+<div class="nice-options" id="niceOptions" aria-hidden="true"><button class="nice-chip" data-kind="🔥 ナイスシュート" type="button">ナイスシュート</button><button class="nice-chip" data-kind="🔥 ナイスキーパー" type="button">ナイスキーパー</button><button class="nice-chip" data-kind="🔥 ナイスパス" type="button">ナイスパス</button><button class="nice-chip" data-kind="🔥 ナイス守備" type="button">ナイス守備</button></div>
+
+<!-- 🎙️ 音声入力ボタン -->
+<div class="voice-control-wrap" style="margin-top: 10px;">
+  <button class="btn voice-btn" id="voiceBtn" type="button" style="width:100%; padding:12px; font-size:0.92rem; background:linear-gradient(135deg, #10b981, #059669); color:#ffffff; font-weight:950; border:0; border-radius:10px; cursor:pointer; transition:all 0.2s;">
+    🎙️ 音声入力をスタート（動画再生して叫ぶだけ！）
+  </button>
+</div>
+
+<div class="utility-actions"><button class="react ai" data-kind="🤖 AIにお任せ" type="button">🤖 AIにお任せ</button><button class="btn tactic-toggle" id="tacticToggle" type="button">🎯 ここな！</button></div>
+<div class="tactical-controls" id="tacticalControls"><button class="btn tactic-only active" data-review="actual" type="button">実際の動き</button><button class="btn tactic-only" data-review="ideal" type="button">理想の動き</button><button class="btn tactic-only" data-tactic="home" type="button">味方</button><button class="btn tactic-only" data-tactic="away" type="button">相手</button><button class="btn tactic-only" data-tactic="ball" type="button">ボール</button><button class="btn tactic-only" data-tactic="pass" type="button">パス</button><button class="btn tactic-only" data-tactic="move" type="button">移動</button><button class="btn tactic-only" data-tactic="dribble" type="button">ドリブル</button><button class="btn tactic-only" data-tactic="shot" type="button">シュート</button><button class="btn tactic-only" id="tacticMemo" type="button">メモ</button><button class="btn tactic-only" id="tacticReset" type="button">初期配置</button><button class="btn tactic-only" id="tacticDelete" type="button">削除</button></div>
+</div>
+<div class="scoreboard" id="scoreboard"></div>
+</div>
+<aside class="side-stack">
+<div class="landscape-btns" aria-label="横画面リアクション"><button class="landscape-btn hot" data-kind="🔥 ナイスプレー" data-offset="4" type="button">🔥</button><button class="landscape-btn miss" data-kind="😫 惜しい" data-offset="3" type="button">😫</button><button class="landscape-btn laugh" data-kind="😅 あちゃー" data-offset="3" type="button">😅</button><button class="landscape-btn respect" data-kind="😳 マジで" data-offset="2" type="button">😳</button></div>
+<div class="info-tabs" aria-label="表示切替"><button class="info-tab active" data-info-tab="map" type="button">反応マップ</button><button class="info-tab" data-info-tab="timeline" type="button">タイムライン</button></div>
+<div class="heatmap info-panel is-active" data-info-panel="map"><div class="heat-title">📊 みんなの反応マップ</div><canvas id="chart" height="120"></canvas></div>
+<aside class="timeline-card info-panel" data-info-panel="timeline"><div class="timeline-title">ECHO TIMELINE</div>
+<div class="filter"><select class="input" id="viewFilter"><option value="all">👁️ 全員の熱量を表示</option></select></div>
+<div class="timeline" id="timeline"><div class="muted">思い出を読み込み中…</div></div></aside>
+</aside>
+</div></div></section></main>
+<footer class="footer"><div class="container">PULSE ECHO — 鼓動が、記憶になる。</div></footer>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="config.js"></script><script src="data.js"></script>
+<script>
+const qs=new URLSearchParams(location.search), id=qs.get("id");
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const cfg=window.PULSE_CONFIG||{};
+let supa=null;
+if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase) supa=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
+const matchesTable=()=>cfg.matchesTableName||"pulse_matches";
+const reactionTable=()=>cfg.tableName||"futsal_goods";
+let match=null,videos=[],currentPart="前半",player,events=[],chart,youtubeReady=false,echoTimer=null,echoPlayed=new Set(),recentManualEchoes=[];
+const tactic={open:false,tool:"move",review:"actual",selected:null,drag:null,arrow:null,counts:{home:0,away:0,ball:0},actions:{actual:{pass:0,move:0},ideal:{pass:0,move:0}}};
+function localMatches(){
+ try{
+  const saved=JSON.parse(localStorage.getItem("pulse_echo_workflow_v3")||"null");
+  if(saved&&Array.isArray(saved.matches))return saved.matches.map(m=>{const x={...m};delete x.workflow;return x});
+ }catch{}
+ return null;
+}
+async function cloudMatches(){
+ if(!supa)return null;
+ const {data,error}=await supa.from(matchesTable()).select("id,data,updated_at");
+ if(error){console.warn("Supabase matches error",error);return null}
+ return data&&data.length?data.map(row=>({id:row.id,...row.data})):null;
+}
+const videoId=v=>{if(!v)return"";let s=String(v);try{let u=new URL(s);return u.hostname.includes("youtu.be")?u.pathname.slice(1):u.searchParams.get("v")||s}catch{return s}};
+async function initMatch(){
+ const allMatches=(await cloudMatches()||localMatches()||window.PULSE_MATCHES||[]).filter(x=>x.published!==false);
+ match=id?allMatches.find(x=>x.id===id):allMatches[0];
+ if(!match){document.body.innerHTML='<div class="container" style="padding:80px 0"><a class="back" href="./">← 試合一覧へ戻る</a><div class="scoreboard"><p class="muted">この試合は見つかりません。削除されたか、まだ公開されていない可能性があります。</p></div></div>';throw new Error("match not found")}
+ document.title=`${match.home} vs ${match.away} | PULSE ECHO`;
+ document.getElementById("scoreboard").innerHTML=`<div class="match-meta">${esc(match.competition||"MATCH")} ${esc((match.date||"").replaceAll("-","."))}${match.venue?" "+esc(match.venue):""}</div><div class="scoreline"><div class="club">${esc(match.home)}</div><div class="bigscore">${esc(match.homeScore)} - ${esc(match.awayScore)}</div><div class="club">${esc(match.away)}</div></div>${match.description?`<p class="muted">${esc(match.description)}</p>`:""}`;
+ videos=[["前半",match.firstHalfVideo],["後半",match.secondHalfVideo],["ハイライト",match.highlightVideo]].filter(x=>x[1]);
+ currentPart=videos[0]?.[0]||"前半";
+ document.getElementById("tabs").innerHTML=videos.map((v,i)=>`<button class="tab ${i===0?"active":""}" data-label="${esc(v[0])}" data-video="${esc(videoId(v[1]))}">${esc(v[0])}</button>`).join("");
+ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");currentPart=b.dataset.label;closeTactics();loadVideo(b.dataset.video);loadEvents(true)});
+ if(youtubeReady&&videos[0])loadVideo(videoId(videos[0][1]));
+ loadEvents(true);
+}
+function onYouTubeIframeAPIReady(){youtubeReady=true;if(match&&videos[0])loadVideo(videoId(videos[0][1]));if(match)loadEvents(true)}
+function loadVideo(v){if(!v)return;echoPlayed.clear();if(player&&player.loadVideoById)player.loadVideoById(v);else player=new YT.Player("player",{videoId:v,playerVars:{playsinline:1,rel:0,autoplay:0},events:{onReady:startEchoPlayback,onStateChange:startEchoPlayback}})}
+const key=()=>`pulse_echo_${match.id}_${currentPart}`;
+function nowTime(back=0){try{return Math.max(0,Math.floor((player.getCurrentTime()||0)-back))}catch{return 0}}
+function fmt(s){s=Number(s)||0;return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`}
+function tacticLayer(){return document.getElementById("tacticalLayer")}
+function tacticPoint(e){const r=tacticLayer().getBoundingClientRect();return{x:Math.max(0,Math.min(r.width,e.clientX-r.left)),y:Math.max(0,Math.min(r.height,e.clientY-r.top)),r}}
+function tacticPct(p){return{x:p.x/p.r.width*100,y:p.y/p.r.height*100}}
+function tacticSelect(el){if(tactic.selected)tactic.selected.classList.remove("selected");tactic.selected=el;if(el)el.classList.add("selected")}
+function placeTactic(el){el.style.left=el.dataset.x+"%";el.style.top=el.dataset.y+"%"}
+function placeTacticArrow(el){const l=tacticLayer(),w=l.clientWidth,h=l.clientHeight,x1=+el.dataset.x1/100*w,y1=+el.dataset.y1/100*h,x2=+el.dataset.x2/100*w,y2=+el.dataset.y2/100*h,dx=x2-x1,dy=y2-y1;el.style.left=x1+"px";el.style.top=y1+"px";el.style.width=Math.max(18,Math.hypot(dx,dy))+"px";el.style.transform=`rotate(${Math.atan2(dy,dx)*180/Math.PI}deg)`}
+function addTacticPiece(type,x=50,y=50,label=null){tactic.counts[type]=(tactic.counts[type]||0)+1;const el=document.createElement("div");el.className=`t-piece ${type}`;el.dataset.kind="piece";el.dataset.type=type;el.dataset.x=x;el.dataset.y=y;el.textContent=label||type==="ball"?"●":tactic.counts[type];if(label)el.textContent=label;tacticLayer().appendChild(el);placeTactic(el);return el}
+function addTacticMemo(text,x=50,y=50){const el=document.createElement("div");el.className="t-memo";el.dataset.kind="memo";el.dataset.x=x;el.dataset.y=y;el.textContent=text||"メモ";tacticLayer().appendChild(el);placeTactic(el);return el}
+function nextTacticOrder(type,review){
+ const used=Array.from(tacticLayer().querySelectorAll(`.t-arrow[data-type="${type}"][data-review="${review}"]`)).map(el=>Number(el.dataset.order)).filter(Boolean);
+ let n=1;while(used.includes(n))n++;
+ if(!tactic.actions[review])tactic.actions[review]={pass:0,move:0};
+ tactic.actions[review][type]=Math.max(tactic.actions[review][type]||0,n);
+ return n
+}
+function addTacticArrow(x1,y1,x2,y2){const el=document.createElement("div"),numbered=["pass","move"].includes(tactic.tool);el.className=`t-arrow ${tactic.tool} ${tactic.review}`;el.dataset.kind="arrow";el.dataset.type=tactic.tool;el.dataset.review=tactic.review;el.dataset.order=numbered?nextTacticOrder(tactic.tool,tactic.review):"";el.dataset.x1=x1;el.dataset.y1=y1;el.dataset.x2=x2;el.dataset.y2=y2;tacticLayer().appendChild(el);placeTacticArrow(el);return el}
+function resetTactics(){const layer=tacticLayer();layer.innerHTML='<div class="tactic-circle"></div><div class="tactic-goal left"></div><div class="tactic-goal right"></div>';tactic.counts={home:0,away:0,ball:0};tactic.actions={actual:{pass:0,move:0},ideal:{pass:0,move:0}};tacticSelect(null);[[24,30],[36,44],[36,60],[53,38],[53,64]].forEach(p=>addTacticPiece("home",p[0],p[1]));[[74,30],[64,44],[64,60],[48,40],[48,66]].forEach(p=>addTacticPiece("away",p[0],p[1]));addTacticPiece("ball",50,50)}
+function openTactics(seekTime=null,mark=false){const t=seekTime!=null?Math.max(0,Number(seekTime)):mark?Math.max(0,nowTime()-5):nowTime(0);if(player){if(mark||seekTime!=null)player.seekTo(t,true);player.pauseVideo&&player.pauseVideo()}tactic.open=true;document.body.classList.add("tactics-open");document.getElementById("videoShell").classList.add("tactical-on");document.getElementById("tacticalControls").classList.add("is-open");document.getElementById("tacticToggle").textContent="レビュー終了";if(!tacticLayer().querySelector(".t-piece"))resetTactics();if(mark)addEvent("🎯 ここな！",`起点 ${fmt(t)}`,t)}
+function closeTactics(){tactic.open=false;tactic.tool="move";document.body.classList.remove("tactics-open");document.getElementById("videoShell").classList.remove("tactical-on");document.getElementById("tacticalControls").classList.remove("is-open");document.getElementById("tacticToggle").textContent="🎯 ここな！";document.querySelectorAll("[data-tactic]").forEach(b=>b.classList.remove("active"));tacticSelect(null)}
+async function loadEvents(resetEcho=false){
+ if(!match)return;
+ if(supa){const {data,error}=await supa.from(reactionTable()).select("*").eq("video_id",`${match.id}:${currentPart}`).order("good_time",{ascending:true});events=error?[]:(data||[])}
+ else{events=JSON.parse(localStorage.getItem(key())||"[]")}
+ if(resetEcho)echoPlayed.clear();startEchoPlayback();render()
+}
+async function addEvent(kind,comment="",timeOverride=null){
+ const isTactic=kind.startsWith("🎯"),e={good_time:timeOverride??(isTactic?nowTime(0):nowTime(3)),description:kind,user_name:document.getElementById("userName").value.trim()||"匿名",comment,video_id:`${match.id}:${currentPart}`};
+ recentManualEchoes.push({t:e.good_time,d:e.description,c:e.comment,u:e.user_name,expires:Date.now()+5000});
+ if(supa){const {error}=await supa.from(reactionTable()).insert(e);if(error){alert("保存に失敗しました: "+error.message);return}}
+ else{events.push({...e,id:Date.now()});localStorage.setItem(key(),JSON.stringify(events))}
+ fly(comment||kind);document.getElementById("commentText").value="";await loadEvents()
+}
+async function deleteEvent(eventId){
+ const target=events.find(e=>String(e.id)===String(eventId));if(!target)return;
+ if(!confirm(`${fmt(target.good_time)} の反応を削除しますか？`))return;
+ if(supa){const {error}=await supa.from(reactionTable()).delete().eq("id",target.id);if(error){alert("削除に失敗しました: "+error.message);return}}
+ else{events=events.filter(e=>String(e.id)!==String(eventId));localStorage.setItem(key(),JSON.stringify(events))}
+ await loadEvents()
+}
+const niceOptions=document.getElementById("niceOptions");
+function showNiceOptions(){niceOptions.classList.add("is-open");niceOptions.setAttribute("aria-hidden","false")}
+function hideNiceOptions(){niceOptions.classList.remove("is-open");niceOptions.setAttribute("aria-hidden","true")}
+document.querySelectorAll(".react[data-kind]").forEach(b=>b.onclick=()=>{addEvent(b.dataset.kind);if(b.id==="niceButton")showNiceOptions();else hideNiceOptions()});
+document.querySelectorAll(".nice-chip").forEach(b=>b.onclick=()=>{addEvent(b.dataset.kind);hideNiceOptions()});
+document.querySelectorAll(".landscape-btn[data-kind]").forEach(b=>b.onclick=()=>{const offset=Number(b.dataset.offset)||3;addEvent(b.dataset.kind,"",nowTime(offset));b.classList.add("is-hit");setTimeout(()=>b.classList.remove("is-hit"),180)});
+document.getElementById("commentBtn").onclick=()=>{let t=document.getElementById("commentText").value.trim();if(t)addEvent("💬",t)};
+document.getElementById("tacticToggle").onclick=()=>tactic.open?closeTactics():openTactics(null,true);
+document.getElementById("tacticReset").onclick=resetTactics;
+document.getElementById("tacticDelete").onclick=()=>{if(!tactic.selected)return;tactic.selected.remove();tactic.selected=null};
+document.getElementById("tacticMemo").onclick=()=>{openTactics();const text=prompt("戦術メモ")||"";if(text.trim())tacticSelect(addTacticMemo(text.trim(),50,50))};
+document.querySelectorAll("[data-review]").forEach(b=>b.onclick=()=>{openTactics();tactic.review=b.dataset.review;document.querySelectorAll("[data-review]").forEach(x=>x.classList.remove("active"));b.classList.add("active")});
+document.querySelectorAll("[data-tactic]").forEach(b=>b.onclick=()=>{openTactics();const tool=b.dataset.tactic;if(["home","away","ball"].includes(tool)&&tactic.selected&&tactic.selected.dataset.type===tool){const x=Math.min(94,+tactic.selected.dataset.x+7),y=Math.min(94,+tactic.selected.dataset.y+7);tacticSelect(addTacticPiece(tool,x,y,tactic.selected.textContent));return}tactic.tool=tool;document.querySelectorAll("[data-tactic]").forEach(x=>x.classList.remove("active"));b.classList.add("active")});
+tacticLayer().addEventListener("pointerdown",e=>{
+ const target=e.target.closest(".t-piece,.t-arrow,.t-memo"),p=tacticPct(tacticPoint(e));
+ if(["home","away","ball"].includes(tactic.tool)&&!target){tacticSelect(addTacticPiece(tactic.tool,p.x,p.y));return}
+ if(["pass","move","dribble","shot"].includes(tactic.tool)&&!target){tactic.arrow=addTacticArrow(p.x,p.y,p.x,p.y);tacticSelect(tactic.arrow);tacticLayer().setPointerCapture(e.pointerId);return}
+ if(!target){tacticSelect(null);return}
+ tacticSelect(target);
+ if(target.classList.contains("t-piece")||target.classList.contains("t-memo")){tactic.drag={el:target};tacticLayer().setPointerCapture(e.pointerId)}
+});
+tacticLayer().addEventListener("pointermove",e=>{
+ const p=tacticPct(tacticPoint(e));
+ if(tactic.arrow){tactic.arrow.dataset.x2=p.x;tactic.arrow.dataset.y2=p.y;placeTacticArrow(tactic.arrow);return}
+ if(tactic.drag){tactic.drag.el.dataset.x=p.x;tactic.drag.el.dataset.y=p.y;placeTactic(tactic.drag.el)}
+});
+tacticLayer().addEventListener("pointerup",e=>{
+ if(tactic.arrow){if(tactic.arrow.offsetWidth<24)tactic.arrow.remove();tactic.arrow=null}
+ if(tactic.drag){tacticLayer().releasePointerCapture(e.pointerId);tactic.drag=null}
+});
+function fly(t){let d=document.createElement("div");d.className="fly";d.textContent=t;d.style.top=(8+Math.random()*72)+"%";document.getElementById("overlay").appendChild(d);setTimeout(()=>d.remove(),4300)}
+function echoText(e){return e.comment?`${e.user_name||"匿名"}: ${e.comment}`:e.description}
+function isRecentManualEcho(e){
+ const now=Date.now();recentManualEchoes=recentManualEchoes.filter(x=>x.expires>now);
+ return recentManualEchoes.some(x=>x.t===(Number(e.good_time)||0)&&x.d===e.description&&(x.c||"")===(e.comment||"")&&x.u===(e.user_name||"匿名"))
+}
+function startEchoPlayback(){if(echoTimer)return;echoTimer=setInterval(()=>{
+ const visible=document.getElementById("echoVisible");if(!visible||!visible.checked||!player||!player.getCurrentTime)return;
+ const now=Math.floor(player.getCurrentTime()||0);
+ events.forEach((e,i)=>{const t=Number(e.good_time)||0,key=`${e.id||i}:${t}`;if(!echoPlayed.has(key)&&Math.abs(now-t)<=1){echoPlayed.add(key);if(!isRecentManualEcho(e))fly(echoText(e))}})
+},700)}
+document.getElementById("echoVisible").onchange=e=>{if(!e.target.checked)document.getElementById("overlay").innerHTML=""};
+document.body.dataset.mobilePanel="react";
+function setInfoPanel(name){
+ document.querySelectorAll("[data-info-tab]").forEach(x=>x.classList.toggle("active",x.dataset.infoTab===name));
+ document.querySelectorAll("[data-info-panel]").forEach(x=>x.classList.toggle("is-active",x.dataset.infoPanel===name));
+ setTimeout(()=>chart&&chart.resize(),60);
+}
+function setMobilePanel(name){
+ document.body.dataset.mobilePanel=name;
+ document.querySelectorAll("[data-mobile-panel]").forEach(x=>x.classList.toggle("active",x.dataset.mobilePanel===name));
+ if(name==="map"||name==="timeline")setTimeout(()=>chart&&chart.resize(),60);
+}
+document.querySelectorAll("[data-info-tab]").forEach(b=>b.onclick=()=>setInfoPanel(b.dataset.infoTab));
+document.querySelectorAll("[data-mobile-panel]").forEach(b=>b.onclick=()=>setMobilePanel(b.dataset.mobilePanel));
+let swipeStart=null;
+document.querySelector(".viewer-layout").addEventListener("touchstart",e=>{const t=e.touches[0];swipeStart={x:t.clientX,y:t.clientY}}, {passive:true});
+document.querySelector(".viewer-layout").addEventListener("touchend",e=>{
+ if(!swipeStart)return;const t=e.changedTouches[0],dx=t.clientX-swipeStart.x,dy=t.clientY-swipeStart.y;swipeStart=null;
+ if(Math.abs(dx)<48||Math.abs(dx)<Math.abs(dy)*1.25)return;
+ const order=["react","map","timeline"],now=document.body.dataset.mobilePanel||"react",i=order.indexOf(now),next=dx<0?Math.min(order.length-1,i+1):Math.max(0,i-1);
+ setMobilePanel(order[next]);
+}, {passive:true});
+document.getElementById("viewFilter").onchange=render;
+function render(){
+ const names=[...new Set(events.map(e=>e.user_name).filter(Boolean))];const sel=document.getElementById("viewFilter"),old=sel.value;
+ sel.innerHTML='<option value="all">👁️ 全員の熱量を表示</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");if([...sel.options].some(o=>o.value===old))sel.value=old;
+ const f=sel.value==="all"?events:events.filter(e=>e.user_name===sel.value);
+ document.getElementById("timeline").innerHTML=f.length?f.slice().sort((a,b)=>b.good_time-a.good_time).map(e=>`<div class="event" data-time="${e.good_time}"><div class="event-top"><span><b>${fmt(e.good_time)}</b> ${esc(e.description)}</span><span class="event-user">${esc(e.user_name)}</span></div>${e.comment?`<div class="event-comment">${esc(e.comment)}</div>`:""}<button class="event-review" data-time="${esc(e.good_time)}" type="button">戦術レビュー</button><button class="event-delete" data-id="${esc(e.id)}" type="button">削除</button></div>`).join(""):'<div class="muted">まだ足跡はありません。最初の一人になろう。</div>';
+ 
+ // ▼ タイムラインクリック時の処理（動画シーク ＋ 画面への文字強制表示）
+ document.querySelectorAll(".event").forEach(el=>el.onclick=e=>{
+  if(e.target.closest(".event-delete")||e.target.closest(".event-review"))return;
+  const t=Number(el.dataset.time);
+  if(player)player.seekTo(t,true);
+  const targetEvent=events.find(ev=>Number(ev.good_time)===t);
+  if(targetEvent)fly(echoText(targetEvent));
+ });
+ 
+ document.querySelectorAll(".event-review").forEach(b=>b.onclick=e=>{e.stopPropagation();openTactics(b.dataset.time,false)});
+ document.querySelectorAll(".event-delete").forEach(b=>b.onclick=e=>{e.stopPropagation();deleteEvent(b.dataset.id)});
+ draw(f)
+}
+function draw(list){
+ const bins=30,labels=Array.from({length:bins},(_,i)=>i+1),groups=[
+  {label:"🔥 ナイスプレー",color:"#ff4757",match:d=>String(d).startsWith("🔥 ナイス")},
+  {label:"😫 惜しい",color:"#8b5cf6",match:d=>d==="😫 惜しい"},
+  {label:"😅 あちゃー",color:"#ffa502",match:d=>d==="😅 あちゃー"},
+  {label:"😳 マジで",color:"#2ed573",match:d=>d==="😳 マジで"},
+  {label:"🤖 AIにお任せ",color:"#00cec9",match:d=>d==="🤖 AIにお任せ"}
+ ];
+ const ds=groups.map(g=>({label:g.label,data:labels.map((_,i)=>list.filter(e=>g.match(e.description)&&Math.floor((Number(e.good_time)||0)/60)===i).length),borderColor:g.color,backgroundColor:g.color+"33",tension:.35,fill:true}));
+ if(chart)chart.destroy();chart=new Chart(document.getElementById("chart"),{type:"line",data:{labels,datasets:ds},options:{responsive:true,plugins:{legend:{labels:{color:"#aaa"}}},scales:{x:{ticks:{color:"#777",maxTicksLimit:8},grid:{color:"#252a37"}},y:{beginAtZero:true,ticks:{display:false},grid:{color:"#252a37"}}}}})
+}
+window.deleteEvent=deleteEvent;
+window.addEventListener("resize",()=>document.querySelectorAll(".t-arrow").forEach(placeTacticArrow));
+
+/* ==========================================
+   Voice-First 音声感情検知（三賢者最終確定版）
+   ========================================== */
+let isVoiceActive = false;
+let voiceRecognition = null;
+let lastProcessedText = "";
+let wakeLock = null;
+
+const VOICE_DICTIONARY = {
+  hot: ["ナイス", "よっしゃ", "シュート", "ゴール", "入った", "決めた", "いけー", "イケー", "ええぞ"],
+  miss: ["惜しい", "おしい", "あちゃー", "なんでやねん", "ファール", "もったいない", "あーっ"],
+  respect: ["マジで", "マジか", "すごい", "スゴい", "やばい", "ヤバい", "神"]
+};
+
+// 画面消灯防止（Wake Lock）
+async function requestWakeLock() {
+  if ('wakeLock' in navigator) {
+    try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) { console.warn('Wake Lock Error:', err); }
+  }
+}
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release().then(() => { wakeLock = null; }); }
+}
+
+function initVoiceRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert("お使いのブラウザは音声認識に対応していません。（Chrome/Safari推奨）");
+    return;
+  }
+
+  voiceRecognition = new SpeechRecognition();
+  voiceRecognition.lang = 'ja-JP';
+  voiceRecognition.continuous = true;
+  voiceRecognition.interimResults = false;
+
+  // 重複発火防止 & isFinal チェック
+  voiceRecognition.onresult = (event) => {
+    const lastResultIndex = event.results.length - 1;
+    if (event.results[lastResultIndex] && !event.results[lastResultIndex].isFinal) return;
+    
+    const rawText = event.results[lastResultIndex][0].transcript.trim();
+    if (!rawText || rawText === lastProcessedText) return;
+    
+    lastProcessedText = rawText;
+    processVoiceResult(rawText);
+  };
+
+  // 300msディレイの安定再起動
+  voiceRecognition.onend = () => {
+    if (isVoiceActive) {
+      setTimeout(() => {
+        if (isVoiceActive) {
+          try { voiceRecognition.start(); } catch (e) { console.warn("再起動スキップ:", e); }
+        }
+      }, 300);
     }
+  };
+}
 
-    body {
-      margin: 0;
-      padding: 16px;
-      background-color: var(--bg);
-      color: #fff;
-      font-family: system-ui, -apple-system, sans-serif;
-      min-height: 100dvh;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
+function processVoiceResult(rawText) {
+  let commentText = rawText;
 
-    h1 {
-      font-size: 1.1rem;
-      margin-bottom: 2px;
-      color: #94a3b8;
-    }
-    .title {
-      font-size: 1.4rem;
-      font-weight: 800;
-      margin-bottom: 12px;
-    }
+  // 1. ゆらぎ自動補正
+  if (commentText.includes("欲しい")) commentText = commentText.replace(/欲しい/g, "惜しい");
+  if (commentText.includes("カウント")) commentText = commentText.replace(/カウント/g, "カウンター");
 
-    /* 同期ガイド注意書き */
-    .sync-guide {
-      background: rgba(251, 191, 36, 0.15);
-      border: 1px solid #fbbf24;
-      color: #fbbf24;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      font-weight: bold;
-      margin-bottom: 12px;
-      text-align: center;
-      width: 100%;
-      max-width: 400px;
-      box-sizing: border-box;
-    }
+  // 2. 感情タグ判定（フル文字列指定でグラフ・UI非崩れ保証）
+  let kind = "🤖 AIにお任せ";
+  if (VOICE_DICTIONARY.hot.some(w => commentText.includes(w))) {
+    kind = "🔥 ナイスプレー";
+  } else if (VOICE_DICTIONARY.miss.some(w => commentText.includes(w))) {
+    kind = "😅 あちゃー";
+  } else if (VOICE_DICTIONARY.respect.some(w => commentText.includes(w))) {
+    kind = "😳 マジで";
+  }
 
-    /* タイマー＆コントロール */
-    .controls {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 16px;
-      width: 100%;
-      max-width: 400px;
-    }
+  // 3. タイムスタンプ（三賢者合意：nowTime() - 1 秒戻し）
+  const voiceTime = typeof nowTime === "function" ? Math.max(0, nowTime() - 1) : 0;
 
-    button {
-      width: 100%;
-      padding: 16px;
-      border: none;
-      border-radius: 12px;
-      font-size: 1.1rem;
-      font-weight: bold;
-      cursor: pointer;
-      transition: transform 0.1s, background 0.2s;
-    }
-    button:active { transform: scale(0.96); }
+  // 4. デバッグ用ログ出力
+  console.log("[PULSE VOICE LOG]", { rawText, kind, commentText, voiceTime });
 
-    .btn-start { background: #3b82f6; color: white; }
-    .btn-start.listening { background: #ef4444; animation: pulse 1.5s infinite; }
+  // 5. 既存 addEvent への受け渡し
+  addEvent(kind, commentText, voiceTime);
+}
 
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.6; }
-      100% { opacity: 1; }
-    }
+// ボタンON/OFF制御
+const voiceBtn = document.getElementById("voiceBtn");
+if (voiceBtn) {
+  voiceBtn.onclick = async () => {
+    if (!voiceRecognition) initVoiceRecognition();
+    if (!voiceRecognition) return;
 
-    /* 叫んだ瞬間の全画面フィードバック (0.6秒フラッシュ) */
-    .flash-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      background: rgba(0,0,0,0.85);
-      z-index: 999;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.15s ease-out;
-    }
-    .flash-overlay.active {
-      opacity: 1;
-    }
-    .flash-emoji { font-size: 6rem; }
-    .flash-text { font-size: 2rem; font-weight: bold; margin-top: 10px; color: #fff; text-align: center; padding: 0 16px; }
-
-    /* 認識ログエリア */
-    .log-container {
-      width: 100%;
-      max-width: 400px;
-      flex: 1;
-      background: var(--card);
-      border-radius: 16px;
-      padding: 16px;
-      box-sizing: border-box;
-      overflow-y: auto;
-      max-height: 45vh;
-    }
-    .log-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 12px;
-      background: rgba(255,255,255,0.05);
-      border-radius: 10px;
-      margin-bottom: 8px;
-      animation: fadeIn 0.2s ease-out;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-5px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .log-time { font-size: 0.8rem; color: #64748b; font-family: monospace; }
-    .log-emoji { font-size: 1.5rem; }
-    .log-text { font-size: 1rem; font-weight: 600; flex: 1; }
-    .log-tag { font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,0.1); }
-
-    .interim-box {
-      margin-bottom: 8px;
-      font-size: 0.85rem;
-      color: #38bdf8;
-      height: 20px;
-      font-style: italic;
-    }
-  </style>
-</head>
-<body>
-
-  <h1>PULSE ECHO VOICE-FIRST</h1>
-  <div class="title">🎙️ 音声感情検知テスト</div>
-
-  <!-- 修正②: テレビ再生位置との同期ガイド -->
-  <div class="sync-guide">
-    ⏱️ テレビのYouTube動画再生と【同時】にボタンを押してね！
-  </div>
-
-  <div class="controls">
-    <button id="micBtn" class="btn-start">🎙️ 動画再生と同時にスタート</button>
-  </div>
-
-  <div id="interimText" class="interim-box">ボタンを押してテレビに向かって叫んでね！</div>
-
-  <div class="log-container" id="logContainer">
-    <div style="text-align:center; color:#64748b; font-size:0.85rem; padding-top:20px;">
-      「なんでやねん！」「よっしゃー！」「神パス！」など<br>叫んだ言葉が自動でタイムスタンプ付き保存されます！
-    </div>
-  </div>
-
-  <!-- 発言時の瞬間フラッシュ画面 -->
-  <div class="flash-overlay" id="flashOverlay">
-    <div class="flash-emoji" id="flashEmoji">🔥</div>
-    <div class="flash-text" id="flashText">ナイスー！</div>
-  </div>
-
-  <script>
-    // 辞書設定
-    const DICTIONARY = [
-      {
-        emoji: "🔥",
-        bg: "#ff4757",
-        keywords: ["よっしゃ", "よし", "神", "ナイス", "ナイスー", "いけ", "すごい", "ゴール", "入った", "うま", "完璧", "きた"],
-        defaultTag: "#神プレー"
-      },
-      {
-        emoji: "😅",
-        bg: "#70a1ff",
-        // 修正①: 「ドマイ」→「どんまい」に修正！
-        keywords: ["なんでやねん", "なんで", "あちゃ", "やってもた", "あかん", "おしい", "惜しい", "ミス", "うそやん", "まじか", "どんまい"],
-        defaultTag: "#なんでやねん"
-      },
-      {
-        emoji: "😳",
-        bg: "#ffa502",
-        keywords: ["マジ", "まじ", "えぐ", "エグい", "やば", "ヤバい", "うそろ", "嘘だろ", "は？"],
-        defaultTag: "#マジか"
-      },
-      {
-        emoji: "🤖",
-        bg: "#2ed573",
-        keywords: ["シュート", "パス", "キーパー", "カット", "コーナー", "ファール", "カウンター"],
-        defaultTag: "#事実タグ"
-      }
-    ];
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      alert("お使いのブラウザは音声認識機能に対応していません。ChromeまたはSafariでお試しください！");
+    isVoiceActive = !isVoiceActive;
+    if (isVoiceActive) {
+      try {
+        voiceRecognition.start();
+        await requestWakeLock();
+        voiceBtn.style.background = "linear-gradient(135deg, #ef4444, #dc2626)";
+        voiceBtn.style.color = "#ffffff";
+        voiceBtn.textContent = "🛑 音声入力中（画面を見ずに叫んでOK！）";
+      } catch(e){ console.error(e); }
     } else {
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'ja-JP';
-      recognition.continuous = true;
-      recognition.interimResults = true;
-
-      let isListening = false;
-      let startTime = null;
-
-      const micBtn = document.getElementById('micBtn');
-      const interimText = document.getElementById('interimText');
-      const logContainer = document.getElementById('logContainer');
-      const flashOverlay = document.getElementById('flashOverlay');
-      const flashEmoji = document.getElementById('flashEmoji');
-      const flashText = document.getElementById('flashText');
-
-      micBtn.addEventListener('click', () => {
-        if (!isListening) {
-          recognition.start();
-          startTime = new Date();
-          isListening = true;
-          micBtn.textContent = "🛑 測定中（テレビに向かって叫んで！）";
-          micBtn.classList.add('listening');
-        } else {
-          recognition.stop();
-          isListening = false;
-          micBtn.textContent = "🎙️ 動画再生と同時にスタート";
-          micBtn.classList.remove('listening');
-        }
-      });
-
-      recognition.onend = () => {
-        if (isListening) recognition.start();
-      };
-
-      recognition.onresult = (event) => {
-        let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            const finalSpeech = event.results[i][0].transcript.trim();
-            if (finalSpeech.length > 0) {
-              processSpeech(finalSpeech);
-            }
-          } else {
-            interim += event.results[i][0].transcript;
-          }
-        }
-        interimText.textContent = interim ? `🎤 聞き取り中: ${interim}` : '🎤 テレビに向かって叫んで！';
-      };
-
-      function processSpeech(text) {
-        let matchedEmotion = null;
-
-        for (const item of DICTIONARY) {
-          for (const kw of item.keywords) {
-            if (text.includes(kw)) {
-              matchedEmotion = {
-                emoji: item.emoji,
-                bg: item.bg,
-                tag: `#${kw}`,
-                text: text
-              };
-              break;
-            }
-          }
-          if (matchedEmotion) break;
-        }
-
-        if (!matchedEmotion) {
-          matchedEmotion = {
-            emoji: "🤖",
-            bg: "#2ed573",
-            tag: "#ボイス",
-            text: text
-          };
-        }
-
-        triggerFlash(matchedEmotion);
-        addLog(matchedEmotion);
-      }
-
-      function triggerFlash(data) {
-        flashEmoji.textContent = data.emoji;
-        flashText.textContent = data.text;
-        flashOverlay.style.background = data.bg + "ee";
-        flashOverlay.classList.add('active');
-
-        setTimeout(() => {
-          flashOverlay.classList.remove('active');
-        }, 600);
-      }
-
-      function addLog(data) {
-        const now = new Date();
-        const diffSec = Math.floor((now - startTime) / 1000);
-        const min = String(Math.floor(diffSec / 60)).padStart(2, '0');
-        const sec = String(diffSec % 60).padStart(2, '0');
-        const timeStr = `${min}:${sec}`;
-
-        const item = document.createElement('div');
-        item.className = 'log-item';
-        item.innerHTML = `
-          <div class="log-time">${timeStr}</div>
-          <div class="log-emoji">${data.emoji}</div>
-          <div class="log-text">${data.text}</div>
-          <div class="log-tag">${data.tag}</div>
-        `;
-
-        if (logContainer.children.length === 1 && logContainer.children[0].tagName === 'DIV' && logContainer.children[0].style.textAlign === 'center') {
-          logContainer.innerHTML = '';
-        }
-
-        logContainer.insertBefore(item, logContainer.firstChild);
-
-        // 修正③: 今後のSupabase保存用のTODO領域
-        /* TODO: Supabase保存処理
-        const { error } = await supabase
-          .from('futsal_goods')
-          .insert({
-            video_id: videoId,         // 試合のYouTube ID
-            good_time: diffSec,        // 動画の経過秒数
-            description: data.emoji,   // 感情スタンプ (🔥 😅 😳 🤖)
-            user_name: userName,       // 発言者名（「俺やで」で設定した名前）
-            comment: data.text         // 拾った音声テキスト
-          });
-        */
-      }
+      try { voiceRecognition.stop(); } catch(e){}
+      releaseWakeLock();
+      voiceBtn.style.background = "linear-gradient(135deg, #10b981, #059669)";
+      voiceBtn.style.color = "#ffffff";
+      voiceBtn.textContent = "🎙️ 音声入力をスタート（動画再生して叫ぶだけ！）";
     }
-  </script>
-</body>
-</html>
+  };
+}
+
+initMatch();
+
+// ▼ Android端末の非表示処理
+document.addEventListener('DOMContentLoaded', () => {
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  if (isAndroid) {
+    const voiceBtn = document.getElementById('voiceBtn');
+    if (voiceBtn) {
+      voiceBtn.style.display = 'none';
+      console.log('[PULSE VOICE] Android端末のため音声ボタンを非表示にしました');
+    }
+  }
+});
+</script>
+</body></html>
