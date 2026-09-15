@@ -271,22 +271,49 @@ function render(){
  document.querySelectorAll(".event-delete").forEach(b=>b.onclick=e=>{e.stopPropagation();deleteEvent(b.dataset.id)});
  draw(f)
 }
+
+/* 📊 反応マップ（Chart.js）描画関数：凡例ズレ修正版 */
 function draw(list){
  const bins=30,labels=Array.from({length:bins},(_,i)=>i+1),groups=[
-  {label:"🔥 ナイスプレー",color:"#ff4757",match:d=>String(d).startsWith("🔥 ナイス")},
+  {label:"🔥 ナイス",color:"#ff4757",match:d=>String(d).startsWith("🔥 ナイス")},
   {label:"😫 惜しい",color:"#8b5cf6",match:d=>d==="😫 惜しい"},
   {label:"😅 あちゃー",color:"#ffa502",match:d=>d==="😅 あちゃー"},
   {label:"😳 マジで",color:"#2ed573",match:d=>d==="😳 マジで"},
-  {label:"🤖 AIにお任せ",color:"#00cec9",match:d=>d==="🤖 AIにお任せ"}
+  {label:"🤖 AI任せ",color:"#00cec9",match:d=>d==="🤖 AIにお任せ"}
  ];
  const ds=groups.map(g=>({label:g.label,data:labels.map((_,i)=>list.filter(e=>g.match(e.description)&&Math.floor((Number(e.good_time)||0)/60)===i).length),borderColor:g.color,backgroundColor:g.color+"33",tension:.35,fill:true}));
- if(chart)chart.destroy();chart=new Chart(document.getElementById("chart"),{type:"line",data:{labels,datasets:ds},options:{responsive:true,plugins:{legend:{labels:{color:"#aaa"}}},scales:{x:{ticks:{color:"#777",maxTicksLimit:8},grid:{color:"#252a37"}},y:{beginAtZero:true,ticks:{display:false},grid:{color:"#252a37"}}}}})
+ if(chart)chart.destroy();
+ chart=new Chart(document.getElementById("chart"),{
+  type:"line",
+  data:{labels,datasets:ds},
+  options:{
+   responsive:true,
+   plugins:{
+    legend:{
+     display:true,
+     labels:{
+      color:"#aaa",
+      boxWidth:8,
+      boxHeight:8,
+      padding:6,
+      usePointStyle:true,
+      font:{size:10}
+     }
+    }
+   },
+   scales:{
+    x:{ticks:{color:"#777",maxTicksLimit:8},grid:{color:"#252a37"}},
+    y:{beginAtZero:true,ticks:{display:false},grid:{color:"#252a37"}}
+   }
+  }
+ })
 }
+
 window.deleteEvent=deleteEvent;
 window.addEventListener("resize",()=>document.querySelectorAll(".t-arrow").forEach(placeTacticArrow));
 
 /* ==========================================
-   Voice-First 音声感情検知（三賢者最終確定版）
+   Voice-First 音声感情検知
    ========================================== */
 let isVoiceActive = false;
 let voiceRecognition = null;
