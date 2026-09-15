@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PULSE ECHO - Match View</title>
   <link rel="stylesheet" href="style.css">
-<style>
+  <style>
     .pulse-app {
       display: flex;
       flex-direction: column;
@@ -13,6 +13,9 @@
       padding: 12px;
       max-width: 1400px;
       margin: 0 auto;
+      color: #fff;
+      background-color: #0f172a;
+      min-height: 100vh;
     }
 
     .video-shell {
@@ -39,6 +42,7 @@
       border: none;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      cursor: pointer;
     }
 
     .emotion-group {
@@ -46,6 +50,16 @@
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
       margin: 12px 0;
+    }
+
+    .btn-emotion {
+      padding: 12px 8px;
+      font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      cursor: pointer;
     }
 
     .sub-actions {
@@ -61,6 +75,7 @@
       color: #94a3b8;
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 8px;
+      cursor: pointer;
     }
 
     .timeline-panel {
@@ -75,6 +90,22 @@
       display: flex;
       gap: 8px;
       margin-top: 12px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background: #2563eb;
+      color: #fff;
     }
 
     @media (min-width: 900px) and (orientation: landscape) {
