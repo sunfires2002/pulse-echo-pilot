@@ -137,7 +137,7 @@ function resetTactics(){const layer=tacticLayer();layer.innerHTML='<div class="t
 function openTactics(seekTime=null,mark=false){const t=seekTime!=null?Math.max(0,Number(seekTime)):mark?Math.max(0,nowTime()-5):nowTime(0);if(player){if(mark||seekTime!=null)player.seekTo(t,true);player.pauseVideo&&player.pauseVideo()}tactic.open=true;document.body.classList.add("tactics-open");document.getElementById("videoShell").classList.add("tactical-on");document.getElementById("tacticalControls").classList.add("is-open");document.getElementById("tacticToggle").textContent="レビュー終了";if(!tacticLayer().querySelector(".t-piece"))resetTactics();if(mark)addEvent("🎯 ここな！",`起点 ${fmt(t)}`,t)}
 function closeTactics(){tactic.open=false;tactic.tool="move";document.body.classList.remove("tactics-open");document.getElementById("videoShell").classList.remove("tactical-on");document.getElementById("tacticalControls").classList.remove("is-open");document.getElementById("tacticToggle").textContent="🎯 ここな！";document.querySelectorAll("[data-tactic]").forEach(b=>b.classList.remove("active"));tacticSelect(null)}
 
-// Supabase Realtime 同期機能の初期化
+// Supabase Realtime 同期機能（デバッグログ付き）
 function initRealtimeSubscription(){
  if(!supa||!match)return;
  if(realtimeChannel) supa.removeChannel(realtimeChannel);
@@ -152,16 +152,21 @@ function initRealtimeSubscription(){
     filter:`video_id=eq.${match.id}:${currentPart}`
    },
    (payload)=>{
+    console.log("🔥 REALTIME EVENT RECEIVED:", payload);
     const newEvent = payload.new;
-    // 他ユーザーが送信したリアクションのみ即時画面へ流す
     if(newEvent.sender_id !== mySessionId){
+     console.log("🔥 REMOTE FLY TRIGGERED:", newEvent);
      fly(echoText(newEvent));
      events.push(newEvent);
      render();
+    } else {
+     console.log("🔥 MY OWN EVENT (IGNORED FOR FLY):", newEvent);
     }
    }
   )
-  .subscribe();
+  .subscribe((status) => {
+   console.log("🔥 REALTIME SUBSCRIPTION STATUS:", status);
+  });
 }
 
 async function loadEvents(resetEcho=false){
@@ -326,7 +331,6 @@ const VOICE_DICTIONARY = {
   respect: ["マジで", "マジか", "すごい", "スゴい", "やばい", "ヤバい", "神"]
 };
 
-// 画面消灯防止（Wake Lock）
 async function requestWakeLock() {
   if ('wakeLock' in navigator) {
     try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) { console.warn('Wake Lock Error:', err); }
