@@ -22,12 +22,13 @@
 <path class="pulse-play" d="M30 24l15 9-15 9z"></path>
 </svg>
 </div><div class="eyebrow">AMATEUR SPORTS MEMORY PLATFORM</div>
-<h1>PULSE ECHO</h1>
+<h1 id="roomTitle">PULSE ECHO</h1>
 <p class="hero-copy"><strong>今この瞬間の熱狂が、何年後の未来にも響き続ける。</strong><br>試合映像に、選手・仲間・家族の感情を刻む場所。</p>
 <div class="actions"><a class="btn btn-primary" href="#matches">▶ 最新の試合を見る</a><a class="btn" href="#about">PULSE ECHOを知る</a></div>
 </div></section>
 <section class="section" id="matches"><div class="container">
 <div class="section-head"><div><h2>最新の試合</h2><p class="section-sub">チームではなく、ひとつひとつの「試合」が主役です。</p></div></div>
+<div id="roomControls" hidden></div>
 <div class="match-grid" id="matchGrid"></div>
 </div></section>
 <section class="section" id="about"><div class="container"><div class="statement">
@@ -39,6 +40,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="data.js"></script>
+<script src="team-rooms.js"></script>
 <script>
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const cfg=window.PULSE_CONFIG||{};
@@ -58,11 +60,24 @@ async function cloudMatches(){
  if(error){console.warn("Supabase matches error",error);return null}
  return data&&data.length?data.map(row=>({id:row.id,...row.data})):null;
 }
+const rooms=window.PULSE_ROOMS;
+if(rooms.requested){
+ const title=document.getElementById("roomTitle");
+ title.textContent=rooms.team?rooms.team.name:"チームが見つかりません";
+ document.title=title.textContent+" | PULSE ECHO";
+ document.querySelector(".eyebrow").textContent="PULSE ECHO TEAM ROOM";
+ document.querySelector(".hero-copy").textContent=rooms.team?"撮影できた試合を、チームの仲間と振り返る部屋。":"SUNFIRES または 8motion のルームを選んでください。";
+ document.querySelector("#matches h2").textContent="撮影済みの試合";
+ document.querySelector("#matches .section-sub").textContent=rooms.includeOlder?"登録済みの撮影済み試合を新しい順に表示します。":"2026年9月以降の撮影済み試合を新しい順に表示します。";
+ const controls=document.getElementById("roomControls");
+ controls.hidden=false;
+ controls.innerHTML='<nav class="actions" aria-label="チームルーム">'+Object.entries(rooms.teams).map(([slug,name])=>`<a class="btn" ${rooms.team?.slug===slug?'aria-current="page"':''} href="${rooms.roomUrl(slug)}">${esc(name)}</a>`).join("")+'<a class="btn" href="./">全体の試合一覧</a></nav>'+(rooms.team?`<p><a class="btn" href="${rooms.roomUrl(rooms.team.slug)}${rooms.includeOlder?'':'&period=all'}">${rooms.includeOlder?'2026年9月以降を表示':'以前の試合も表示'}</a></p>`:'');
+}
 function renderMatches(matches){
  const grid=document.getElementById("matchGrid");
- const list=(matches||[]).filter(x=>x.published!==false).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
- if(!list.length){grid.innerHTML='<div class="empty">掲載中の試合はまだありません。</div>';return}
- grid.innerHTML=list.map(m=>`<a class="card match-card" href="match.html?id=${encodeURIComponent(m.id)}">
+ const list=(matches||[]).filter(x=>x.published!==false).filter(rooms.matchesRoom).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+ if(!list.length){grid.innerHTML=`<div class="empty">${rooms.requested?'条件に合う撮影済み試合はまだありません。':'掲載中の試合はまだありません。'}</div>`;return}
+ grid.innerHTML=list.map(m=>`<a class="card match-card" href="${rooms.matchUrl(m.id)}">
 <div class="card-cover"><div class="teams"><div class="team-name">${esc(m.home)}</div><div><div class="vs">MATCH</div><div class="score">${esc(m.homeScore)} - ${esc(m.awayScore)}</div></div><div class="team-name">${esc(m.away)}</div></div></div>
 <div class="card-body"><div class="meta"><span class="competition">${esc(m.competition||"MATCH")}</span><span>${esc((m.date||"").replaceAll("-","."))}</span></div>
 <div class="echo-counts"><span class="echo-pill">🔥 ナイスプレー</span><span class="echo-pill">😅 あちゃー</span><span class="echo-pill">😳 マジで</span><span class="echo-pill">💬 コメント</span></div></div></a>`).join("");
