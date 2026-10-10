@@ -52,6 +52,46 @@ if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase) supa=window.supabase.c
 const matchesTable=()=>cfg.matchesTableName||"pulse_matches";
 const reactionTable=()=>cfg.tableName||"futsal_goods";
 let match=null,videos=[],currentPart="前半",player,events=[],chart,youtubeReady=false,echoTimer=null,echoPlayed=new Set(),recentManualEchoes=[];
+let realtimeChannel=null,realtimeKey="",realtimeGeneration=0,realtimeReceived=[];
+let pendingRealtimeInserts=0,realtimeBuffer=[],ownRealtimeIds=new Set();
+function stopRealtimeSubscription(){
+ const channel=realtimeChannel;
+ realtimeChannel=null;realtimeKey="";realtimeGeneration++;realtimeReceived=[];realtimeBuffer=[];
+ if(supa&&channel)supa.removeChannel(channel);
+}
+function receiveRealtimeEvent(row,generation){
+ if(generation!==realtimeGeneration||!match||row.video_id!==`${match.id}:${currentPart}`)return;
+ if(pendingRealtimeInserts){realtimeBuffer.push({row,generation});return}
+ if(events.some(e=>String(e.id)===String(row.id)))return;
+ realtimeReceived.push(row);events.push(row);
+ if(!ownRealtimeIds.has(String(row.id))){
+  fly(echoText(row));
+ }
+ echoPlayed.add(`${row.id}:${Number(row.good_time)||0}`);
+ render();
+}
+function flushRealtimeBuffer(){
+ if(pendingRealtimeInserts)return;
+ const buffered=realtimeBuffer;realtimeBuffer=[];
+ buffered.forEach(({row,generation})=>receiveRealtimeEvent(row,generation));
+}
+function initRealtimeSubscription(){
+ if(!supa||!match)return;
+ const videoKey=`${match.id}:${currentPart}`;
+ if(realtimeChannel&&realtimeKey===videoKey)return;
+ stopRealtimeSubscription();realtimeKey=videoKey;
+ const generation=realtimeGeneration;
+ realtimeChannel=supa.channel(`match-realtime-${videoKey}`)
+  .on('postgres_changes',{event:'INSERT',schema:'public',table:reactionTable(),filter:`video_id=eq.${videoKey}`},
+   payload=>receiveRealtimeEvent(payload.new,generation))
+  .subscribe(status=>{
+   if(generation!==realtimeGeneration)return;
+   console.log("[PULSE REALTIME]",status);
+   if(status==='SUBSCRIBED')loadEvents();
+  });
+}
+window.addEventListener('pagehide',stopRealtimeSubscription);
+window.addEventListener('pageshow',()=>{if(match){initRealtimeSubscription();loadEvents()}});
 const tactic={open:false,tool:"move",review:"actual",selected:null,drag:null,arrow:null,counts:{home:0,away:0,ball:0},actions:{actual:{pass:0,move:0},ideal:{pass:0,move:0}}};
 function localMatches(){
  try{
@@ -106,14 +146,30 @@ function openTactics(seekTime=null,mark=false){const t=seekTime!=null?Math.max(0
 function closeTactics(){tactic.open=false;tactic.tool="move";document.body.classList.remove("tactics-open");document.getElementById("videoShell").classList.remove("tactical-on");document.getElementById("tacticalControls").classList.remove("is-open");document.getElementById("tacticToggle").textContent="🎯 ここな！";document.querySelectorAll("[data-tactic]").forEach(b=>b.classList.remove("active"));tacticSelect(null)}
 async function loadEvents(resetEcho=false){
  if(!match)return;
- if(supa){const {data,error}=await supa.from(reactionTable()).select("*").eq("video_id",`${match.id}:${currentPart}`).order("good_time",{ascending:true});events=error?[]:(data||[])}
- else{events=JSON.parse(localStorage.getItem(key())||"[]")}
- if(resetEcho)echoPlayed.clear();startEchoPlayback();render()
+ if(resetEcho)echoPlayed.clear();
+ initRealtimeSubscription();
+ const videoKey=`${match.id}:${currentPart}`,generation=realtimeGeneration;
+ const receivedFrom=realtimeReceived.length;
+ let loaded;
+ if(supa){const {data,error}=await supa.from(reactionTable()).select("*").eq("video_id",videoKey).order("good_time",{ascending:true});if(error){console.warn("ECHO load failed",error);return}loaded=data||[]}
+ else{loaded=JSON.parse(localStorage.getItem(key())||"[]")}
+ if(generation!==realtimeGeneration||videoKey!==`${match.id}:${currentPart}`)return;
+ const merged=new Map(loaded.map(e=>[String(e.id),e]));
+ realtimeReceived.slice(receivedFrom).forEach(e=>merged.set(String(e.id),e));
+ events=[...merged.values()];
+ startEchoPlayback();render()
 }
 async function addEvent(kind,comment="",timeOverride=null){
  const isTactic=kind.startsWith("🎯"),e={good_time:timeOverride??(isTactic?nowTime(0):nowTime(3)),description:kind,user_name:document.getElementById("userName").value.trim()||"匿名",comment,video_id:`${match.id}:${currentPart}`};
  recentManualEchoes.push({t:e.good_time,d:e.description,c:e.comment,u:e.user_name,expires:Date.now()+5000});
- if(supa){const {error}=await supa.from(reactionTable()).insert(e);if(error){alert("保存に失敗しました: "+error.message);return}}
+ if(supa){
+  pendingRealtimeInserts++;
+  try{
+   const {data,error}=await supa.from(reactionTable()).insert(e).select("id");
+   if(error){alert("保存に失敗しました: "+error.message);return}
+   (data||[]).forEach(row=>ownRealtimeIds.add(String(row.id)));
+  }finally{pendingRealtimeInserts--;flushRealtimeBuffer()}
+ }
  else{events.push({...e,id:Date.now()});localStorage.setItem(key(),JSON.stringify(events))}
  fly(echoText(e));document.getElementById("commentText").value="";await loadEvents()
 }
