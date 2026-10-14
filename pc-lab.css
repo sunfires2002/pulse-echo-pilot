@@ -1,0 +1,21 @@
+/* All experimental controls are opt-in; TV never shows LAB controls. */
+.lab-entry,.lab-only{display:none}
+@media(min-width:901px){.lab-entry{display:inline-flex;padding:7px 12px;font-size:.8rem}}
+body.tv-mode.lab-mode .lab-only{display:flex}
+body.tv-mode.lab-mode #labControls{position:fixed;left:12px;top:12px;right:12px;z-index:80;align-items:center;gap:8px;flex-wrap:wrap;pointer-events:none}
+body.tv-mode.lab-mode #labControls>*{pointer-events:auto;background:rgba(8,10,16,.85)}
+body.tv-mode.lab-mode #labControls strong{padding:8px}
+body.tv-mode.lab-mode #tvMapDock{position:fixed;inset:auto;transform:none;display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:12px;pointer-events:auto;background:rgba(8,10,16,.78);z-index:70;overflow:visible;min-width:0;min-height:0}
+body.tv-mode.lab-mode #tvMapDock[hidden]{display:none!important}
+body.tv-mode.lab-mode #labMapHandle{flex:0 0 30px;align-items:center;font-size:13px;font-weight:900;cursor:grab;touch-action:none;user-select:none;border-bottom:1px solid #566074}
+body.tv-mode.lab-mode #tvMapDock .tv-reactions{flex:0 0 auto;width:100%;margin:0;gap:5px}
+body.tv-mode.lab-mode #tvMapDock #tvNameOpen{flex-basis:88px;width:88px;min-height:40px;font-size:12px}
+body.tv-mode.lab-mode #tvMapDock .tv-react{font-size:12px;padding:4px;min-height:40px}
+body.tv-mode.lab-mode #tvMapDock .heatmap{flex:1 1 0;height:auto;min-height:50px;position:relative}
+body.tv-mode.lab-mode #tvMapDock canvas{max-height:none!important;width:100%!important;height:100%!important}
+body.tv-mode.lab-mode #labMapResize{position:absolute;right:0;bottom:0;width:26px;height:26px;border:1px solid #aaa;border-radius:6px;background:#202636;color:#fff;cursor:nwse-resize;touch-action:none;align-items:center;justify-content:center;z-index:4}
+body.tv-mode.lab-mode .comment-overlay{bottom:0}
+#labTooltip{position:fixed;z-index:100;pointer-events:none;max-width:min(320px,calc(100vw - 16px));max-height:calc(100dvh - 16px);overflow:auto;padding:12px;background:rgba(8,10,16,.97);color:#fff;border:1px solid #8994ab;border-radius:10px;font-size:13px;overflow-wrap:anywhere;box-shadow:0 6px 22px #0008}
+#labTooltip[hidden]{display:none!important}
+body:not(.lab-mode) #labTooltip{display:none!important}
+#labTooltip>div{margin-top:6px}

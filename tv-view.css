@@ -55,3 +55,5 @@ body.tv-mode #tvMapDock canvas{pointer-events:auto;cursor:pointer}
 /* Ver.0.5: one name button followed by the five reaction buttons. */
 body.tv-mode #tvMapDock #tvNameOpen{flex:0 0 clamp(96px,12vw,150px);width:clamp(96px,12vw,150px);max-width:none;min-width:0;min-height:40px;padding:4px 8px;font-size:13px;border-radius:10px}
 body.tv-mode[data-tv-layout="large"] .tv-reactions .tv-react{flex:1 1 0;width:0}
+
+#tvStatus{white-space:nowrap;max-width:94vw}
