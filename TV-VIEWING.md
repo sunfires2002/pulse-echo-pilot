@@ -39,3 +39,9 @@ LABパネルは420×220pxを基本下限とし、画面がそれ未満の場合�
 テレビとLABのPULSE ECHO独自「▶ 時刻」をCSSで非表示。内部の時間取得・再生位置線・同期は維持する。
 利用者の追加指示により、YouTube標準の「現在時刻 / 総時間」と操作UI、既存のジャンプ案内は現状維持。
 YouTube UIとの重なりは今後の実機テストで確認。YouTube操作UI全体の非表示は実施しない。
+
+## Smartphone landscape overlay
+Touch phones with smartphone UA and screen short side <=500 CSS px only. Apply within the existing landscape layout (height <=500px, width <=1100px). Exclude tablets, portrait, TV and LAB.
+Keep the right rail geometry, four button sizes/types and time offsets; set rail background alpha to .3. Only buttons intercept input.
+Extend the player frame to full width. YouTube preserves the original 16:9 picture; wider screens can retain side bars. Do not stretch or crop the picture.
+Desktop-UA overrides are excluded. Verify browser bars, notch and YouTube controls on real devices.
