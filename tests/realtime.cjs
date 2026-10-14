@@ -1,6 +1,6 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const html=fs.readFileSync('match.html','utf8'),base=require('child_process').execFileSync('git',['show','0c48160a4fe2b5cd4ed5d7f78c09a618c734b17f:match.html'],{encoding:'utf8'});
-const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].at(-1)[1];new vm.Script(script);
+const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].filter(s=>s[1].trim()).at(-1)[1];new vm.Script(script);
 const section=(s,a,b)=>s.slice(s.indexOf(a),s.indexOf(b,s.indexOf(a)));
 for(const [a,b] of [['function loadVideo(', 'function tacticLayer('],['function echoText(', 'function setInfoPanel('],['function draw(', 'window.deleteEvent='],['let isVoiceActive', '</script>']]) assert.equal(section(html,a,b),section(base,a,b),a+' unchanged');
 let channels=[],removed=[],queries=[],flown=[],renders=0,insertResolve;
