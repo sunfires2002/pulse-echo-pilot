@@ -3,7 +3,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080a10"><title>試合を見る | PULSE ECHO</title>
 <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="tv-view.css"></head><body class="match-page">
-<header class="site-header"><div class="container nav"><a class="brand" href="./">PULSE <span>ECHO</span></a><nav class="navlinks"><button class="btn tv-entry" id="tvEnter" type="button">テレビ鑑賞 Ver.0.1</button><a href="./">試合一覧</a></nav></div></header>
+<header class="site-header"><div class="container nav"><a class="brand" href="./">PULSE <span>ECHO</span></a><nav class="navlinks"><button class="btn tv-entry" id="tvEnter" type="button">テレビ鑑賞 Ver.0.2</button><a href="./">試合一覧</a></nav></div></header>
 <main><div class="container match-hero"></div>
 <section class="section" style="padding-top:10px"><div class="container">
 <div class="viewer-layout">
@@ -40,12 +40,7 @@
 </div></div></section></main>
 <div id="tvToolbar" class="tv-toolbar" hidden aria-label="テレビ鑑賞操作">
 <button class="btn" id="tvExit" type="button">↩ 振り返りモード</button>
-<div class="tv-reactions" aria-label="テレビの反応">
-<button class="tv-react hot" data-tv-source="niceButton" type="button" aria-label="ナイスプレー">🔥<span>ナイスプレー</span></button>
-<button class="tv-react laugh" data-tv-kind="😅 あちゃー" type="button" aria-label="あちゃー">😂<span>あちゃー</span></button>
-<button class="tv-react respect" data-tv-kind="😳 マジで" type="button" aria-label="マジで">🫡<span>マジで</span></button>
-<button class="tv-react ai" data-tv-kind="🤖 AIにお任せ" type="button" aria-label="AIにお任せ">🤖<span>AIにお任せ</span></button>
-</div><div id="tvStatus" role="status" aria-live="polite"></div>
+<div id="tvStatus" role="status" aria-live="polite"></div>
 </div>
 <footer class="footer"><div class="container">PULSE ECHO — 鼓動が、記憶になる。</div></footer>
 <script src="https://www.youtube.com/iframe_api"></script>
