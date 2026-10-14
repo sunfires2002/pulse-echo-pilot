@@ -57,3 +57,6 @@ body.tv-mode #tvMapDock #tvNameOpen{flex:0 0 clamp(96px,12vw,150px);width:clamp(
 body.tv-mode[data-tv-layout="large"] .tv-reactions .tv-react{flex:1 1 0;width:0}
 
 #tvStatus{white-space:nowrap;max-width:94vw}
+
+/* Display only: keep internal playback time and map playhead calculations. */
+body.tv-mode .tv-map-time{display:none!important}
