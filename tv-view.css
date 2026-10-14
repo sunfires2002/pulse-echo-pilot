@@ -51,3 +51,7 @@ body.tv-mode #tvMapDock canvas{pointer-events:auto;cursor:pointer}
 .tv-playhead{position:absolute;top:0;bottom:16px;width:2px;background:#fff;box-shadow:0 0 3px #000;pointer-events:none;z-index:2}
 .tv-playhead[hidden]{display:none!important}
 .tv-map-time{font-size:13px;color:#fff;background:rgba(0,0,0,.55);padding:4px 8px;border-radius:8px;pointer-events:none}
+
+/* Ver.0.5: one name button followed by the five reaction buttons. */
+body.tv-mode #tvMapDock #tvNameOpen{flex:0 0 clamp(96px,12vw,150px);width:clamp(96px,12vw,150px);max-width:none;min-width:0;min-height:40px;padding:4px 8px;font-size:13px;border-radius:10px}
+body.tv-mode[data-tv-layout="large"] .tv-reactions .tv-react{flex:1 1 0;width:0}

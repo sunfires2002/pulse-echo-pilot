@@ -38,7 +38,7 @@
   button.dataset.tvKind=kind;button.style.setProperty("--reaction-color",color);button.textContent=label;button.setAttribute("aria-label",label);
   legend.append(button);
  });
- dock.append(legend);shell.append(toolbar);
+ legend.prepend(nameButton);dock.append(legend);shell.append(toolbar);
  // Hide the canvas legend only in TV mode: the five buttons serve as its legend.
  if(window.Chart)Chart.register({id:"pulseTvLegend",beforeUpdate(instance){
   if(instance.canvas.id==="chart"){
