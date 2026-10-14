@@ -45,3 +45,9 @@ body.tv-mode[data-tv-layout="large"] .tv-toolbar{bottom:112px}
 body.tv-mode[data-tv-layout="large"] .tv-toolbar .btn{padding:8px 12px;min-height:40px}
 body.tv-mode[data-tv-layout="large"] .comment-overlay{bottom:164px}
 @media(max-height:420px){body.tv-mode .tv-toolbar{bottom:160px}body.tv-mode .comment-overlay{bottom:212px}body.tv-mode[data-tv-layout="large"] .tv-toolbar{bottom:112px}body.tv-mode[data-tv-layout="large"] .comment-overlay{bottom:164px}}
+
+/* Ver.0.4: one TV layout, using the compact viewing layout from Ver.0.3. */
+body.tv-mode #tvMapDock canvas{pointer-events:auto;cursor:pointer}
+.tv-playhead{position:absolute;top:0;bottom:16px;width:2px;background:#fff;box-shadow:0 0 3px #000;pointer-events:none;z-index:2}
+.tv-playhead[hidden]{display:none!important}
+.tv-map-time{font-size:13px;color:#fff;background:rgba(0,0,0,.55);padding:4px 8px;border-radius:8px;pointer-events:none}

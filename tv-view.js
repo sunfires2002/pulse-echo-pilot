@@ -2,7 +2,7 @@
 (() => {
  const body=document.body, shell=document.getElementById("videoShell");
  const map=document.querySelector(".heatmap"), toolbar=document.getElementById("tvToolbar");
- const enter=document.getElementById("tvEnter"), exit=document.getElementById("tvExit");
+ const enter=document.getElementById("tvEnter");
  const nameField=document.getElementById("userName"), namePanel=document.getElementById("tvNamePanel"), nameInput=document.getElementById("tvNameInput");
  const nameButton=document.getElementById("tvNameOpen"), status=document.getElementById("tvStatus");
  const storage={read(key){try{return localStorage.getItem(key)}catch{return null}},write(key,value){try{localStorage.setItem(key,value);return true}catch{return false}}};
@@ -13,16 +13,7 @@
  const savedName=storage.read("pulse_echo_tv_name");if(savedName!==null&&!nameField.value.trim())nameField.value=savedName;
  refreshName();
  nameField.addEventListener("input",refreshName);
- function setLayout(value,persist=false){
-  const layout=value==="large"?"large":"standard";body.dataset.tvLayout=layout;
-  document.getElementById("tvStandard").setAttribute("aria-pressed",String(layout==="standard"));
-  document.getElementById("tvLarge").setAttribute("aria-pressed",String(layout==="large"));
-  if(persist&&!storage.write("pulse_echo_tv_layout",layout))announce("表示設定を保存できません。このページ内で適用します");
-  requestAnimationFrame(()=>{window.dispatchEvent(new Event("resize"));if(typeof chart!=="undefined"&&chart)chart.resize()});
- }
- setLayout(storage.read("pulse_echo_tv_layout"));
- document.getElementById("tvStandard").addEventListener("click",()=>setLayout("standard",true));
- document.getElementById("tvLarge").addEventListener("click",()=>setLayout("large",true));
+ body.dataset.tvLayout="large";
  nameButton.addEventListener("click",()=>{nameInput.value=nameField.value;namePanel.hidden=false;document.getElementById("tvStorageNotice").textContent="";nameInput.focus()});
  function closeName(){namePanel.hidden=true;nameButton.focus()}
  document.getElementById("tvNameCancel").addEventListener("click",closeName);
@@ -50,7 +41,12 @@
  dock.append(legend);shell.append(toolbar);
  // Hide the canvas legend only in TV mode: the five buttons serve as its legend.
  if(window.Chart)Chart.register({id:"pulseTvLegend",beforeUpdate(instance){
-  if(instance.canvas.id==="chart")instance.options.plugins.legend.display=body.classList.contains("tv-mode")?false:true;
+  if(instance.canvas.id==="chart"){
+   const active=body.classList.contains("tv-mode");
+   instance.options.plugins.legend.display=!active;
+   // Thirty minute-wide bands, retaining the original minute bins and counts.
+   instance.options.scales.x.offset=active;
+  }
  }});
  function setMode(active){
   clearStatus();namePanel.hidden=true;refreshName();
@@ -59,9 +55,9 @@
   const url=new URL(location.href);if(active)url.searchParams.set("mode","tv");else url.searchParams.delete("mode");
   history.replaceState(null,"",url);
   requestAnimationFrame(()=>{window.dispatchEvent(new Event("resize"));if(typeof chart!=="undefined"&&chart){chart.update("none");chart.resize()}});
-  (active?exit:enter).focus({preventScroll:true});
+  if(!active)enter.focus({preventScroll:true});
  }
- enter.addEventListener("click",()=>setMode(true));exit.addEventListener("click",()=>setMode(false));
+ enter.addEventListener("click",()=>setMode(true));
  legend.querySelectorAll(".tv-react").forEach(button=>button.addEventListener("click",()=>{
   const source=button.dataset.tvSource?document.getElementById(button.dataset.tvSource):
    [...document.querySelectorAll(".react[data-kind]")].find(el=>el.dataset.kind===button.dataset.tvKind);
@@ -69,6 +65,37 @@
   source.click();
   announce(button.getAttribute("aria-label")+"を選択");
  }));
- document.addEventListener("keydown",event=>{if(event.key==="Escape"&&body.classList.contains("tv-mode")){event.preventDefault();if(!namePanel.hidden)closeName();else setMode(false)}});
+ // Map navigation uses the plot width, not the canvas margins or label pixels.
+ const canvas=document.getElementById("chart");
+ const playhead=document.createElement("div");playhead.className="tv-playhead";playhead.hidden=true;map.append(playhead);
+ const timeLabel=document.createElement("span");timeLabel.className="tv-map-time";toolbar.append(timeLabel);
+ canvas.addEventListener("click",event=>{
+  if(!body.classList.contains("tv-mode"))return;
+  if(typeof chart==="undefined"||!chart?.chartArea||!player?.seekTo){announce("動画とマップの読み込みをお待ちください");return}
+  const rect=canvas.getBoundingClientRect(),area=chart.chartArea;
+  const x=(event.clientX-rect.left)*chart.width/rect.width;
+  if(area.right<=area.left||x<area.left-1||x>area.right+1)return;
+  const selected=Math.min(1,Math.max(0,(x-area.left)/(area.right-area.left)))*1800;
+  let target=Math.max(0,Math.floor(selected)-10);
+  const duration=Number(player.getDuration?.())||0;
+  if(duration>0)target=Math.min(target,Math.max(0,Math.floor(duration)-1));
+  try{
+   player.seekTo(target,true);
+   // Replaying a scene should also replay its existing ECHO, without a new query.
+   echoPlayed.clear();
+   if(player.playVideo)player.playVideo();
+   announce(`${Math.floor(target/60)}:${String(target%60).padStart(2,"0")}から再生`);
+  }catch{announce("動画の準備後にもう一度クリックしてください")}
+ });
+ setInterval(()=>{
+  if(!body.classList.contains("tv-mode")){playhead.hidden=true;return}
+  if(typeof chart==="undefined"||!chart?.chartArea||!player?.getCurrentTime)return;
+  const now=Number(player.getCurrentTime())||0,area=chart.chartArea;
+  const scale=canvas.clientWidth/chart.width;
+  playhead.style.left=(canvas.offsetLeft+(area.left+Math.min(1,Math.max(0,now/1800))*(area.right-area.left))*scale)+"px";
+  playhead.hidden=false;
+  timeLabel.textContent=`▶ ${Math.floor(now/60)}:${String(Math.floor(now)%60).padStart(2,"0")}${now>=1800?"（マップ範囲外）":""}`;
+ },500);
+ document.addEventListener("keydown",event=>{if(event.key==="Escape"&&body.classList.contains("tv-mode")){event.preventDefault();if(!namePanel.hidden)closeName()}});
  if(new URLSearchParams(location.search).get("mode")==="tv")setMode(true);
 })();
