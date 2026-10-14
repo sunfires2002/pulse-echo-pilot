@@ -11,7 +11,7 @@
  const active=()=>body.classList.contains("lab-mode");
  function redraw(){if(resizingFrame)return;resizingFrame=requestAnimationFrame(()=>{resizingFrame=0;if(typeof chart!=="undefined"&&chart)chart.resize()})}
  function bounds(left,top,width,height){
-  width=Math.min(Math.max(300,width),Math.max(1,innerWidth-16));height=Math.min(Math.max(180,height),Math.max(1,innerHeight-16));
+  width=Math.min(Math.max(420,width),Math.max(1,innerWidth-16));height=Math.min(Math.max(220,height),Math.max(1,innerHeight-16));
   left=Math.max(8,Math.min(left,innerWidth-width-8));top=Math.max(8,Math.min(top,innerHeight-height-8));
   Object.assign(dock.style,{left:left+"px",top:top+"px",width:width+"px",height:height+"px"});tip.hidden=true;redraw();
  }
