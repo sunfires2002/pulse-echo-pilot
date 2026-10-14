@@ -86,7 +86,7 @@
    // Replaying a scene should also replay its existing ECHO, without a new query.
    echoPlayed.clear();
    if(player.playVideo)player.playVideo();
-   announce("選んだ場面から再生");
+   announce(`${Math.floor(target/60)}:${String(target%60).padStart(2,"0")}から再生`);
   }catch{announce("動画の準備後にもう一度クリックしてください")}
  });
  setInterval(()=>{
