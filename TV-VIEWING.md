@@ -45,3 +45,9 @@ Touch phones with smartphone UA and screen short side <=500 CSS px only. Apply w
 Keep the right rail geometry, four button sizes/types and time offsets; set rail background alpha to .3. Only buttons intercept input.
 Extend the player frame to full width. YouTube preserves the original 16:9 picture; wider screens can retain side bars. Do not stretch or crop the picture.
 Desktop-UA overrides are excluded. Verify browser bars, notch and YouTube controls on real devices.
+
+## 通常ルーム版の横画面最適化
+旧スマホ専用の短辺判定を置き換え。Android・iPhoneのタッチ端末で、表示領域が横向き・幅1280px以下・高さ800px以下の場合に通常ルームだけへ適用。端末機種や画面の物理サイズでは配置を決めない。iPad・PC・テレビ・LAB・縦画面は対象外。
+visualViewportとinnerWidth/innerHeightの小さい方を表示可能領域とし、幅=min(領域幅,領域高さ×16/9)、高さ=幅×9/16で映像を最大化。アドレスバーや表示領域の変更時に再計算する。プレーヤーは再生成しない。
+余った右側の半幅がボタンレールの幅以上なら余白へ配置。足りなければ半透明で重ねる。動画をボタンのために縮めない。4種類・既存投稿処理とoffsetは維持。ボタンは48〜64px。高さ不足時のみ2×2にして画面内へ収める。
+旧CSSは500px境界で通常ページと固定高さの横画面が分かれ、ヘッダー・余白・動的な表示領域との組み合わせで下端が切れ得た。新しい対象条件では固定ルーム枠自体を表示可能領域へ収め、内部の動画を16:9に保つ。実機でアドレスバー・再生前後・実150％ズームを最終確認する。
