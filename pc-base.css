@@ -1,0 +1,16 @@
+/* PC-only reflow support, loaded by pc-desktop.js. */
+/* Reflow only when a control group runs out of usable space. */
+.viewer-card{container-type:inline-size}
+.inputs>*{min-width:0}
+.event-top>*{min-width:0;overflow-wrap:anywhere}
+.event-comment{overflow-wrap:anywhere}
+.meta>*{min-width:0;overflow-wrap:anywhere}
+@container (max-width:330px){
+ .inputs{grid-template-columns:minmax(0,1fr) auto}
+ .inputs #userName{grid-column:1/-1}
+}
+@container (max-width:230px){
+ .inputs{grid-template-columns:minmax(0,1fr)}
+ .inputs .btn{grid-column:1}
+ .utility-actions{grid-template-columns:minmax(0,1fr)}
+}

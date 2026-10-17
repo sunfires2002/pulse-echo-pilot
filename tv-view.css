@@ -1,0 +1,62 @@
+/* Opt-in TV presentation; default smartphone/tablet CSS stays unchanged. */
+.tv-entry{display:none}
+.tv-toolbar[hidden],#tvMapDock[hidden]{display:none!important}
+@media(min-width:901px){.tv-entry{display:inline-flex;padding:7px 12px;font-size:.8rem}}
+html:has(body.tv-mode){height:100%;overflow:hidden}
+body.match-page.tv-mode{height:100dvh;min-height:0;overflow:hidden;background:#000}
+body.tv-mode .site-header,body.tv-mode .match-hero,body.tv-mode .footer,
+body.tv-mode .controls,body.tv-mode .scoreboard,body.tv-mode .echo-visibility,
+body.tv-mode .mobile-panel-tabs,body.tv-mode .side-stack,body.tv-mode .tabs{display:none!important}
+body.tv-mode main{position:fixed;inset:0}
+body.tv-mode main,body.tv-mode .section,body.tv-mode .section>.container{height:100dvh;padding:0!important;width:100%;max-width:none}
+body.tv-mode .viewer-layout{display:block;height:100dvh}
+body.tv-mode .viewer-card{container-type:normal;height:100dvh;padding:0;border:0;border-radius:0;background:#000}
+body.tv-mode .video-shell{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,calc(100dvh * 16 / 9));height:auto;aspect-ratio:16/9;border-radius:0}
+body.tv-mode .video-shell iframe{width:100%;height:100%}
+body.tv-mode .comment-overlay{z-index:3;bottom:256px}
+body.tv-mode #tvMapDock{position:absolute;left:3%;right:3%;bottom:52px;height:144px;z-index:4;pointer-events:none;background:rgba(8,10,16,.64);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:8px 12px}
+body.tv-mode #tvMapDock .heatmap{display:block!important;position:relative;width:100%;height:76px;padding:0;background:transparent;border:0;border-radius:0}
+body.tv-mode #tvMapDock .heat-title{display:none}
+body.tv-mode #tvMapDock canvas{max-height:76px!important}
+body.tv-mode .tv-toolbar{position:absolute;left:3%;right:auto;top:auto;bottom:204px;z-index:60;display:flex;flex-wrap:wrap;align-items:center;gap:8px;max-width:94%}
+body.tv-mode .tv-toolbar .btn{background:rgba(8,10,16,.7)}
+body.tv-mode .tv-reactions{display:flex;gap:10px;align-items:stretch;justify-content:center;margin-bottom:8px;pointer-events:auto}
+body.tv-mode .tv-react{flex:1;min-width:0;min-height:48px;border:2px solid var(--reaction-color);background:rgba(8,10,16,.86);border-radius:10px;padding:8px;color:#fff;font-size:16px;font-weight:900;cursor:pointer;overflow-wrap:anywhere}
+.tv-react:focus-visible,.tv-toolbar .btn:focus-visible{outline:4px solid #fff;outline-offset:2px}
+.tv-react:hover{background:var(--reaction-color)!important;color:#080a10!important}
+.tv-react:active{filter:brightness(1.25)}
+#tvStatus{position:absolute;left:0;bottom:100%;background:rgba(0,0,0,.7);font-size:14px;color:#fff}
+@media(max-width:800px){body.tv-mode .tv-react{font-size:12px;padding:4px}body.tv-mode .tv-reactions{gap:5px}.tv-toolbar .btn{font-size:12px;padding:8px}}
+@media(max-height:420px){body.tv-mode #tvMapDock{height:116px;bottom:36px;padding:4px 8px}body.tv-mode #tvMapDock .heatmap{height:54px}body.tv-mode #tvMapDock canvas{max-height:54px!important}}
+
+#tvNamePanel[hidden]{display:none!important}
+#tvNamePanel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(480px,90vw);padding:20px;background:rgba(17,20,29,.98);border:2px solid var(--cyan);border-radius:14px;box-shadow:0 0 0 100vmax rgba(0,0,0,.55);z-index:80}
+#tvNamePanel label{display:block;margin-bottom:12px}
+#tvNameInput{margin-bottom:12px;font-size:18px}
+#tvStorageNotice{font-size:14px}
+body.tv-mode #tvNameOpen{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.tv-mode .tv-toolbar .btn[aria-pressed="true"]{border-color:var(--cyan);color:var(--cyan)}
+body.tv-mode[data-tv-layout="large"] #tvMapDock{bottom:0;height:104px;padding:4px 8px;background:rgba(8,10,16,.28);border-radius:8px}
+body.tv-mode[data-tv-layout="large"] #tvMapDock .heatmap{height:48px}
+body.tv-mode[data-tv-layout="large"] #tvMapDock canvas{max-height:48px!important}
+body.tv-mode[data-tv-layout="large"] .tv-reactions{gap:6px;margin-bottom:4px}
+body.tv-mode[data-tv-layout="large"] .tv-react{min-height:40px;font-size:14px;padding:4px 8px;background:rgba(8,10,16,.5)}
+body.tv-mode[data-tv-layout="large"] .tv-toolbar{bottom:112px}
+body.tv-mode[data-tv-layout="large"] .tv-toolbar .btn{padding:8px 12px;min-height:40px}
+body.tv-mode[data-tv-layout="large"] .comment-overlay{bottom:164px}
+@media(max-height:420px){body.tv-mode .tv-toolbar{bottom:160px}body.tv-mode .comment-overlay{bottom:212px}body.tv-mode[data-tv-layout="large"] .tv-toolbar{bottom:112px}body.tv-mode[data-tv-layout="large"] .comment-overlay{bottom:164px}}
+
+/* Ver.0.4: one TV layout, using the compact viewing layout from Ver.0.3. */
+body.tv-mode #tvMapDock canvas{pointer-events:auto;cursor:pointer}
+.tv-playhead{position:absolute;top:0;bottom:16px;width:2px;background:#fff;box-shadow:0 0 3px #000;pointer-events:none;z-index:2}
+.tv-playhead[hidden]{display:none!important}
+.tv-map-time{font-size:13px;color:#fff;background:rgba(0,0,0,.55);padding:4px 8px;border-radius:8px;pointer-events:none}
+
+/* Ver.0.5: one name button followed by the five reaction buttons. */
+body.tv-mode #tvMapDock #tvNameOpen{flex:0 0 clamp(96px,12vw,150px);width:clamp(96px,12vw,150px);max-width:none;min-width:0;min-height:40px;padding:4px 8px;font-size:13px;border-radius:10px}
+body.tv-mode[data-tv-layout="large"] .tv-reactions .tv-react{flex:1 1 0;width:0}
+
+#tvStatus{white-space:nowrap;max-width:94vw}
+
+/* Display only: keep internal playback time and map playhead calculations. */
+body.tv-mode .tv-map-time{display:none!important}

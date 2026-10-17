@@ -2,7 +2,7 @@
 <html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080a10"><title>試合を見る | PULSE ECHO</title>
-<link rel="stylesheet" href="style.css"></head><body>
+<link rel="stylesheet" href="style.css"><script src="pc-desktop.js?v=1.0.0"></script></head><body>
 <header class="site-header"><div class="container nav"><a class="brand" href="./">PULSE <span>ECHO</span></a><nav class="navlinks"><a href="./">試合一覧</a></nav></div></header>
 <main><div class="container match-hero"></div>
 <section class="section" style="padding-top:10px"><div class="container">
@@ -43,6 +43,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="config.js"></script><script src="data.js"></script>
+<script src="pc-voice-diagnostics.js?v=1.0.0"></script><script src="pc-voice.js?v=1.0.0"></script>
 <script>
 const qs=new URLSearchParams(location.search), id=qs.get("id");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -159,19 +160,20 @@ async function loadEvents(resetEcho=false){
  events=[...merged.values()];
  startEchoPlayback();render()
 }
-async function addEvent(kind,comment="",timeOverride=null){
+async function addEvent(kind,comment="",timeOverride=null,voiceAudit=null){
+ const report=type=>{try{voiceAudit?.(type)}catch{}};report("save-start");
  const isTactic=kind.startsWith("🎯"),e={good_time:timeOverride??(isTactic?nowTime(0):nowTime(3)),description:kind,user_name:document.getElementById("userName").value.trim()||"匿名",comment,video_id:`${match.id}:${currentPart}`};
  recentManualEchoes.push({t:e.good_time,d:e.description,c:e.comment,u:e.user_name,expires:Date.now()+5000});
  if(supa){
   pendingRealtimeInserts++;
   try{
    const {data,error}=await supa.from(reactionTable()).insert(e).select("id");
-   if(error){alert("保存に失敗しました: "+error.message);return}
+   if(error){report("save-failure");alert("保存に失敗しました: "+error.message);return}
    (data||[]).forEach(row=>ownRealtimeIds.add(String(row.id)));
-  }finally{pendingRealtimeInserts--;flushRealtimeBuffer()}
+  }catch(error){report("save-failure");throw error}finally{pendingRealtimeInserts--;flushRealtimeBuffer()}
  }
  else{events.push({...e,id:Date.now()});localStorage.setItem(key(),JSON.stringify(events))}
- fly(echoText(e));document.getElementById("commentText").value="";await loadEvents()
+ report("save-success");fly(echoText(e));document.getElementById("commentText").value="";await loadEvents()
 }
 async function deleteEvent(eventId){
  const target=events.find(e=>String(e.id)===String(eventId));if(!target)return;
@@ -280,16 +282,20 @@ window.addEventListener("resize",()=>document.querySelectorAll(".t-arrow").forEa
 /* ==========================================
    Voice-First 音声感情検知（三賢者最終確定版）
    ========================================== */
-let isVoiceActive = false;
-let voiceRecognition = null;
-let lastProcessedText = "";
-let wakeLock = null;
-
 const VOICE_DICTIONARY = {
   hot: ["ナイス", "よっしゃ", "シュート", "ゴール", "入った", "決めた", "いけー", "イケー", "ええぞ"],
   miss: ["惜しい", "おしい", "あちゃー", "なんでやねん", "ファール", "もったいない", "あーっ"],
   respect: ["マジで", "マジか", "すごい", "スゴい", "やばい", "ヤバい", "神"]
 };
+if(window.PULSE_PC_DESKTOP){
+ window.PULSE_PC_VOICE.install({button:document.getElementById("voiceBtn"),dictionary:VOICE_DICTIONARY,addEvent,nowTime});
+}else{
+let isVoiceActive = false;
+let voiceRecognition = null;
+let lastProcessedText = "";
+let wakeLock = null;
+
+
 
 // 画面消灯防止（Wake Lock）
 async function requestWakeLock() {
@@ -388,6 +394,8 @@ if (voiceBtn) {
       voiceBtn.textContent = "🎙️ 音声入力をスタート（動画再生して叫ぶだけ！）";
     }
   };
+}
+
 }
 
 initMatch();

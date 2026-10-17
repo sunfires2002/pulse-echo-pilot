@@ -98,3 +98,8 @@ Settings → Pages → Branch: main → Folder: / (root)
 5. 全体管理者が「公開する」
 6. 画面下の「公開用 data.js を書き出す」
 7. GitHub上の data.js と入れ替えて Commit changes
+
+
+## PC版 Ver.1.0
+
+PCで試合ページを開くと、自由配置のPC鑑賞画面を表示します。PULSE ECHOメニューから表示・透明度・鑑賞モードを変更できます。パネル設定はブラウザ内へ保存され、「標準配置に戻す」で初期配置へ戻せます。スマホ・タブレット・Fire TVの公開UIは従来どおりです。詳細と検証範囲は[PC-V1-RELEASE.md](PC-V1-RELEASE.md)を参照してください。
