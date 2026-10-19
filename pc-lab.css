@@ -59,6 +59,12 @@ body.tv-mode.lab-mode.lab-clean #tvMapDock,body.tv-mode.lab-mode.lab-clean .lab-
 body.tv-mode.lab-mode.lab-clean #labControls,body.tv-mode.lab-mode.lab-clean #labMenuToggle,
 body.tv-mode.lab-mode.lab-clean #labTooltip,body.tv-mode.lab-mode.lab-clean .comment-overlay,
 body.tv-mode.lab-mode.lab-clean .tactical-layer,body.tv-mode.lab-mode.lab-clean .tv-toolbar{display:none!important}
+#labCleanMic[hidden]{display:none!important}
+body.tv-mode.lab-mode #labCleanMic{position:fixed;right:16px;bottom:72px;z-index:130;display:none;place-items:center;width:42px;height:42px;min-width:42px;min-height:42px;padding:0;border:1px solid rgba(255,255,255,.58);border-radius:50%;background:rgba(8,10,16,.58);color:#fff;font-size:21px;line-height:1;opacity:.78;box-shadow:0 2px 10px rgba(0,0,0,.24);cursor:pointer;pointer-events:auto}
+body.tv-mode.lab-mode.lab-clean #labCleanMic:not([hidden]){display:grid}
+body.tv-mode.lab-mode.lab-clean #labCleanMic.is-flashing{animation:lab-clean-mic-flash .85s ease-out}
+@keyframes lab-clean-mic-flash{0%{background:rgba(0,206,201,.98);box-shadow:0 0 0 0 rgba(0,230,208,.9),0 0 24px rgba(0,230,208,.95);opacity:1;transform:scale(1.12)}100%{background:rgba(8,10,16,.58);box-shadow:0 2px 10px rgba(0,0,0,.24);opacity:.78;transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){body.tv-mode.lab-mode.lab-clean #labCleanMic.is-flashing{animation:none;background:rgba(0,206,201,.96);opacity:1}}
 body.tv-mode.lab-mode #tvMapDock{overflow:auto}
 
 /* Foundation: LAB-only labels and panel-width-aware detail choices. */
@@ -86,6 +92,8 @@ body.tv-mode.lab-mode.lab-clean #labNicePopup{display:none!important}
 /* LAB-only docking and background alpha: text/buttons remain opaque. */
 body.tv-mode.lab-mode #labControls{background:rgba(8,10,16,.25)}
 body.tv-mode.lab-mode #labTimeline .event{background:rgba(24,28,39,var(--lab-bg-alpha,.28));color:#fff;text-shadow:0 1px 3px #000,0 0 3px #000}
+body.pc-default.tv-mode.lab-mode #labTimeline .event-meta{display:flex;align-items:center;gap:7px;flex:0 0 auto;white-space:nowrap}
+body.pc-default.tv-mode.lab-mode #labTimeline .event-date{display:inline-block;color:#9aa3b4;font-size:10px;font-weight:500;line-height:1.2}
 body.tv-mode.lab-mode #labTimeline .event-comment{color:#fff}
 body.tv-mode.lab-mode #labTimeline .event-review{background:#123c40}
 body.tv-mode.lab-mode #labTimeline .event-delete{background:#492229}

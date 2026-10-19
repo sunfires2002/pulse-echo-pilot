@@ -43,6 +43,14 @@
   return entry;
  }
  const clearButton=document.createElement('button');clearButton.id='labClearAll';clearButton.className='lab-only btn';clearButton.type='button';clearButton.textContent='動画だけ表示';clearButton.setAttribute('aria-pressed','false');body.append(clearButton);
+ const cleanMic=document.createElement('button');cleanMic.id='labCleanMic';cleanMic.className='lab-only';cleanMic.type='button';cleanMic.textContent='🎙';cleanMic.hidden=true;cleanMic.setAttribute('aria-label','音声入力中。クリックして停止');cleanMic.title='音声入力を停止';body.append(cleanMic);
+ const voiceButton=document.getElementById('voiceBtn'),activeVoiceStates=new Set(['starting','listening','waiting','stopping']);
+ function syncCleanMic(){const state=voiceButton?.dataset.voiceState||'idle',listening=activeVoiceStates.has(state);cleanMic.hidden=!(active()&&body.classList.contains('lab-clean')&&listening);cleanMic.setAttribute('aria-label',state==='stopping'?'音声入力を停止中':'音声入力中。クリックして停止');cleanMic.title=state==='stopping'?'音声入力を停止中':'音声入力を停止'}
+ cleanMic.onclick=()=>{if(!cleanMic.hidden&&voiceButton&&!voiceButton.disabled&&activeVoiceStates.has(voiceButton.dataset.voiceState))voiceButton.click()};
+ const voiceStateObserver=voiceButton?new MutationObserver(syncCleanMic):null;if(voiceStateObserver)voiceStateObserver.observe(voiceButton,{attributes:true,attributeFilter:['data-voice-state']});
+ const cleanStateObserver=new MutationObserver(syncCleanMic);cleanStateObserver.observe(body,{attributes:true,attributeFilter:['class']});
+ document.addEventListener('pulse-voice-echo-saved',()=>{if(cleanMic.hidden)return;cleanMic.classList.remove('is-flashing');void cleanMic.offsetWidth;cleanMic.classList.add('is-flashing');setTimeout(()=>cleanMic.classList.remove('is-flashing'),900)});
+ syncCleanMic();
  clearButton.onclick=()=>{const hidden=body.classList.toggle('lab-clean');clearButton.textContent=hidden?'パネルを復元':'動画だけ表示';clearButton.setAttribute('aria-pressed',String(hidden));tip.hidden=true;clearDockCandidate();closeDetails();document.getElementById('tvNamePanel').hidden=true;if(!hidden)redraw()};
  document.addEventListener('pulse-view-mode',()=>{body.classList.remove('lab-clean');clearButton.textContent='動画だけ表示';clearButton.setAttribute('aria-pressed','false');if(active()){controls.classList.add('is-collapsed');menu.setAttribute('aria-expanded','false');if(storageWarning)notice.textContent='保存設定を利用できない場合は標準配置を使います。'}});
 

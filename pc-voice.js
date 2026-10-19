@@ -50,6 +50,7 @@
       if(phase==='save-success')saved=true;
       debug(phase,{...identity,durationMs:performance.now()-started});
      });
+     if(saved)document.dispatchEvent(new Event('pulse-voice-echo-saved'));
      debug('processing-complete',{...identity,reason:saved?'saved':'save-not-confirmed',durationMs:performance.now()-received});
     }catch(error){debug('processing-error',{...identity,reason:saved?'after-save':'save-or-processing',error:error.name||'Error',durationMs:performance.now()-received})}
    })();

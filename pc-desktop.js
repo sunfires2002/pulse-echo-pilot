@@ -5,11 +5,11 @@
  const desktop=!mobile&&/Windows NT|Macintosh|X11|CrOS|Linux/.test(ua)&&matchMedia('(any-pointer: fine)').matches&&matchMedia('(any-hover: hover)').matches;
  window.PULSE_PC_DESKTOP=desktop;
  if(!desktop)return;
- window.PULSE_PC_VERSION='1.0.0';
+ window.PULSE_PC_VERSION='1.1.0';
  const styles=Promise.all(['pc-base.css','tv-view.css','pc-lab.css'].map(path=>new Promise((resolve,reject)=>{
-  const link=document.createElement('link');link.rel='stylesheet';link.href=path+'?v=1.0.0';link.onload=resolve;link.onerror=()=>reject(new Error('PC stylesheet unavailable: '+path));document.head.append(link);
+  const link=document.createElement('link');link.rel='stylesheet';link.href=path+'?v=1.1.0';link.onload=resolve;link.onerror=()=>reject(new Error('PC stylesheet unavailable: '+path));document.head.append(link);
  })));
- function script(path){return new Promise((resolve,reject)=>{const node=document.createElement('script');node.src=path+'?v=1.0.0';node.onload=resolve;node.onerror=()=>reject(new Error('PC script unavailable: '+path));document.body.append(node)})}
+ function script(path){return new Promise((resolve,reject)=>{const node=document.createElement('script');node.src=path+'?v=1.1.0';node.onload=resolve;node.onerror=()=>reject(new Error('PC script unavailable: '+path));document.body.append(node)})}
  document.addEventListener('DOMContentLoaded',async()=>{
   try{
    await styles;document.body.classList.add('match-page');
