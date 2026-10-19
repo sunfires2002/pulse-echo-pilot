@@ -6,8 +6,12 @@ create table if not exists public.futsal_goods (
   good_time integer not null default 0,
   description text not null,
   user_name text,
-  comment text
+  comment text,
+  sender_id text
 );
+
+-- Existing installations may already have this nullable column; this is safe to re-run.
+alter table public.futsal_goods add column if not exists sender_id text;
 
 alter table public.futsal_goods enable row level security;
 

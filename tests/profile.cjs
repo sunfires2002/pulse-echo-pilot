@@ -1,0 +1,62 @@
+const {chromium}=require('/Users/momo/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const assert=require('assert');
+const base='http://127.0.0.1:8767/match.html?id=sunfires-vs-niceguy-20260607';
+const supabaseMock=`window.mockRows=[];window.mockPosted=[];window.mockChannels=[];window.supabase={createClient:()=>({channel:key=>{const c={key,on(type,filter,cb){this.cb=cb;this.filter=filter;return this},subscribe(cb){if(cb)setTimeout(()=>cb('SUBSCRIBED'),0);return this}};window.mockChannels.push(c);return c},removeChannel(){},from(table){if(table==='pulse_matches')return{select:async()=>({data:[],error:null})};return{select:()=>({eq:(key,value)=>({order:async()=>({data:window.mockRows.filter(row=>row[key]===value),error:null})})}),insert:e=>({select:async()=>{window.mockPosted.push(e);const row={...e,id:'local-'+window.mockPosted.length};window.mockRows.push(row);return{data:[{id:row.id}],error:null}}})}}})};`;
+const ytMock=`window.YT={Player:function(id,opts){this.time=5;this.loadVideoById=()=>{};this.getCurrentTime=()=>this.time;this.getDuration=()=>1800;this.seekTo=t=>this.time=t;this.playVideo=()=>{};this.pauseVideo=()=>{};document.getElementById(id).innerHTML='<iframe title="YouTube mock"></iframe>';setTimeout(()=>opts.events.onReady(),0);return this}};const t=setInterval(()=>{if(window.onYouTubeIframeAPIReady){clearInterval(t);window.onYouTubeIframeAPIReady()}},10);`;
+const chartMock=`window.Chart=class{static register(){} constructor(canvas,config){this.canvas=canvas;this.data=config.data;this.options=config.options;this.width=canvas.clientWidth||500;this.height=canvas.clientHeight||120;this.chartArea={left:24,right:this.width-8,top:8,bottom:this.height-8}}update(){}resize(){}destroy(){}};`;
+async function makePage(browser,ua,touch=false,blockStorage=false,legacyName=''){
+ const context=await browser.newContext({viewport:{width:1440,height:900},userAgent:ua,hasTouch:touch});
+ if(blockStorage)await context.addInitScript(()=>{Storage.prototype.getItem=function(){throw new DOMException('blocked','SecurityError')};Storage.prototype.setItem=function(){throw new DOMException('blocked','SecurityError')}});
+ if(legacyName)await context.addInitScript(value=>localStorage.setItem('pulse_echo_tv_name',value),legacyName);
+ await context.route('**/*.supabase.co/**',r=>r.abort());
+ await context.route('**/@supabase/supabase-js@2',r=>r.fulfill({contentType:'application/javascript',body:supabaseMock}));
+ await context.route('https://www.youtube.com/iframe_api',r=>r.fulfill({contentType:'application/javascript',body:ytMock}));
+ await context.route('https://cdn.jsdelivr.net/npm/chart.js',r=>r.fulfill({contentType:'application/javascript',body:chartMock}));
+ const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
+ await page.goto(base,{waitUntil:'networkidle'});return{context,page,errors};
+}
+(async()=>{
+ const browser=await chromium.launch({channel:'chrome',headless:true});
+ const desktop=await makePage(browser,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36');
+ const p=desktop.page;
+ await p.locator('#profileSetup').waitFor({state:'visible'});
+ assert.notEqual(await p.evaluate(()=>document.activeElement?.id),'profileNameInput','initial setup must not focus the text input');
+ for(const id of ['profileNameSave','profileNameSkip'])assert((await p.locator('#'+id).evaluate(el=>el.getBoundingClientRect().height))>=48,id+' touch target must be at least 48px high');
+ await p.locator('#profileNameInput').fill('M4-12');await p.locator('#profileNameSave').click();
+ const saved=await p.evaluate(()=>({name:localStorage.getItem(PULSE_PROFILE.nameKey),id:localStorage.getItem(PULSE_PROFILE.senderKey),legacy:localStorage.getItem(PULSE_PROFILE.legacyNameKey)}));
+ assert.equal(saved.name,'M4-12');assert.equal(saved.legacy,'M4-12');assert.match(saved.id,/^p_[a-z0-9-]{8,}$/i);
+ await p.reload({waitUntil:'networkidle'});assert.equal(await p.locator('#profileSetup').isVisible(),false);assert.equal(await p.locator('#userName').inputValue(),'M4-12');assert.equal(await p.evaluate(()=>PULSE_PROFILE.senderId()),saved.id);
+ await p.locator('#commentText').fill('profile fixture');await p.locator('#commentBtn').click();await p.waitForFunction(()=>mockPosted.length===1);
+ assert.equal(await p.evaluate(()=>mockPosted[0].user_name),'M4-12');assert.equal(await p.evaluate(()=>mockPosted[0].sender_id),saved.id);
+ const channels=await p.evaluate(()=>mockChannels.length);assert(channels>0);
+ await p.evaluate(()=>{const row={id:'remote-profile',video_id:match.id+':'+currentPart,user_name:'ゲスト-ABCD',sender_id:'p_remote1234567890',description:'💬',comment:'remote fixture',good_time:10};mockRows.push(row);mockChannels[0].cb({new:row})});
+ await p.waitForFunction(()=>document.querySelector('#timeline').textContent.includes('ゲスト-ABCD'));
+ await p.evaluate(()=>PULSE_VIEW.setMode(true));await p.locator('#tvNameOpen').click();await p.locator('#tvNameInput').fill('家族-12');await p.locator('#tvNameSave').click();
+ await p.locator('#tvMapDock .tv-react').first().click();await p.waitForFunction(()=>mockPosted.length===2);
+ assert.equal(await p.evaluate(()=>mockPosted[1].user_name),'家族-12');assert.equal(await p.evaluate(()=>mockPosted[1].sender_id),saved.id);
+ assert.deepEqual(desktop.errors,[]);await desktop.context.close();
+
+ const guest=await makePage(browser,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36');
+ await guest.page.locator('#profileSetup').waitFor({state:'visible'});await guest.page.locator('#profileNameSkip').click();
+ const guestIdentity=await guest.page.evaluate(()=>({name:localStorage.getItem(PULSE_PROFILE.nameKey),id:localStorage.getItem(PULSE_PROFILE.senderKey)}));
+ assert.match(guestIdentity.name,/^ゲスト-[A-Z0-9]{4}$/);assert.match(guestIdentity.id,/^p_[a-z0-9-]{8,}$/i);assert.notEqual(guestIdentity.id,saved.id);
+ await guest.page.locator('#niceButton').click();await guest.page.waitForFunction(()=>mockPosted.length===1);
+ assert.equal(await guest.page.evaluate(()=>mockPosted[0].user_name),guestIdentity.name);assert.equal(await guest.page.evaluate(()=>mockPosted[0].sender_id),guestIdentity.id);
+ await guest.page.reload({waitUntil:'networkidle'});assert.equal(await guest.page.locator('#profileSetup').isVisible(),false);assert.equal(await guest.page.locator('#userName').inputValue(),guestIdentity.name);assert.equal(await guest.page.evaluate(()=>PULSE_PROFILE.senderId()),guestIdentity.id);
+ assert.deepEqual(guest.errors,[]);await guest.context.close();
+
+ const mobile=await makePage(browser,'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 Chrome/131.0.0.0 Mobile Safari/537.36',true);
+ await mobile.page.locator('#profileSetup').waitFor({state:'visible'});assert.notEqual(await mobile.page.evaluate(()=>document.activeElement?.id),'profileNameInput','mobile setup must not open the keyboard on entry');for(const id of ['profileNameSave','profileNameSkip'])assert((await mobile.page.locator('#'+id).evaluate(el=>el.getBoundingClientRect().height))>=48,id+' mobile touch target must be at least 48px high');await mobile.page.locator('#profileNameInput').fill('Pixel-7');await mobile.page.locator('#profileNameSave').click();
+ assert.equal(await mobile.page.evaluate(()=>Boolean(window.PULSE_PC_DESKTOP)),false);await mobile.page.locator('#userName').fill('Pixel-8');await mobile.page.locator('#commentText').fill('mobile fixture');await mobile.page.locator('#commentBtn').click();await mobile.page.waitForFunction(()=>mockPosted.length===1);
+ assert.equal(await mobile.page.evaluate(()=>mockPosted[0].user_name),'Pixel-8');assert.match(await mobile.page.evaluate(()=>mockPosted[0].sender_id),/^p_/);assert.equal(await mobile.page.evaluate(()=>localStorage.getItem(PULSE_PROFILE.nameKey)),'Pixel-8');
+ assert.deepEqual(mobile.errors,[]);await mobile.context.close();
+ const legacy=await makePage(browser,'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 Chrome/131.0.0.0 Mobile Safari/537.36',true,false,'既存保存名');
+ assert.equal(await legacy.page.locator('#profileSetup').isVisible(),false);assert.equal(await legacy.page.locator('#userName').inputValue(),'既存保存名');assert.equal(await legacy.page.evaluate(()=>localStorage.getItem(PULSE_PROFILE.nameKey)),'既存保存名');await legacy.context.close();
+ const blocked=await makePage(browser,'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 Chrome/131.0.0.0 Mobile Safari/537.36',true,true);
+ await blocked.page.locator('#profileSetup').waitFor({state:'visible'});await blocked.page.locator('#profileNameSkip').click();
+ const fallback=await blocked.page.evaluate(()=>({name:PULSE_PROFILE.getName(),id:PULSE_PROFILE.senderId()}));assert.match(fallback.name,/^ゲスト-[A-Z0-9]{4}$/);assert.match(fallback.id,/^p_/);
+ await blocked.page.locator('#commentText').fill('storage blocked fixture');await blocked.page.locator('#commentBtn').click();await blocked.page.waitForFunction(()=>mockPosted.length===1);
+ assert.equal(await blocked.page.evaluate(()=>mockPosted[0].user_name),fallback.name);assert.equal(await blocked.page.evaluate(()=>mockPosted[0].sender_id),fallback.id);assert.deepEqual(blocked.errors,[]);
+ await blocked.context.close();await browser.close();
+ console.log('PASS profile onboarding, skip/reload persistence, unique p_ IDs, PC+TV posting identity, mobile persistence, legacy-name migration, storage-blocked fallback, mocked Realtime display');
+})().catch(error=>{console.error(error);process.exit(1)});

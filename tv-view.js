@@ -5,12 +5,10 @@
  const enter=document.getElementById("tvEnter");
  const nameField=document.getElementById("userName"), namePanel=document.getElementById("tvNamePanel"), nameInput=document.getElementById("tvNameInput");
  const nameButton=document.getElementById("tvNameOpen"), status=document.getElementById("tvStatus");
- const storage={read(key){try{return localStorage.getItem(key)}catch{return null}},write(key,value){try{localStorage.setItem(key,value);return true}catch{return false}}};
  let statusTimer;
  function clearStatus(){clearTimeout(statusTimer);status.textContent=""}
  function announce(text){clearStatus();status.textContent=text;statusTimer=setTimeout(clearStatus,1800)}
- function refreshName(){nameButton.textContent="名前："+(nameField.value.trim()||"匿名")}
- const savedName=storage.read("pulse_echo_tv_name");if(savedName!==null&&!nameField.value.trim())nameField.value=savedName;
+ function refreshName(){nameButton.textContent="名前："+(window.PULSE_PROFILE?.getName()||nameField.value.trim()||"匿名")}
  refreshName();
  nameField.addEventListener("input",refreshName);
  body.dataset.tvLayout="large";
@@ -18,10 +16,10 @@
  function closeName(){namePanel.hidden=true;nameButton.focus()}
  document.getElementById("tvNameCancel").addEventListener("click",closeName);
  document.getElementById("tvNameSave").addEventListener("click",()=>{
-  nameField.value=nameInput.value.trim();refreshName();
-  if(storage.write("pulse_echo_tv_name",nameField.value)){closeName();announce("名前を保存しました")}
-  else document.getElementById("tvStorageNotice").textContent="ブラウザへの保存ができません。名前はこのページ内で適用しました。";
+  if(!nameInput.value.trim()){document.getElementById("tvStorageNotice").textContent="名前か背番号を入力してください。";nameInput.focus();return}
+  window.PULSE_PROFILE?.setName(nameInput.value);nameField.value=nameInput.value.trim();refreshName();closeName();announce("名前を保存しました");
  });
+ document.addEventListener("pulse-profile-name-changed",refreshName);
  const placeholder=document.createComment("reaction map original position");
  map.before(placeholder);
  const dock=document.createElement("div");dock.id="tvMapDock";dock.hidden=true;shell.append(dock);
