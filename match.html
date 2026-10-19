@@ -48,7 +48,14 @@
 <div id="tvStatus" role="status" aria-live="polite"></div>
 </div>
 <footer class="footer"><div class="container">PULSE ECHO — 鼓動が、記憶になる。</div></footer>
-<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+window.__PULSE_YT_API_READY__=Boolean(window.YT&&window.YT.Player);
+window.onYouTubeIframeAPIReady=function(){
+ window.__PULSE_YT_API_READY__=true;
+ console.info('[PULSE PLAYER] API ready (bootstrap)');
+};
+</script>
+<script async src="https://www.youtube.com/iframe_api" onerror="console.error('[PULSE PLAYER] API script failed to load')"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="config.js"></script><script src="data.js"></script>
@@ -66,7 +73,7 @@ let supa=null;
 if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase) supa=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
 const matchesTable=()=>cfg.matchesTableName||"pulse_matches";
 const reactionTable=()=>cfg.tableName||"futsal_goods";
-let match=null,videos=[],currentPart="前半",player,events=[],chart,youtubeReady=false,echoTimer=null,echoPlayed=new Set(),recentManualEchoes=[];
+let match=null,videos=[],currentPart="前半",player,playerReady=false,playerAttempt=0,playerReadyTimer=null,events=[],chart,youtubeReady=Boolean(window.__PULSE_YT_API_READY__||(window.YT&&window.YT.Player)),echoTimer=null,echoPlayed=new Set(),recentManualEchoes=[];
 let realtimeChannel=null,realtimeKey="",realtimeGeneration=0,realtimeReceived=[];
 let pendingRealtimeInserts=0,realtimeBuffer=[],ownRealtimeIds=new Set();
 function stopRealtimeSubscription(){
@@ -135,8 +142,55 @@ async function initMatch(){
  if(youtubeReady&&videos[0])loadVideo(videoId(videos[0][1]));
  loadEvents(true);
 }
-function onYouTubeIframeAPIReady(){youtubeReady=true;if(match&&videos[0])loadVideo(videoId(videos[0][1]));if(match)loadEvents(true)}
-function loadVideo(v){if(!v)return;echoPlayed.clear();if(player&&player.loadVideoById)player.loadVideoById(v);else player=new YT.Player("player",{videoId:v,playerVars:{playsinline:1,rel:0,autoplay:0},events:{onReady:startEchoPlayback,onStateChange:startEchoPlayback}})}
+function onYouTubeIframeAPIReady(){
+ window.__PULSE_YT_API_READY__=true;
+ if(youtubeReady){console.info('[PULSE PLAYER] API ready callback (already ready)');return}
+ youtubeReady=true;console.info('[PULSE PLAYER] API ready');
+ if(match&&videos[0]&&!player)loadVideo(videoId(videos[0][1]));
+ if(match)loadEvents(true)
+}
+function ensurePlayerHost(){
+ const shell=document.getElementById('videoShell'),old=document.getElementById('player');
+ if(!shell)return null;
+ if(old?.tagName==='DIV'){old.replaceChildren();return old}
+ if(old)old.remove();
+ const host=document.createElement('div');host.id='player';shell.prepend(host);return host
+}
+function createPlayer(v,attempt){
+ if(!window.YT?.Player){console.info('[PULSE PLAYER] waiting for API',{attempt});return}
+ if(!ensurePlayerHost()){console.error('[PULSE PLAYER] mount element missing');return}
+ const attemptId=++playerAttempt;playerReady=false;
+ console.info('[PULSE PLAYER] create requested',{attempt,videoId:v});
+ try{
+  player=new YT.Player('player',{videoId:v,playerVars:{playsinline:1,rel:0,autoplay:0},events:{
+   onReady:event=>{if(attemptId!==playerAttempt)return;playerReady=true;clearTimeout(playerReadyTimer);playerReadyTimer=null;console.info('[PULSE PLAYER] onReady',{attempt});startEchoPlayback(event)},
+   onStateChange:event=>{if(attemptId===playerAttempt)startEchoPlayback(event)},
+   onError:event=>{if(attemptId!==playerAttempt)return;console.error('[PULSE PLAYER] player error',{attempt,code:event.data});retryPlayer(v,attempt,'player-error-'+event.data)}
+  }});
+  clearTimeout(playerReadyTimer);
+  playerReadyTimer=setTimeout(()=>{
+   if(attemptId!==playerAttempt||playerReady)return;
+   console.error('[PULSE PLAYER] onReady timeout',{attempt});
+   retryPlayer(v,attempt,'onReady-timeout')
+  },12000)
+ }catch(error){
+  console.error('[PULSE PLAYER] create failed',{attempt,error:error?.message||String(error)});
+  retryPlayer(v,attempt,'create-failed')
+ }
+}
+function retryPlayer(v,attempt,reason){
+ if(attempt>=2){console.error('[PULSE PLAYER] retry limit reached',{reason});return}
+ clearTimeout(playerReadyTimer);playerReadyTimer=null;
+ const failed=player;player=null;playerReady=false;playerAttempt++;
+ try{failed?.destroy()}catch(error){console.warn('[PULSE PLAYER] destroy before retry failed',error)}
+ ensurePlayerHost();console.warn('[PULSE PLAYER] retrying once',{reason,nextAttempt:attempt+1});createPlayer(v,attempt+1)
+}
+function loadVideo(v){
+ if(!v)return;echoPlayed.clear();
+ if(player&&player.loadVideoById){console.info('[PULSE PLAYER] load video',{videoId:v});player.loadVideoById(v);return}
+ if(window.YT?.Player){createPlayer(v,1);return}
+ console.info('[PULSE PLAYER] API not ready yet',{videoId:v})
+}
 const key=()=>`pulse_echo_${match.id}_${currentPart}`;
 function nowTime(back=0){try{return Math.max(0,Math.floor((player.getCurrentTime()||0)-back))}catch{return 0}}
 function fmt(s){s=Number(s)||0;return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`}
