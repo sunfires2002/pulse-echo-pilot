@@ -17,8 +17,6 @@
  const active=()=>body.classList.contains("lab-mode");
  // Move the original elements, preserving their input state and event handlers.
  const panels=[];
- const nameField=document.getElementById('userName');
- nameField.addEventListener('input',()=>{if(active()){try{localStorage.setItem('pulse_echo_tv_name',nameField.value.trim())}catch{document.getElementById('tvStorageNotice').textContent='名前をブラウザへ保存できません。'}}});
  const layoutKey="pulse_echo_pc_lab_layout_v1",entries=[];
  let layout={},restoring=false,storageWarning=false,docked=false,dockingReady=false,syncingDock=false,dockCandidate=false;
  try{const saved=JSON.parse(localStorage.getItem(layoutKey)||"null");if(saved?.version===1&&saved.panels&&typeof saved.panels==="object"){layout=saved.panels;docked=saved.docked===true}}catch{storageWarning=true}

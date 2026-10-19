@@ -2,7 +2,7 @@
 <html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080a10"><title>試合を見る | PULSE ECHO</title>
-<link rel="stylesheet" href="style.css"><script src="pc-desktop.js?v=1.1.0"></script></head><body>
+<link rel="stylesheet" href="style.css"><script src="profile.js?v=1.2.0"></script><script src="pc-desktop.js?v=1.2.0"></script></head><body>
 <header class="site-header"><div class="container nav"><a class="brand" href="./">PULSE <span>ECHO</span></a><nav class="navlinks"><a href="./">試合一覧</a></nav></div></header>
 <main><div class="container match-hero"></div>
 <section class="section" style="padding-top:10px"><div class="container">
@@ -39,6 +39,16 @@
 </aside>
 </div></div></section></main>
 <footer class="footer"><div class="container">PULSE ECHO — 鼓動が、記憶になる。</div></footer>
+<div class="profile-setup" id="profileSetup" hidden role="dialog" aria-modal="true" aria-labelledby="profileSetupTitle">
+ <div class="profile-setup-card">
+  <h2 id="profileSetupTitle">PULSE ECHOへようこそ</h2>
+  <p>投稿に表示する名前を設定してください。背番号でも大丈夫です。</p>
+  <label for="profileNameInput">名前</label>
+  <input class="input" id="profileNameInput" type="text" autocomplete="nickname" maxlength="40" placeholder="例：横江、12">
+  <div class="profile-setup-actions"><button class="btn btn-primary" id="profileNameSave" type="button">名前を入れる</button><button class="btn" id="profileNameSkip" type="button">スキップ</button></div>
+  <p class="profile-setup-status" id="profileSetupStatus" role="status" aria-live="polite"></p>
+ </div>
+</div>
 <script>
 window.__PULSE_YT_API_READY__=Boolean(window.YT&&window.YT.Player);
 window.onYouTubeIframeAPIReady=function(){
@@ -55,6 +65,7 @@ window.onYouTubeIframeAPIReady=function(){
 const qs=new URLSearchParams(location.search), id=qs.get("id");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const cfg=window.PULSE_CONFIG||{};
+window.PULSE_PROFILE?.init();
 let supa=null;
 if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase) supa=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
 const matchesTable=()=>cfg.matchesTableName||"pulse_matches";
@@ -223,7 +234,7 @@ async function loadEvents(resetEcho=false){
 }
 async function addEvent(kind,comment="",timeOverride=null,voiceAudit=null){
  const report=type=>{try{voiceAudit?.(type)}catch{}};report("save-start");
- const isTactic=kind.startsWith("🎯"),e={good_time:timeOverride??(isTactic?nowTime(0):nowTime(3)),description:kind,user_name:document.getElementById("userName").value.trim()||"匿名",comment,video_id:`${match.id}:${currentPart}`};
+ const isTactic=kind.startsWith("🎯"),e={good_time:timeOverride??(isTactic?nowTime(0):nowTime(3)),description:kind,user_name:window.PULSE_PROFILE?.nameForPost(document.getElementById("userName").value)||document.getElementById("userName").value.trim()||"匿名",sender_id:window.PULSE_PROFILE?.senderId()||"",comment,video_id:`${match.id}:${currentPart}`};
  recentManualEchoes.push({t:e.good_time,d:e.description,c:e.comment,u:e.user_name,expires:Date.now()+5000});
  if(supa){
   pendingRealtimeInserts++;

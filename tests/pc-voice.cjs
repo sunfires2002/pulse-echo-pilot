@@ -34,14 +34,14 @@ function make({ua='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',touch=0,pref
    if(outcome==='throw')throw new Error('synthetic');
    return outcome==='error'?{error:{message:'synthetic'}}:{data:[{id:1}]};
   }}}}}};
-  const env={document:{getElementById:()=>({value:'テスト'})},nowTime:()=>42,recentManualEchoes:[],pendingRealtimeInserts:0,ownRealtimeIds:new Set(),flushRealtimeBuffer(){},fly(){},echoText(){},loadEvents:async()=>{},reactionTable:()=> 'in-memory-only',match:{id:'test'},currentPart:'前半',alert(){},supa};
+  const env={window:{PULSE_PROFILE:{nameForPost:value=>String(value||'').trim()||'テスト',senderId:()=> 'p_test1234567890'}},document:{getElementById:()=>({value:'テスト'})},nowTime:()=>42,recentManualEchoes:[],pendingRealtimeInserts:0,ownRealtimeIds:new Set(),flushRealtimeBuffer(){},fly(){},echoText(){},loadEvents:async()=>{},reactionTable:()=> 'in-memory-only',match:{id:'test'},currentPart:'前半',alert(){},supa};
   vm.createContext(env);vm.runInContext(source,env);try{await env.addEvent('🔥 ナイスプレー','ナイス',41,p=>reports.push(p))}catch{}
-  assert.equal(seen.length,1);assert.deepEqual(Object.keys(seen[0]).sort(),['good_time','description','user_name','comment','video_id'].sort());assert.equal(seen[0].video_id,'test:前半');assert.deepEqual(reports,['save-start',outcome==='success'?'save-success':'save-failure']);assert.equal(env.pendingRealtimeInserts,0);
+  assert.equal(seen.length,1);assert.deepEqual(Object.keys(seen[0]).sort(),['good_time','description','user_name','sender_id','comment','video_id'].sort());assert.equal(seen[0].video_id,'test:前半');assert.equal(seen[0].sender_id,'p_test1234567890');assert.deepEqual(reports,['save-start',outcome==='success'?'save-success':'save-failure']);assert.equal(env.pendingRealtimeInserts,0);
  }
- console.log('PASS actual addEvent diagnostics, original record shape and Realtime counter on success/error/throw');
+ console.log('PASS actual addEvent diagnostics, sender_id record shape and Realtime counter on success/error/throw');
  const before=require('child_process').execFileSync('git',['show','47b8f14:match.html'],{cwd:root,encoding:'utf8'});
  const getSave=text=>text.slice(text.indexOf('async function addEvent('),text.indexOf('async function deleteEvent('));
- const stripped=getSave(html).replace(',voiceAudit=null','').replace('\n const report=type=>{try{voiceAudit?.(type)}catch{}};report("save-start");','').replace('report("save-failure");','').replace('catch(error){report("save-failure");throw error}','').replace('report("save-success");','');
+ const stripped=getSave(html).replace(',voiceAudit=null','').replace('\n const report=type=>{try{voiceAudit?.(type)}catch{}};report("save-start");','').replace('report("save-failure");','').replace('catch(error){report("save-failure");throw error}','').replace('report("save-success");','').replace('user_name:window.PULSE_PROFILE?.nameForPost(document.getElementById("userName").value)||document.getElementById("userName").value.trim()||"匿名",sender_id:window.PULSE_PROFILE?.senderId()||"",','user_name:document.getElementById("userName").value.trim()||"匿名",');
  assert.equal(stripped,getSave(before));
  const oldVoice=before.slice(before.indexOf('let isVoiceActive'),before.indexOf('\ninitMatch();',before.indexOf('let isVoiceActive')));
  const legacy=html.slice(html.indexOf('let isVoiceActive'),html.indexOf('\n}\n\ninitMatch();',html.indexOf('let isVoiceActive')));
