@@ -62,7 +62,7 @@ window.onYouTubeIframeAPIReady=function(){
 <script src="config.js"></script><script src="data.js"></script>
 <script src="pc-voice-diagnostics.js?v=1.0.0"></script><script src="pc-voice.js?v=1.1.0"></script>
 <script>
-const qs=new URLSearchParams(location.search), id=qs.get("id");
+const qs=new URLSearchParams(location.search), id=qs.get("id"), tacticsLabRequested=qs.get("mode")==="lab";
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const cfg=window.PULSE_CONFIG||{};
 window.PULSE_PROFILE?.init();
@@ -112,6 +112,9 @@ function initRealtimeSubscription(){
 window.addEventListener('pagehide',stopRealtimeSubscription);
 window.addEventListener('pageshow',()=>{if(match){initRealtimeSubscription();loadEvents()}});
 const tactic={open:false,tool:"move",review:"actual",selected:null,drag:null,arrow:null,counts:{home:0,away:0,ball:0},actions:{actual:{pass:0,move:0},ideal:{pass:0,move:0}}};
+function tacticsEnabled(){return tacticsLabRequested&&document.body.classList.contains("lab-mode")}
+function syncTacticsAccess(){const enabled=tacticsEnabled();document.body.classList.toggle("tactics-available",enabled);if(!enabled&&tactic.open)closeTactics();if(match)render()}
+document.addEventListener("pulse-view-mode",syncTacticsAccess);
 function localMatches(){
  try{
   const saved=JSON.parse(localStorage.getItem("pulse_echo_workflow_v3")||"null");
@@ -215,7 +218,7 @@ function nextTacticOrder(type,review){
 }
 function addTacticArrow(x1,y1,x2,y2){const el=document.createElement("div"),numbered=["pass","move"].includes(tactic.tool);el.className=`t-arrow ${tactic.tool} ${tactic.review}`;el.dataset.kind="arrow";el.dataset.type=tactic.tool;el.dataset.review=tactic.review;el.dataset.order=numbered?nextTacticOrder(tactic.tool,tactic.review):"";el.dataset.x1=x1;el.dataset.y1=y1;el.dataset.x2=x2;el.dataset.y2=y2;tacticLayer().appendChild(el);placeTacticArrow(el);return el}
 function resetTactics(){const layer=tacticLayer();layer.innerHTML='<div class="tactic-circle"></div><div class="tactic-goal left"></div><div class="tactic-goal right"></div>';tactic.counts={home:0,away:0,ball:0};tactic.actions={actual:{pass:0,move:0},ideal:{pass:0,move:0}};tacticSelect(null);[[24,30],[36,44],[36,60],[53,38],[53,64]].forEach(p=>addTacticPiece("home",p[0],p[1]));[[74,30],[64,44],[64,60],[48,40],[48,66]].forEach(p=>addTacticPiece("away",p[0],p[1]));addTacticPiece("ball",50,50)}
-function openTactics(seekTime=null,mark=false){const t=seekTime!=null?Math.max(0,Number(seekTime)):mark?Math.max(0,nowTime()-5):nowTime(0);if(player){if(mark||seekTime!=null)player.seekTo(t,true);player.pauseVideo&&player.pauseVideo()}tactic.open=true;document.body.classList.add("tactics-open");document.getElementById("videoShell").classList.add("tactical-on");document.getElementById("tacticalControls").classList.add("is-open");document.getElementById("tacticToggle").textContent="レビュー終了";if(!tacticLayer().querySelector(".t-piece"))resetTactics();if(mark)addEvent("🎯 ここな！",`起点 ${fmt(t)}`,t)}
+function openTactics(seekTime=null,mark=false){if(!tacticsEnabled())return false;const t=seekTime!=null?Math.max(0,Number(seekTime)):mark?Math.max(0,nowTime()-5):nowTime(0);if(player){if(mark||seekTime!=null)player.seekTo(t,true);player.pauseVideo&&player.pauseVideo()}tactic.open=true;document.body.classList.add("tactics-open");document.getElementById("videoShell").classList.add("tactical-on");document.getElementById("tacticalControls").classList.add("is-open");document.getElementById("tacticToggle").textContent="レビュー終了";if(!tacticLayer().querySelector(".t-piece"))resetTactics();if(mark)addEvent("🎯 ここな！",`起点 ${fmt(t)}`,t)}
 function closeTactics(){tactic.open=false;tactic.tool="move";document.body.classList.remove("tactics-open");document.getElementById("videoShell").classList.remove("tactical-on");document.getElementById("tacticalControls").classList.remove("is-open");document.getElementById("tacticToggle").textContent="🎯 ここな！";document.querySelectorAll("[data-tactic]").forEach(b=>b.classList.remove("active"));tacticSelect(null)}
 async function loadEvents(resetEcho=false){
  if(!match)return;
@@ -261,7 +264,7 @@ document.querySelectorAll(".react[data-kind]").forEach(b=>b.onclick=()=>{addEven
 document.querySelectorAll(".nice-chip").forEach(b=>b.onclick=()=>{addEvent(b.dataset.kind);hideNiceOptions()});
 document.querySelectorAll(".landscape-btn[data-kind]").forEach(b=>b.onclick=()=>{const offset=Number(b.dataset.offset)||3;addEvent(b.dataset.kind,"",nowTime(offset));b.classList.add("is-hit");setTimeout(()=>b.classList.remove("is-hit"),180)});
 document.getElementById("commentBtn").onclick=()=>{let t=document.getElementById("commentText").value.trim();if(t)addEvent("💬",t)};
-document.getElementById("tacticToggle").onclick=()=>tactic.open?closeTactics():openTactics(null,true);
+document.getElementById("tacticToggle").onclick=()=>{if(!tacticsEnabled()){const t=Math.max(0,nowTime()-5);addEvent("🎯 ここな！",`起点 ${fmt(t)}`,t);return}tactic.open?closeTactics():openTactics(null,true)};
 document.getElementById("tacticReset").onclick=resetTactics;
 document.getElementById("tacticDelete").onclick=()=>{if(!tactic.selected)return;tactic.selected.remove();tactic.selected=null};
 document.getElementById("tacticMemo").onclick=()=>{openTactics();const text=prompt("戦術メモ")||"";if(text.trim())tacticSelect(addTacticMemo(text.trim(),50,50))};
@@ -322,7 +325,7 @@ function render(){
  const names=[...new Set(events.map(e=>e.user_name).filter(Boolean))];const sel=document.getElementById("viewFilter"),old=sel.value;
  sel.innerHTML='<option value="all">👁️ 全員の熱量を表示</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");if([...sel.options].some(o=>o.value===old))sel.value=old;
  const f=sel.value==="all"?events:events.filter(e=>e.user_name===sel.value);
- document.getElementById("timeline").innerHTML=f.length?f.slice().sort((a,b)=>b.good_time-a.good_time).map(e=>`<div class="event" data-time="${e.good_time}"><div class="event-top"><span><b>${fmt(e.good_time)}</b> ${esc(displayEchoKind(e.description))}</span>${window.PULSE_PC_DESKTOP?`<span class="event-meta"><span class="event-user">${esc(e.user_name)}</span>${pcPostDate(e.created_at)}</span>`:`<span class="event-user">${esc(e.user_name)}</span>`}</div>${e.comment?`<div class="event-comment">${esc(e.comment)}</div>`:""}<button class="event-review" data-time="${esc(e.good_time)}" type="button">戦術レビュー</button><button class="event-delete" data-id="${esc(e.id)}" type="button">削除</button></div>`).join(""):'<div class="muted">まだ足跡はありません。最初の一人になろう。</div>';
+ document.getElementById("timeline").innerHTML=f.length?f.slice().sort((a,b)=>b.good_time-a.good_time).map(e=>`<div class="event" data-time="${e.good_time}"><div class="event-top"><span><b>${fmt(e.good_time)}</b> ${esc(displayEchoKind(e.description))}</span>${window.PULSE_PC_DESKTOP?`<span class="event-meta"><span class="event-user">${esc(e.user_name)}</span>${pcPostDate(e.created_at)}</span>`:`<span class="event-user">${esc(e.user_name)}</span>`}</div>${e.comment?`<div class="event-comment">${esc(e.comment)}</div>`:""}${tacticsEnabled()?`<button class="event-review" data-time="${esc(e.good_time)}" type="button">戦術レビュー</button>`:""}<button class="event-delete" data-id="${esc(e.id)}" type="button">削除</button></div>`).join(""):'<div class="muted">まだ足跡はありません。最初の一人になろう。</div>';
  
  // ▼ タイムラインクリック時の処理（動画シーク ＋ 画面への文字強制表示）
  document.querySelectorAll(".event").forEach(el=>el.onclick=e=>{
