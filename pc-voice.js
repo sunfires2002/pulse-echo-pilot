@@ -36,7 +36,6 @@
    if(commentText.includes('カウント'))commentText=commentText.replace(/カウント/g,'カウンター');
    let kind='🤖 AIにお任せ';
    if(dictionary.hot.some(w=>commentText.includes(w)))kind='🔥 ナイスプレー';
-   else if(dictionary.close?.some(w=>commentText.includes(w)))kind='😫 惜しい';
    else if(dictionary.miss.some(w=>commentText.includes(w)))kind='😅 あちゃー';
    else if(dictionary.respect.some(w=>commentText.includes(w)))kind='😳 マジで';
    const videoTime=Math.max(0,nowTime()-1),received=performance.now();
