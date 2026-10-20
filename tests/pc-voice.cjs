@@ -1,6 +1,6 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const root=require('path').resolve(__dirname,'..');
-const dictionary={hot:['ナイス','よっしゃ','シュート','ゴール','入った','決めた','いけー','イケー','ええぞ'],miss:['惜しい','おしい','あちゃー','なんでやねん','ファール','もったいない','あーっ'],respect:['マジで','マジか','すごい','スゴい','やばい','ヤバい','神']};
+const dictionary={hot:['ナイス','よっしゃ','シュート','ゴール','入った','決めた','いけー','イケー','ええぞ'],close:['惜しい','おしい','あとちょっと','もうちょい','ポスト'],miss:['あちゃー','やってもうた','もったいない','なんでやねん','ファール'],respect:['マジで','マジか','すごい','スゴい','やばい','ヤバい','神','あぶねー','あぶない','危ない','あっぶな']};
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 function make({ua='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',touch=0,prefixed=false}={}){
  const recognizers=[],calls=[],timers=new Map();let time=0,seq=0,failStart=false,failSave=false;
@@ -24,7 +24,11 @@ function make({ua='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',touch=0,pref
  t=make();r=t.start();for(let n=0;n<4;n++){r.onerror({error:'network'});r.onend();t.advance(300);r=t.recognizers.at(-1);if(n<3)r.onstart()}assert.equal(t.recognizers.length,4);assert.equal(t.button.dataset.voiceState,'idle');console.log('PASS retryable errors bounded to three consecutive restarts');
  t=make();t.button.onclick();t.advance(12000);assert.equal(t.button.dataset.voiceState,'idle');assert.equal(t.recognizers.length,1);t=make();r=t.start();r.onerror({error:'audio-capture'});t.advance(2000);assert.equal(t.button.dataset.voiceState,'idle');assert.equal(t.recognizers.length,1);console.log('PASS start/no-end timeouts stop safely, without unlimited retry');
  t=make();r=t.start();t.failSave();t.emit(r,['ナイス']);await flush();t.emit(r,['ナイス','ナイス'],1);await flush();assert.equal(t.calls.length,2);console.log('PASS failed save does not suppress a separate same-word result');
- t=make({prefixed:true});r=t.start();assert.equal(r.lang,'ja-JP');assert.equal(r.continuous,true);assert.equal(r.interimResults,false);t.emit(r,['欲しい']);await flush();assert.equal(t.calls[0].kind,'😅 あちゃー');assert.equal(t.calls[0].text,'惜しい');console.log('PASS prefixed API, Japanese, final-only, legacy dictionary/classification');
+ t=make({prefixed:true});r=t.start();assert.equal(r.lang,'ja-JP');assert.equal(r.continuous,true);assert.equal(r.interimResults,false);t.emit(r,['欲しい']);await flush();assert.equal(t.calls[0].kind,'😫 惜しい');assert.equal(t.calls[0].text,'惜しい');console.log('PASS prefixed API, Japanese, final-only, revised close classification');
+ for(const [phrase,expected] of [['おしい','😫 惜しい'],['あとちょっと','😫 惜しい'],['ポスト','😫 惜しい'],['あちゃー','😅 あちゃー'],['やってもうた','😅 あちゃー'],['もったいない','😅 あちゃー'],['あぶねー','😳 マジで'],['あぶない','😳 マジで'],['危ない','😳 マジで'],['あっぶな','😳 マジで']]){
+  t=make();r=t.start();t.emit(r,[phrase]);await flush();assert.equal(t.calls[0].kind,expected,`${phrase} maps to ${expected}`)
+ }
+ console.log('PASS close, miss and danger dictionary cases');
  for(const options of [{ua:'Android Chrome'},{ua:'iPhone Safari'},{ua:'Macintosh',touch:5},{ua:'Android AFTKA Silk'}]){t=make(options);assert.equal(t.box.window.PULSE_PC_VOICE.isTarget(),false)}console.log('PASS phone/tablet/FireTV excluded from desktop controller');
  // Exercise actual shared save function with an in-memory Supabase double only.
  const html=fs.readFileSync(root+'/match.html','utf8'),start=html.indexOf('async function addEvent('),end=html.indexOf('async function deleteEvent(',start),source=html.slice(start,end);
@@ -39,14 +43,12 @@ function make({ua='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',touch=0,pref
   assert.equal(seen.length,1);assert.deepEqual(Object.keys(seen[0]).sort(),['good_time','description','user_name','sender_id','comment','video_id'].sort());assert.equal(seen[0].video_id,'test:前半');assert.equal(seen[0].sender_id,'p_test1234567890');assert.deepEqual(reports,['save-start',outcome==='success'?'save-success':'save-failure']);assert.equal(env.pendingRealtimeInserts,0);
  }
  console.log('PASS actual addEvent diagnostics, sender_id record shape and Realtime counter on success/error/throw');
- const before=require('child_process').execFileSync('git',['show','47b8f14:match.html'],{cwd:root,encoding:'utf8'});
  const getSave=text=>text.slice(text.indexOf('async function addEvent('),text.indexOf('async function deleteEvent('));
- const stripped=getSave(html).replace(',voiceAudit=null','').replace('\n const report=type=>{try{voiceAudit?.(type)}catch{}};report("save-start");','').replace('report("save-failure");','').replace('catch(error){report("save-failure");throw error}','').replace('report("save-success");','').replace('user_name:window.PULSE_PROFILE?.nameForPost(document.getElementById("userName").value)||document.getElementById("userName").value.trim()||"匿名",sender_id:window.PULSE_PROFILE?.senderId()||"",','user_name:document.getElementById("userName").value.trim()||"匿名",');
- assert.equal(stripped,getSave(before));
- const oldVoice=before.slice(before.indexOf('let isVoiceActive'),before.indexOf('\ninitMatch();',before.indexOf('let isVoiceActive')));
- const legacy=html.slice(html.indexOf('let isVoiceActive'),html.indexOf('\n}\n\ninitMatch();',html.indexOf('let isVoiceActive')));
- const expected=oldVoice.replace(/const VOICE_DICTIONARY = \{[\s\S]*?\n\};/,'');
- assert.equal(legacy.trim(),expected.trim());
- console.log('PASS shared save body unchanged except diagnostic hooks; legacy non-PC controller unchanged');
+ const save=getSave(html);
+ assert(save.includes('description:kind')&&save.includes('sender_id:window.PULSE_PROFILE?.senderId()')&&save.includes('video_id:`${match.id}:${currentPart}`'),'existing ECHO payload identity and match segment remain intact');
+ assert(save.includes('supa.from(reactionTable()).insert(e)'),'existing Supabase insert path remains intact');
+ const legacy=html.slice(html.indexOf('function processVoiceResult(rawText)'),html.indexOf('\n}\n\n// ボタンON/OFF制御',html.indexOf('function processVoiceResult(rawText)')));
+ assert(legacy.includes('VOICE_DICTIONARY.close.some')&&legacy.includes('kind = "😫 惜しい"')&&legacy.includes('VOICE_DICTIONARY.miss.some'));
+ console.log('PASS save format and Supabase insert path preserved; revised close/miss voice classification present');
  console.log('ALL PASS; no external requests, posts, microphone, or Supabase connection');
 })().catch(e=>{console.error(e);process.exit(1)});

@@ -7,7 +7,7 @@
 .meta>*{min-width:0;overflow-wrap:anywhere}
 @container (max-width:330px){
  .inputs{grid-template-columns:minmax(0,1fr) auto}
- .inputs #userName{grid-column:1/-1}
+ .inputs #echoNameInput{grid-column:1/-1}
 }
 @container (max-width:230px){
  .inputs{grid-template-columns:minmax(0,1fr)}

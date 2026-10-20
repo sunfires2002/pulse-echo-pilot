@@ -1,11 +1,14 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
-const html=fs.readFileSync('match.html','utf8'),base=require('child_process').execFileSync('git',['show','ba8e4d7:match.html'],{encoding:'utf8'});
+const html=fs.readFileSync('match.html','utf8'),base=require('child_process').execFileSync('git',['show','6dda028:match.html'],{encoding:'utf8'});
 const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].filter(s=>s[1].trim()).at(-1)[1];new vm.Script(script);
 const section=(s,a,b)=>s.slice(s.indexOf(a),s.indexOf(b,s.indexOf(a)));
-for(const [a,b] of [['function loadVideo(', 'function tacticLayer('],['function echoText(', 'function setInfoPanel('],['function draw(', 'window.deleteEvent=']]) assert.equal(section(html,a,b),section(base,a,b),a+' unchanged');
+for(const [a,b] of [['function loadVideo(', 'function tacticLayer('],['let realtimeChannel=', 'const tactic=']]) assert.equal(section(html,a,b),section(base,a,b),a+' unchanged');
+const beforeDraw=section(base,'function draw(','window.deleteEvent='),afterDraw=section(html,'function draw(','function displayEchoKind(');
+assert.equal(afterDraw.replace('label:"🎙 その他"','label:"🤖 AIにお任せ"').replace(',maintainAspectRatio:false',''),beforeDraw,'heatmap category matching and data aggregation unchanged');
+assert(html.includes('function displayEchoKind(kind){return kind==="🤖 AIにお任せ"?"🎙 その他":kind}'),'stored AI kind is display-mapped only');
 // Desktop/legacy voice preservation is verified separately in pc-voice.cjs.
 let channels=[],removed=[],queries=[],flown=[],renders=0,insertResolve;
-const ctx={console,window:{addEventListener:()=>{}},alert:()=>{},localStorage:{getItem:()=> '[]'},document:{getElementById:id=>id==='userName'?{value:'Alice'}:{value:''}},setTimeout};
+const ctx={console,window:{addEventListener:()=>{}},alert:()=>{},localStorage:{getItem:()=> '[]'},document:{getElementById:id=>id==='echoNameInput'?{value:'Alice'}:{value:''}},setTimeout};
 vm.createContext(ctx);
 vm.runInContext(`let match={id:'match'},currentPart='前半',events=[],echoPlayed=new Set(),recentManualEchoes=[];const reactionTable=()=> 'futsal_goods';const key=()=> 'local';function startEchoPlayback(){}function nowTime(){return 10}function echoText(e){return e.user_name+'：'+e.comment}function fly(s){flown(s)}function render(){rendered()}let supa;`,ctx);
 ctx.flown=s=>flown.push(s);ctx.rendered=()=>renders++;

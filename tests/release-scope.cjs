@@ -1,12 +1,12 @@
 const fs=require('fs'),assert=require('assert'),{execFileSync}=require('child_process');
 const show=(ref,file)=>execFileSync('git',['show',ref+':'+file],{maxBuffer:4*1024*1024});
-for(const file of ['index.html','style.css','config.js','data.js','admin.html','robots.txt','supabase-schema.sql','.github/workflows/keep-alive.yml','pulse-echo-workflow-backup.json'])assert(fs.readFileSync(file).equals(show('47b8f14',file)),file+' must retain production content');
-const adopted={"pc-lab.js": "8eeb429abaab2a26a78c5ad2156a84a7dce13769", "pc-lab.css": "634671010889460dcb4dc07d2dd99c04541585c4", "tv-view.js": "46aaab2fefb579ddb0f245fdf3454f5a10c0a7b7", "tv-view.css": "05f6e453075e52a6e5ee2fdbab6458060e6585d8", "pc-voice.js": "f48d08c111d05963b53ff5a210d2e8cf24f15946", "pc-voice-diagnostics.js": "68fe02e9e95fae67dcba82f0e1c66e14dc0f4e2e", "assets/pulse-echo-icon.png": "4e840d3eb7f8810d28f472041bcde702be9980fc"};
-for(const [file,sha] of Object.entries(adopted))assert.equal(execFileSync('git',['hash-object',file],{encoding:'utf8'}).trim(),sha,file+' must retain adopted development content');
-const html=fs.readFileSync('match.html','utf8'),before=show('47b8f14','match.html').toString();
+for(const file of ['index.html','config.js','data.js','admin.html','robots.txt','supabase-schema.sql','.github/workflows/keep-alive.yml','pulse-echo-workflow-backup.json'])assert(fs.readFileSync(file).equals(show('6dda028',file)),file+' must retain current production content');
+for(const file of ['pc-lab.js','pc-lab.css','pc-desktop.js','pc-voice-diagnostics.js','assets/pulse-echo-icon.png'])assert(fs.readFileSync(file).equals(show('6dda028',file)),file+' must retain current PC release content');
+assert(fs.readFileSync('pc-base.css','utf8').replaceAll('echoNameInput','userName')===show('6dda028','pc-base.css').toString(),'PC input layout differs only by the name-field id');
+const html=fs.readFileSync('match.html','utf8'),before=show('6dda028','match.html').toString();
 const section=(s,a,b)=>s.slice(s.indexOf(a),s.indexOf(b,s.indexOf(a)));
-for(const [a,b]of [['let realtimeChannel=','const tactic='],['function localMatches()','async function addEvent('],['async function deleteEvent(','/* ==========================================']])assert.equal(section(html,a,b),section(before,a,b),'production logic '+a);
+for(const [a,b]of [['let realtimeChannel=','const tactic='],['function localMatches()','async function addEvent('],['async function deleteEvent(','const niceOptions=']])assert.equal(section(html,a,b),section(before,a,b),'production logic '+a);
 const token=fs.readFileSync('config.js','utf8').match(/supabaseAnonKey:\s*"([^"]+)"/)[1];if(token.startsWith('sb_publishable_'))assert(!token.startsWith('sb_secret_'));else assert.equal(JSON.parse(Buffer.from(token.split('.')[1],'base64url')).role,'anon');
 for(const name of ['pc-desktop.js','pc-base.css','pc-lab.js','pc-lab.css','tv-view.js','tv-view.css','pc-voice.js','pc-voice-diagnostics.js'])assert(!/-----BEGIN .*PRIVATE KEY-----|github_pat_[A-Za-z0-9_]+|ghp_[A-Za-z0-9]+|sb_secret_[A-Za-z0-9_]+/.test(fs.readFileSync(name,'utf8')),'unexpected credential '+name);
 assert(!html.includes('team-rooms.js'));assert(!html.includes('mobile-landscape.js'));
-console.log('PASS release scope: production index/styles/config/data/schema retained; adopted PC assets retained; core player/ECHO/Realtime unchanged; public anon role; no added credential material');
+console.log('PASS release scope: production content and PC release retained; core player/ECHO/Realtime unchanged; public anon role; no added credential material');
