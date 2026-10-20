@@ -1,4 +1,6 @@
 /* All experimental controls are opt-in; TV never shows LAB controls. */
+#labTacticsExit[hidden]{display:none!important}
+body.tv-mode.lab-mode #labTacticsExit:not([hidden]){position:fixed;right:16px;bottom:16px;z-index:150;display:flex;min-height:44px;background:rgba(8,10,16,.9);border:1px solid var(--cyan);box-shadow:0 3px 15px #0008}
 .lab-entry,.lab-only{display:none}
 @media(min-width:901px){.lab-entry{display:inline-flex;padding:7px 12px;font-size:.8rem}}
 body.tv-mode.lab-mode .lab-only{display:flex}
