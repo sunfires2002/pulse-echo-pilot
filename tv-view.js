@@ -3,7 +3,7 @@
  const body=document.body, shell=document.getElementById("videoShell");
  const map=document.querySelector(".heatmap"), toolbar=document.getElementById("tvToolbar");
  const enter=document.getElementById("tvEnter");
- const nameField=document.getElementById("userName"), namePanel=document.getElementById("tvNamePanel"), nameInput=document.getElementById("tvNameInput");
+ const nameField=document.getElementById("echoNameInput"), namePanel=document.getElementById("tvNamePanel"), nameInput=document.getElementById("tvNameInput");
  const nameButton=document.getElementById("tvNameOpen"), status=document.getElementById("tvStatus");
  let statusTimer;
  function clearStatus(){clearTimeout(statusTimer);status.textContent=""}
@@ -29,7 +29,7 @@
   ["😫 惜しい","😫 惜しい","#8b5cf6"],
   ["😂 あちゃー","😅 あちゃー","#ffa502"],
   ["😲 マジで","😳 マジで","#2ed573"],
-  ["🤖 AIにお任せ","🤖 AIにお任せ","#00cec9"]
+  ["🎙 その他","🤖 AIにお任せ","#00cec9"]
  ];
  reactions.forEach(([label,kind,color])=>{
   const button=document.createElement("button");button.className="tv-react";button.type="button";

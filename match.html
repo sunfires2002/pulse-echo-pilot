@@ -13,7 +13,7 @@
 <div class="echo-visibility"><label><input type="checkbox" id="echoVisible" checked> みんなの足跡を表示</label></div>
 <div class="mobile-panel-tabs" aria-label="スマホ表示切替"><button class="mobile-panel-tab active" data-mobile-panel="react" type="button">反応する</button><button class="mobile-panel-tab" data-mobile-panel="map" type="button">反応マップ</button><button class="mobile-panel-tab" data-mobile-panel="timeline" type="button">タイムライン</button></div>
 <div class="controls">
-<div class="inputs"><input class="input" id="userName" placeholder="名前を入力"><input class="input" id="commentText" placeholder="この瞬間に一言…"><button class="btn btn-primary" id="commentBtn">💬 残す</button></div>
+<div class="inputs"><input class="input" id="echoNameInput" autocomplete="nickname" placeholder="名前を入力"><input class="input" id="commentText" placeholder="この瞬間に一言…"><button class="btn btn-primary" id="commentBtn">💬 残す</button></div>
 <div class="reactions"><button class="react hot" id="niceButton" data-kind="🔥 ナイスプレー">🔥 ナイスプレー</button><button class="react miss" data-kind="😫 惜しい">😫 惜しい</button><button class="react laugh" data-kind="😅 あちゃー">😅 あちゃー</button><button class="react respect" data-kind="😳 マジで">😳 マジで</button></div>
 <div class="nice-options" id="niceOptions" aria-hidden="true"><button class="nice-chip" data-kind="🔥 ナイスシュート" type="button">ナイスシュート</button><button class="nice-chip" data-kind="🔥 ナイスキーパー" type="button">ナイスキーパー</button><button class="nice-chip" data-kind="🔥 ナイスパス" type="button">ナイスパス</button><button class="nice-chip" data-kind="🔥 ナイス守備" type="button">ナイス守備</button></div>
 
@@ -32,7 +32,7 @@
 <aside class="side-stack">
 <div class="landscape-btns" aria-label="横画面リアクション"><button class="landscape-btn hot" data-kind="🔥 ナイスプレー" data-offset="4" type="button">🔥</button><button class="landscape-btn miss" data-kind="😫 惜しい" data-offset="3" type="button">😫</button><button class="landscape-btn laugh" data-kind="😅 あちゃー" data-offset="3" type="button">😅</button><button class="landscape-btn respect" data-kind="😳 マジで" data-offset="2" type="button">😳</button></div>
 <div class="info-tabs" aria-label="表示切替"><button class="info-tab active" data-info-tab="map" type="button">反応マップ</button><button class="info-tab" data-info-tab="timeline" type="button">タイムライン</button></div>
-<div class="heatmap info-panel is-active" data-info-panel="map"><div class="heat-title">📊 みんなの反応マップ</div><canvas id="chart" height="120"></canvas></div>
+<div class="heatmap info-panel is-active" data-info-panel="map"><div class="heat-title">📊 みんなの反応マップ</div><div class="heatmap-chart-wrap"><canvas id="chart" height="120"></canvas></div></div>
 <aside class="timeline-card info-panel" data-info-panel="timeline"><div class="timeline-title">ECHO TIMELINE</div>
 <div class="filter"><select class="input" id="viewFilter"><option value="all">👁️ 全員の熱量を表示</option></select></div>
 <div class="timeline" id="timeline"><div class="muted">思い出を読み込み中…</div></div></aside>
@@ -234,7 +234,7 @@ async function loadEvents(resetEcho=false){
 }
 async function addEvent(kind,comment="",timeOverride=null,voiceAudit=null){
  const report=type=>{try{voiceAudit?.(type)}catch{}};report("save-start");
- const isTactic=kind.startsWith("🎯"),e={good_time:timeOverride??(isTactic?nowTime(0):nowTime(3)),description:kind,user_name:window.PULSE_PROFILE?.nameForPost(document.getElementById("userName").value)||document.getElementById("userName").value.trim()||"匿名",sender_id:window.PULSE_PROFILE?.senderId()||"",comment,video_id:`${match.id}:${currentPart}`};
+ const isTactic=kind.startsWith("🎯"),nameInput=document.getElementById("echoNameInput"),e={good_time:timeOverride??(isTactic?nowTime(0):nowTime(3)),description:kind,user_name:window.PULSE_PROFILE?.nameForPost(nameInput.value)||nameInput.value.trim()||"匿名",sender_id:window.PULSE_PROFILE?.senderId()||"",comment,video_id:`${match.id}:${currentPart}`};
  recentManualEchoes.push({t:e.good_time,d:e.description,c:e.comment,u:e.user_name,expires:Date.now()+5000});
  if(supa){
   pendingRealtimeInserts++;
@@ -285,7 +285,7 @@ tacticLayer().addEventListener("pointerup",e=>{
  if(tactic.drag){tacticLayer().releasePointerCapture(e.pointerId);tactic.drag=null}
 });
 function fly(t){let d=document.createElement("div");d.className="fly";d.textContent=t;d.style.top=(8+Math.random()*72)+"%";document.getElementById("overlay").appendChild(d);setTimeout(()=>d.remove(),4300)}
-function echoText(e){const text=e.comment||e.description,name=(e.user_name||"").trim();return name?`${name}：${text}`:text}
+function echoText(e){const text=e.comment||displayEchoKind(e.description),name=(e.user_name||"").trim();return name?`${name}：${text}`:text}
 function isRecentManualEcho(e){
  const now=Date.now();recentManualEchoes=recentManualEchoes.filter(x=>x.expires>now);
  return recentManualEchoes.some(x=>x.t===(Number(e.good_time)||0)&&x.d===e.description&&(x.c||"")===(e.comment||"")&&x.u===(e.user_name||"匿名"))
@@ -322,7 +322,7 @@ function render(){
  const names=[...new Set(events.map(e=>e.user_name).filter(Boolean))];const sel=document.getElementById("viewFilter"),old=sel.value;
  sel.innerHTML='<option value="all">👁️ 全員の熱量を表示</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");if([...sel.options].some(o=>o.value===old))sel.value=old;
  const f=sel.value==="all"?events:events.filter(e=>e.user_name===sel.value);
- document.getElementById("timeline").innerHTML=f.length?f.slice().sort((a,b)=>b.good_time-a.good_time).map(e=>`<div class="event" data-time="${e.good_time}"><div class="event-top"><span><b>${fmt(e.good_time)}</b> ${esc(e.description)}</span>${window.PULSE_PC_DESKTOP?`<span class="event-meta"><span class="event-user">${esc(e.user_name)}</span>${pcPostDate(e.created_at)}</span>`:`<span class="event-user">${esc(e.user_name)}</span>`}</div>${e.comment?`<div class="event-comment">${esc(e.comment)}</div>`:""}<button class="event-review" data-time="${esc(e.good_time)}" type="button">戦術レビュー</button><button class="event-delete" data-id="${esc(e.id)}" type="button">削除</button></div>`).join(""):'<div class="muted">まだ足跡はありません。最初の一人になろう。</div>';
+ document.getElementById("timeline").innerHTML=f.length?f.slice().sort((a,b)=>b.good_time-a.good_time).map(e=>`<div class="event" data-time="${e.good_time}"><div class="event-top"><span><b>${fmt(e.good_time)}</b> ${esc(displayEchoKind(e.description))}</span>${window.PULSE_PC_DESKTOP?`<span class="event-meta"><span class="event-user">${esc(e.user_name)}</span>${pcPostDate(e.created_at)}</span>`:`<span class="event-user">${esc(e.user_name)}</span>`}</div>${e.comment?`<div class="event-comment">${esc(e.comment)}</div>`:""}<button class="event-review" data-time="${esc(e.good_time)}" type="button">戦術レビュー</button><button class="event-delete" data-id="${esc(e.id)}" type="button">削除</button></div>`).join(""):'<div class="muted">まだ足跡はありません。最初の一人になろう。</div>';
  
  // ▼ タイムラインクリック時の処理（動画シーク ＋ 画面への文字強制表示）
  document.querySelectorAll(".event").forEach(el=>el.onclick=e=>{
@@ -343,11 +343,12 @@ function draw(list){
   {label:"😫 惜しい",color:"#8b5cf6",match:d=>d==="😫 惜しい"},
   {label:"😅 あちゃー",color:"#ffa502",match:d=>d==="😅 あちゃー"},
   {label:"😳 マジで",color:"#2ed573",match:d=>d==="😳 マジで"},
-  {label:"🤖 AIにお任せ",color:"#00cec9",match:d=>d==="🤖 AIにお任せ"}
+  {label:"🎙 その他",color:"#00cec9",match:d=>d==="🤖 AIにお任せ"}
  ];
  const ds=groups.map(g=>({label:g.label,data:labels.map((_,i)=>list.filter(e=>g.match(e.description)&&Math.floor((Number(e.good_time)||0)/60)===i).length),borderColor:g.color,backgroundColor:g.color+"33",tension:.35,fill:true}));
- if(chart)chart.destroy();chart=new Chart(document.getElementById("chart"),{type:"line",data:{labels,datasets:ds},options:{responsive:true,plugins:{legend:{labels:{color:"#aaa"}}},scales:{x:{ticks:{color:"#777",maxTicksLimit:8},grid:{color:"#252a37"}},y:{beginAtZero:true,ticks:{display:false},grid:{color:"#252a37"}}}}})
+ if(chart)chart.destroy();chart=new Chart(document.getElementById("chart"),{type:"line",data:{labels,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#aaa"}}},scales:{x:{ticks:{color:"#777",maxTicksLimit:8},grid:{color:"#252a37"}},y:{beginAtZero:true,ticks:{display:false},grid:{color:"#252a37"}}}}})
 }
+function displayEchoKind(kind){return kind==="🤖 AIにお任せ"?"🎙 その他":kind}
 window.deleteEvent=deleteEvent;
 window.addEventListener("resize",()=>document.querySelectorAll(".t-arrow").forEach(placeTacticArrow));
 
@@ -356,8 +357,9 @@ window.addEventListener("resize",()=>document.querySelectorAll(".t-arrow").forEa
    ========================================== */
 const VOICE_DICTIONARY = {
   hot: ["ナイス", "よっしゃ", "シュート", "ゴール", "入った", "決めた", "いけー", "イケー", "ええぞ"],
-  miss: ["惜しい", "おしい", "あちゃー", "なんでやねん", "ファール", "もったいない", "あーっ"],
-  respect: ["マジで", "マジか", "すごい", "スゴい", "やばい", "ヤバい", "神"]
+  close: ["惜しい", "おしい", "あとちょっと", "もうちょい", "ポスト"],
+  miss: ["あちゃー", "やってもうた", "もったいない", "なんでやねん", "ファール"],
+  respect: ["マジで", "マジか", "すごい", "スゴい", "やばい", "ヤバい", "神", "あぶねー", "あぶない", "危ない", "あっぶな"]
 };
 if(window.PULSE_PC_DESKTOP){
  window.PULSE_PC_VOICE.install({button:document.getElementById("voiceBtn"),dictionary:VOICE_DICTIONARY,addEvent,nowTime});
@@ -426,6 +428,8 @@ function processVoiceResult(rawText) {
   let kind = "🤖 AIにお任せ";
   if (VOICE_DICTIONARY.hot.some(w => commentText.includes(w))) {
     kind = "🔥 ナイスプレー";
+  } else if (VOICE_DICTIONARY.close.some(w => commentText.includes(w))) {
+    kind = "😫 惜しい";
   } else if (VOICE_DICTIONARY.miss.some(w => commentText.includes(w))) {
     kind = "😅 あちゃー";
   } else if (VOICE_DICTIONARY.respect.some(w => commentText.includes(w))) {

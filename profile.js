@@ -12,7 +12,7 @@
   return 'p_'+Array.from({length:32},()=>Math.floor(Math.random()*16).toString(16)).join('');
  }
  function guest(){return 'ゲスト-'+(sender.replace(/^p_/,'').replace(/[^a-z0-9]/gi,'').slice(0,4)||'0000').toUpperCase()}
- function updateField(){const field=document.getElementById('userName');if(field)field.value=name}
+ function updateField(){const field=document.getElementById('echoNameInput');if(field)field.value=name}
  function setName(value){
   const cleaned=String(value??'').trim();if(!cleaned)return false;
   name=cleaned;write(NAME_KEY,name);write(LEGACY_NAME_KEY,name);updateField();
@@ -34,7 +34,7 @@
   }
   name=storedName?.trim()||'';
   updateField();
-  const field=document.getElementById('userName');
+  const field=document.getElementById('echoNameInput');
   field?.addEventListener('input',()=>{if(field.value.trim())setName(field.value)});
   field?.addEventListener('change',()=>{if(field.value.trim())setName(field.value);else updateField()});
   const gate=document.getElementById('profileSetup'),input=document.getElementById('profileNameInput');
