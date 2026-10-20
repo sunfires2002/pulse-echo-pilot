@@ -7,6 +7,12 @@
  const menu=document.createElement("button");menu.id="labMenuToggle";menu.className="lab-only btn";menu.type="button";menu.textContent="LABメニュー";menu.setAttribute("aria-expanded","false");menu.setAttribute("aria-controls","labControls");body.append(menu);controls.classList.add("is-collapsed");
  menu.onclick=()=>{const collapsed=controls.classList.toggle("is-collapsed");menu.setAttribute("aria-expanded",String(!collapsed))};
  const back=document.createElement("button");back.id="labReturn";back.className="btn";back.type="button";back.textContent="PC LABへ戻る";back.hidden=true;body.append(back);
+  const tacticsExit=document.createElement("button");tacticsExit.id="labTacticsExit";tacticsExit.className="lab-only btn";tacticsExit.type="button";tacticsExit.textContent="戦術レビューを終了";tacticsExit.hidden=true;body.append(tacticsExit);
+  function syncTacticsExit(){tacticsExit.hidden=!(body.classList.contains("tactics-available")&&body.classList.contains("tactics-open"))}
+  tacticsExit.onclick=()=>document.getElementById("tacticToggle")?.click();
+  const tacticsObserver=new MutationObserver(syncTacticsExit);tacticsObserver.observe(body,{attributes:true,attributeFilter:["class"]});
+  document.addEventListener("pulse-view-mode",syncTacticsExit);
+  syncTacticsExit();
  let returnFromTv=false;
  back.onclick=()=>window.PULSE_VIEW.setMode(true,"lab");
  document.addEventListener("pulse-view-mode",event=>{back.hidden=!(returnFromTv&&event.detail.mode==="tv");if(event.detail.mode==="review")returnFromTv=false});
