@@ -47,6 +47,7 @@
   }
  }});
  function setMode(active,variant="tv"){
+  if((!active||variant!=="lab")&&document.body.classList.contains("tactics-open"))document.getElementById("tacticToggle")?.click();
   clearStatus();namePanel.hidden=true;refreshName();
   body.classList.toggle("tv-mode",active);body.classList.toggle("lab-mode",active&&variant==="lab");toolbar.hidden=!active;dock.hidden=!active;
   if(active)dock.append(map);else placeholder.after(map);
