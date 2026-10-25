@@ -16,11 +16,90 @@
  let returnFromTv=false;
  back.onclick=()=>window.PULSE_VIEW.setMode(true,"lab");
  document.addEventListener("pulse-view-mode",event=>{back.hidden=!(returnFromTv&&event.detail.mode==="tv");if(event.detail.mode==="review")returnFromTv=false});
- const handle=document.createElement("div");handle.id="labMapHandle";handle.className="lab-only";handle.tabIndex=0;handle.innerHTML='<span class="lab-grip-line"><span class="lab-grip-mark" aria-hidden="true">⠿</span><span class="lab-grip-title">PULSE</span></span><small>みんなの熱量</small>';dock.prepend(handle);
+ const handle=document.createElement("div");handle.id="labMapHandle";handle.className="lab-only";handle.tabIndex=0;handle.innerHTML='<span class="lab-grip-line"><span class="lab-grip-mark" aria-hidden="true">⠿</span><span class="lab-grip-title">PULSE</span><span class="lab-pulse-playback lab-only"><button class="lab-pulse-play-button" id="labPulsePlay" type="button" aria-label="再生" title="再生">▶</button><span class="lab-pulse-clock" id="labPulseClock" aria-live="off">0:00 / --:--</span></span></span><small>みんなの熱量</small>';dock.prepend(handle);
  const resize=document.createElement("button");resize.id="labMapResize";resize.type="button";resize.className="lab-only";resize.setAttribute("aria-label","反応マップのサイズ変更");resize.textContent="↘";dock.append(resize);
+ const labPlayhead=document.createElement("div");labPlayhead.className="lab-playhead";labPlayhead.hidden=true;labPlayhead.setAttribute("aria-hidden","true");dock.append(labPlayhead);
  const tip=document.createElement("div");tip.id="labTooltip";tip.hidden=true;tip.setAttribute("role","tooltip");body.append(tip);
  let resizingFrame=0;
  const active=()=>body.classList.contains("lab-mode");
+ const labPlayButton=document.getElementById("labPulsePlay"),labClock=document.getElementById("labPulseClock"),labCanvas=document.getElementById("chart");
+ let pendingLabSeekRatio=null,labDrag=null,labPreviewRatio=null,labHoverRatio=null,pendingLabPlay=false,ignoreLabClickUntil=0;
+ function labDuration(){try{return Math.max(0,Number(player?.getDuration?.())||0)}catch{return 0}}
+ function labPlayerState(){try{return Number(player?.getPlayerState?.())}catch{return NaN}}
+ function labRatioFromEvent(event){
+  if(!chart?.chartArea||!labCanvas)return null;
+  const rect=labCanvas.getBoundingClientRect(),area=chart.chartArea;
+  if(rect.width<=0||rect.height<=0||chart.width<=0||chart.height<=0)return null;
+  const x=(event.clientX-rect.left)*chart.width/rect.width,y=(event.clientY-rect.top)*chart.height/rect.height;
+  if(x<area.left||x>area.right||y<area.top||y>area.bottom||area.right<=area.left)return null;
+  return Math.max(0,Math.min(1,(x-area.left)/(area.right-area.left)))
+ }
+ function labSeekRatio(ratio){
+  ratio=Math.max(0,Math.min(1,Number(ratio)||0));const duration=labDuration();
+  if(!playerReady||!player?.seekTo||duration<=0){pendingLabSeekRatio=ratio;return false}
+  const target=Math.max(0,Math.min(Math.floor(ratio*duration),Math.max(0,Math.ceil(duration)-1)));
+  try{player.seekTo(target,true);pendingLabSeekRatio=null;return true}catch{pendingLabSeekRatio=ratio;return false}
+ }
+ function labPlaybackClick(){
+  if(!active())return;
+  const state=labPlayerState(),duration=labDuration();
+  if(!playerReady||!player?.playVideo){pendingLabPlay=!pendingLabPlay;return}
+  if(state===1||pendingLabPlay){pendingLabPlay=false;try{player.pauseVideo?.()}catch{};return}
+  try{if(state===0||(duration>0&&(Number(player.getCurrentTime?.())||0)>=duration-.5))player.seekTo(0,true);player.playVideo();pendingLabPlay=false}catch{pendingLabPlay=true}
+ }
+ labPlayButton.onclick=labPlaybackClick;
+ function labPulseUpdate(){
+  if(!active()){labPlayhead.hidden=true;return}
+  const duration=labDuration(),state=labPlayerState();
+  if(pendingLabSeekRatio!==null&&playerReady&&duration>0)labSeekRatio(pendingLabSeekRatio);
+  if(pendingLabPlay&&playerReady&&player?.playVideo){try{if(state===0)player.seekTo(0,true);player.playVideo();pendingLabPlay=false}catch{}}
+  const liveDuration=labDuration(),current=Number(player?.getCurrentTime?.())||0;
+  const preview=labPreviewRatio!==null?labPreviewRatio:pendingLabSeekRatio;
+  const shown=preview!==null&&liveDuration>0?preview*liveDuration:(state===0&&liveDuration>0?liveDuration:current);
+  labClock.textContent=`${fmt(Math.floor(Math.max(0,shown)))} / ${liveDuration>0?fmt(Math.floor(liveDuration)):"--:--"}`;
+  const playing=labPlayerState()===1&&!pendingLabPlay;labPlayButton.textContent=playing?"Ⅱ":"▶";labPlayButton.setAttribute("aria-label",playing?"一時停止":"再生");labPlayButton.title=playing?"一時停止":"再生";
+  const area=chart?.chartArea,rect=labCanvas?.getBoundingClientRect(),dockRect=dock.getBoundingClientRect();
+  if(!area||!rect||liveDuration<=0||rect.width<=0||chart.width<=0){labPlayhead.hidden=true;return}
+  const ratio=Math.max(0,Math.min(1,shown/liveDuration)),sx=rect.width/chart.width,sy=rect.height/chart.height;
+  labPlayhead.style.left=`${rect.left-dockRect.left+(area.left+ratio*(area.right-area.left))*sx}px`;
+  labPlayhead.style.top=`${rect.top-dockRect.top+area.top*sy}px`;
+  labPlayhead.style.height=`${Math.max(0,(area.bottom-area.top)*sy)}px`;labPlayhead.hidden=false;
+ }
+ labCanvas.addEventListener("click",event=>{
+  if(!active())return;
+  event.preventDefault();event.stopImmediatePropagation();
+  if(performance.now()<ignoreLabClickUntil){ignoreLabClickUntil=0;event.preventDefault();event.stopImmediatePropagation();return}
+  const ratio=labRatioFromEvent(event);if(ratio===null)return;
+  labSeekRatio(ratio);labPulseUpdate();
+ },true);
+ labCanvas.addEventListener("pointerdown",event=>{
+  if(!active()||event.button!==0||!chart?.chartArea)return;
+  const ratio=labRatioFromEvent(event),duration=labDuration();if(ratio===null||duration<=0||labPlayhead.hidden)return;
+  const rect=labCanvas.getBoundingClientRect(),area=chart.chartArea,x=(event.clientX-rect.left)*chart.width/rect.width,current=Number(player?.getCurrentTime?.())||0,playheadX=area.left+Math.max(0,Math.min(1,current/duration))*(area.right-area.left);
+  if(Math.abs(x-playheadX)>14)return;
+  labDrag={id:event.pointerId};labPreviewRatio=ratio;dock.classList.add("lab-scrubbing");labCanvas.setPointerCapture(event.pointerId);event.preventDefault();event.stopImmediatePropagation();tip.hidden=true;labPulseUpdate();
+ },true);
+ labCanvas.addEventListener("pointermove",event=>{
+  if(!active()||!labDrag||event.pointerId!==labDrag.id)return;
+  const ratio=labRatioFromEvent(event);if(ratio!==null)labPreviewRatio=ratio;
+  event.preventDefault();event.stopImmediatePropagation();tip.hidden=true;labPulseUpdate();
+ },true);
+ function finishLabDrag(event,commit){
+  if(!labDrag||event.pointerId!==labDrag.id)return;
+  const ratio=labPreviewRatio;labDrag=null;labPreviewRatio=null;dock.classList.remove("lab-scrubbing");
+  if(commit&&ratio!==null){labSeekRatio(ratio);ignoreLabClickUntil=performance.now()+400}
+  labPulseUpdate();
+ }
+ labCanvas.addEventListener("pointerup",event=>{if(!active()||!labDrag||event.pointerId!==labDrag.id)return;event.preventDefault();event.stopImmediatePropagation();finishLabDrag(event,true)},true);
+ labCanvas.addEventListener("pointercancel",event=>finishLabDrag(event,false),true);
+ setInterval(labPulseUpdate,100);
+ labCanvas.addEventListener("mousemove",event=>{
+  if(!active()||labDrag)return;
+  const ratio=labRatioFromEvent(event);labHoverRatio=ratio;
+  const duration=labDuration(),area=chart?.chartArea,rect=labCanvas.getBoundingClientRect();
+  const x=rect.width>0&&chart?.width?(event.clientX-rect.left)*chart.width/rect.width:NaN,current=Number(player?.getCurrentTime?.())||0,playheadX=area&&duration>0?area.left+Math.max(0,Math.min(1,current/duration))*(area.right-area.left):NaN;
+  dock.classList.toggle("lab-scrub-ready",ratio!==null&&Number.isFinite(playheadX)&&Math.abs(x-playheadX)<=14);
+ },true);
  // Move the original elements, preserving their input state and event handlers.
  const panels=[];
  const layoutKey="pulse_echo_pc_lab_layout_v1",entries=[];
@@ -123,7 +202,7 @@
  function movable(element,isResize){
   let start=null;
   element.addEventListener("pointerdown",event=>{
-   if(!active()||event.button!==0)return;
+   if(!active()||event.button!==0||(element===handle&&event.target.closest("button")))return;
    const r=dock.getBoundingClientRect();start={id:event.pointerId,x:event.clientX,y:event.clientY,left:r.left,top:r.top,width:r.width,height:r.height};
    element.setPointerCapture(event.pointerId);event.preventDefault();tip.hidden=true;closeDetails();
   });
@@ -145,7 +224,8 @@
  function tooltip(context){
   const model=context.tooltip;if(!active()||!model||model.opacity===0){tip.hidden=true;return}
   tip.replaceChildren();
-  const title=document.createElement("strong");title.textContent=(model.title||[]).join(" ")+"分目";tip.append(title);
+  const title=document.createElement("strong"),minute=(model.title||[]).join(" ")+"分目",duration=labDuration();
+  title.textContent=labHoverRatio!==null&&duration>0?`${fmt(Math.floor(labHoverRatio*duration))} · ${minute}`:minute;tip.append(title);
   (model.dataPoints||[]).forEach(point=>{const row=document.createElement("div");row.textContent=point.dataset.label+"："+point.formattedValue;row.style.borderLeft="4px solid "+point.dataset.borderColor;row.style.paddingLeft="8px";tip.append(row)});
   tip.hidden=false;
   const r=context.chart.canvas.getBoundingClientRect(),t=tip.getBoundingClientRect();
@@ -159,7 +239,7 @@
   instance.options.plugins.tooltip.enabled=!lab;instance.options.plugins.tooltip.external=lab?tooltip:null;
   instance.options.plugins.tooltip.mode=lab?"index":"nearest";instance.options.plugins.tooltip.intersect=!lab;
  }});
- document.getElementById("chart").addEventListener("mouseleave",()=>{tip.hidden=true});
+ document.getElementById("chart").addEventListener("mouseleave",()=>{tip.hidden=true;labHoverRatio=null});
 
  // LAB reaction bar: relocate the original controls; never clone posting handlers.
  const reactionSource=document.createElement('div');reactionSource.className='lab-reaction-source';reactionSource.hidden=true;body.append(reactionSource);

@@ -12,6 +12,14 @@ body.tv-mode.lab-mode #tvMapDock[hidden]{display:none!important}
 body.tv-mode.lab-mode #labMapHandle{flex:0 0 30px;align-items:center;font-size:13px;font-weight:900;cursor:grab;touch-action:none;user-select:none;border-bottom:1px solid #566074}
 body.tv-mode.lab-mode #labMapHandle{flex-direction:column;align-items:flex-start;justify-content:center;gap:1px}
 body.tv-mode.lab-mode #labMapHandle small{font-size:11px;font-weight:600;color:#b8c1d2;line-height:1.2}
+body.tv-mode.lab-mode #tvMapDock .lab-grip-line{width:100%;min-width:0}
+body.tv-mode.lab-mode #tvMapDock .lab-pulse-playback{display:flex;align-items:center;gap:6px;margin-left:auto;white-space:nowrap}
+body.tv-mode.lab-mode #tvMapDock .lab-pulse-play-button{display:inline-flex;align-items:center;justify-content:center;width:28px;min-width:28px;height:24px;min-height:24px;padding:0;border:1px solid #8994ab;border-radius:5px;background:#253047;color:#fff;font-size:13px;line-height:1;cursor:pointer}
+body.tv-mode.lab-mode #tvMapDock .lab-pulse-clock{min-width:78px;color:#fff;font-size:12px;font-variant-numeric:tabular-nums;text-align:right}
+body.tv-mode.lab-mode #tvMapDock .lab-playhead{position:absolute;width:2px;margin-left:-1px;background:#fff;box-shadow:0 0 3px #000;pointer-events:none;z-index:3}
+body.tv-mode.lab-mode #tvMapDock .lab-playhead[hidden]{display:none!important}
+body.tv-mode.lab-mode #tvMapDock:not(.lab-scrub-ready):not(.lab-scrubbing) canvas{cursor:crosshair}
+body.tv-mode.lab-mode #tvMapDock.lab-scrub-ready canvas,body.tv-mode.lab-mode #tvMapDock.lab-scrubbing canvas{cursor:ew-resize}
 body.tv-mode.lab-mode #tvMapDock .tv-reactions{flex:0 0 auto;width:100%;margin:0;gap:5px}
 body.tv-mode.lab-mode #tvMapDock #tvNameOpen{flex-basis:88px;width:88px;min-height:40px;font-size:12px}
 body.tv-mode.lab-mode #tvMapDock .tv-react{font-size:12px;padding:4px;min-height:40px}

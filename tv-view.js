@@ -89,7 +89,7 @@
   }catch{announce("動画の準備後にもう一度クリックしてください")}
  });
  setInterval(()=>{
-  if(!body.classList.contains("tv-mode")){playhead.hidden=true;return}
+  if(!body.classList.contains("tv-mode")||body.classList.contains("lab-mode")){playhead.hidden=true;return}
   if(typeof chart==="undefined"||!chart?.chartArea||!player?.getCurrentTime)return;
   const now=Number(player.getCurrentTime())||0,area=chart.chartArea;
   const scale=canvas.clientWidth/chart.width;
