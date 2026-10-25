@@ -86,14 +86,14 @@
   const entry={panel,update(){if(active())applyEntry(savedEntry)},mode(){if(active()){content.append(source);applyEntry(savedEntry)}else{anchor.after(source);panel.hidden=true}}};
   panels.push(entry);return savedEntry;
  }
- makePanel("labPosting","ECHO+",".controls",()=>[16,130,360,350],false,"声・ひとこと");
+ makePanel("labPosting","ECHO+",".controls",()=>innerHeight<800?[16,Math.max(56,Math.round(innerHeight*.1)),360,290]:[16,130,360,350],false,"声・ひとこと");
  makePanel("labTimeline","REACT",".timeline-card",()=>[innerWidth-316,56,300,240],false,"みんなの反応");
  const goalLog=document.createElement('section');goalLog.className='lab-only lab-goal-log';goalLog.innerHTML='<div class="lab-goal-warning">仮データ・仮配色</div><div class="lab-goal-list"></div>';body.append(goalLog);
  const goalRows=[{team:'SUNFIRES',n:1,home:1,away:0,color:'#00cec9'},{team:'8motion',n:1,home:1,away:1,color:'#ff9b50'},{team:'SUNFIRES',n:2,home:2,away:1,color:'#00cec9'},{team:'8motion',n:2,home:2,away:2,color:'#ff9b50'}];
  const goalList=goalLog.querySelector('.lab-goal-list');goalRows.forEach(row=>{const item=document.createElement('div');item.className='lab-goal-row';item.style.setProperty('--goal-color',row.color);item.innerHTML=`<strong>${row.team}</strong><span>GOAL ${['','①','②','③','④'][row.n]}</span><b>${row.home}–${row.away}</b>`;goalList.append(item)});
  goalLog.dataset.labPrototype='true';
  // The prototype panel is created only inside PC LAB; it has no jump or data-writing behavior.
- const goalPanel=makePanel('labMatchLog','MATCH LOG','.lab-goal-log',()=>[16,510,340,260],false,'押すとゴールの場面へ');
+ const goalPanel=makePanel('labMatchLog','MATCH LOG','.lab-goal-log',()=>innerHeight<800?[16,Math.max(374,Math.round(innerHeight*.1)+310),340,160]:[16,510,340,260],false,'押すとゴールの場面へ');
  goalPanel.panel.dataset.mockOnly='true';
  document.getElementById("labReset").textContent="標準配置に戻す";
  document.getElementById("labReset").addEventListener("click",()=>{docked=false;clearDockCandidate();entries.forEach(entry=>{layout[entry.id]=entry.initial();entry.range.value=layout[entry.id].transparency;entry.output.textContent=entry.range.value+'％';applyEntry(entry)});saveLayout()});
@@ -106,7 +106,7 @@
   left=Math.max(8,Math.min(left,innerWidth-width-8));top=Math.max(floor,Math.min(top,innerHeight-height-8-(effectiveDock()?barHeight(Math.min(720,width)):0)));
   Object.assign(dock.style,{left:left+"px",top:top+"px",width:width+"px",height:height+"px"});tip.hidden=true;redraw();remember("map",dock);if(dockingReady&&!syncingDock)syncDock();
  }
- function mapInitial(){const width=Math.min(1200,innerWidth-32),height=Math.min(180,innerHeight-32);return[(innerWidth-width)/2,innerHeight-height-16,width,height]}
+ function mapInitial(){const width=Math.min(1200,innerWidth-376),height=Math.min(180,innerHeight-32),left=Math.max(360,(innerWidth-width)/2);return[left,innerHeight-height-16,width,height]}
  const mapEntry=register("map",dock,"反応マップ",bounds,mapInitial,document.getElementById("labMapToggle"),78);
  function updateToggle(){const b=document.getElementById("labMapToggle");b.textContent='PULSE';b.setAttribute("aria-pressed",String(!dock.hidden))}
  function activate(){window.PULSE_VIEW.setMode(true,"lab")}
@@ -165,7 +165,7 @@
  const reactionSource=document.createElement('div');reactionSource.className='lab-reaction-source';reactionSource.hidden=true;body.append(reactionSource);
  const reactions=[document.getElementById('tvNameOpen'),...document.querySelectorAll('.controls .react[data-kind]')];
  const origins=reactions.map(node=>{const anchor=document.createComment('LAB reaction original');node.before(anchor);return{node,anchor}});
- const barEntry=makePanel('labReactions','ECHO','.lab-reaction-source',()=>[Math.max(8,(innerWidth-720)/2),Math.max(8,innerHeight-130),720,88],true,'反応する');
+ const barEntry=makePanel('labReactions','ECHO','.lab-reaction-source',()=>{const m=mapInitial(),width=Math.min(720,m[2]);return[m[0]+(m[2]-width)/2,Math.max(8,m[1]-barHeight(width)-12),width,88]},true,'反応する');
  barEntry.panel.classList.add('lab-reaction-bar');
  const splitButton=document.createElement('button');splitButton.id='labUndock';splitButton.type='button';splitButton.className='btn';splitButton.textContent='分離';splitButton.hidden=true;barEntry.panel.querySelector('.lab-panel-grip').after(splitButton);
  splitButton.onclick=()=>splitDock(true);
