@@ -10,6 +10,8 @@ body.tv-mode.lab-mode #labControls strong{padding:8px}
 body.tv-mode.lab-mode #tvMapDock{position:fixed;inset:auto;transform:none;display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:12px;pointer-events:auto;background:rgba(8,10,16,.78);z-index:70;overflow:visible;min-width:0;min-height:0}
 body.tv-mode.lab-mode #tvMapDock[hidden]{display:none!important}
 body.tv-mode.lab-mode #labMapHandle{flex:0 0 30px;align-items:center;font-size:13px;font-weight:900;cursor:grab;touch-action:none;user-select:none;border-bottom:1px solid #566074}
+body.tv-mode.lab-mode #labMapHandle{flex-direction:column;align-items:flex-start;justify-content:center;gap:1px}
+body.tv-mode.lab-mode #labMapHandle small{font-size:11px;font-weight:600;color:#b8c1d2;line-height:1.2}
 body.tv-mode.lab-mode #tvMapDock .tv-reactions{flex:0 0 auto;width:100%;margin:0;gap:5px}
 body.tv-mode.lab-mode #tvMapDock #tvNameOpen{flex-basis:88px;width:88px;min-height:40px;font-size:12px}
 body.tv-mode.lab-mode #tvMapDock .tv-react{font-size:12px;padding:4px;min-height:40px}
@@ -41,6 +43,8 @@ body.tv-mode.lab-mode .lab-panel .timeline{max-height:none;overflow:visible}
 body.tv-mode.lab-mode .lab-panel .event{overflow-wrap:anywhere}
 body.tv-mode.lab-mode.tactics-open .lab-panel .inputs,body.tv-mode.lab-mode.tactics-open .lab-panel .reactions{display:none}
 .lab-panel-grip:focus-visible,.lab-panel-resize:focus-visible{outline:3px solid #00cec9}
+.lab-panel-grip{display:flex;flex-direction:column;justify-content:center;gap:1px;flex-basis:42px;line-height:1.2}
+.lab-panel-grip small{font-size:11px;font-weight:600;color:#b8c1d2}
 
 /* Review fix: menu is an overlay, never a reserved band for panel movement. */
 body.tv-mode.lab-mode #labMenuToggle{position:fixed;left:8px;top:8px;z-index:82;display:block;min-height:36px;padding:6px 10px;background:rgba(8,10,16,.7)}
@@ -79,7 +83,7 @@ body.tv-mode.lab-mode #tvMapDock .tv-react{flex:0 0 112px;width:112px}
 body.tv-mode.lab-mode #tvMapDock .tv-reactions{display:none}
 body.tv-mode.lab-mode #labPosting .reactions{display:none!important}
 body.tv-mode.lab-mode #labPosting .utility-actions{grid-template-columns:1fr}
-body.tv-mode.lab-mode .lab-reaction-bar .lab-panel-grip{flex-basis:24px}
+body.tv-mode.lab-mode .lab-reaction-bar .lab-panel-grip{flex-basis:42px}
 body.tv-mode.lab-mode .lab-reaction-bar .lab-panel-content{padding:4px 0;overflow:auto}
 body.tv-mode.lab-mode .lab-reaction-source{display:flex;flex-wrap:wrap;align-content:start;gap:6px}
 body.tv-mode.lab-mode .lab-reaction-source .react{flex:0 0 112px;width:112px;height:40px;min-height:40px;padding:4px;font-size:12px}
@@ -106,6 +110,24 @@ body.tv-mode.lab-mode #labReactions.lab-bar-docked{border-top-left-radius:0;bord
 body.tv-mode.lab-mode #labUndock{position:absolute;right:8px;top:3px;min-height:24px;height:24px;font-size:12px;padding:2px 8px}
 #labUndock[hidden]{display:none!important}
 body.tv-mode.lab-mode #labControls button{background:#151b27;opacity:1}
+
+/* PC LAB prototype panels and names. */
+body.tv-mode.lab-mode #labPosting .lab-panel-content{overflow:hidden;padding:8px 0 0}
+body.tv-mode.lab-mode #labPosting .inputs{grid-template-columns:minmax(0,1fr) auto}
+body.tv-mode.lab-mode #labPosting .inputs #commentText{flex:1 1 180px;min-width:0}
+body.tv-mode.lab-mode #labPosting .inputs #echoNameInput{display:none!important}
+body.tv-mode.lab-mode #labReactions .lab-panel-content{overflow:hidden;padding:4px 0 0}
+body.tv-mode.lab-mode .lab-reaction-source{flex-wrap:nowrap;justify-content:flex-start}
+body.tv-mode.lab-mode .lab-reaction-source .react{flex-basis:100px;width:100px;flex-shrink:0}
+body.tv-mode.lab-mode #labReactions #tvNameOpen{flex:0 1 170px;width:170px;max-width:170px;min-width:112px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;justify-content:flex-start}
+body.tv-mode.lab-mode #labTimeline .timeline-title,body.tv-mode.lab-mode #tvMapDock .heat-title{display:none!important}
+body.tv-mode.lab-mode #labMatchLog .lab-panel-content{overflow:hidden;padding:7px 0 22px}
+body.tv-mode.lab-mode #labMatchLog .lab-goal-log{display:block!important}
+.lab-goal-warning{font-size:10px;color:#ffcf86;margin:0 0 6px}
+.lab-goal-list{display:flex;flex-direction:column;gap:5px}
+.lab-goal-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:7px;min-height:34px;padding:4px 7px;border:1px solid #30394b;border-left:5px solid var(--goal-color);border-radius:8px;background:rgba(24,28,39,.88);font-size:12px;white-space:nowrap;overflow:hidden}
+.lab-goal-row strong{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.lab-goal-row span{font-weight:850}.lab-goal-row b{font-size:14px;min-width:34px;text-align:right}
 
 /* PC default entry; legacy remains available through the explicit review URL. */
 body.lab-mode #labToReview{display:none!important}

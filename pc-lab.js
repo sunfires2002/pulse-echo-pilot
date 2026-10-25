@@ -16,7 +16,7 @@
  let returnFromTv=false;
  back.onclick=()=>window.PULSE_VIEW.setMode(true,"lab");
  document.addEventListener("pulse-view-mode",event=>{back.hidden=!(returnFromTv&&event.detail.mode==="tv");if(event.detail.mode==="review")returnFromTv=false});
- const handle=document.createElement("div");handle.id="labMapHandle";handle.className="lab-only";handle.tabIndex=0;handle.textContent="反応マップ ─ ドラッグで移動";dock.prepend(handle);
+ const handle=document.createElement("div");handle.id="labMapHandle";handle.className="lab-only";handle.tabIndex=0;handle.innerHTML='<span>PULSE ─ 移動</span><small>みんなの熱量</small>';dock.prepend(handle);
  const resize=document.createElement("button");resize.id="labMapResize";resize.type="button";resize.className="lab-only";resize.setAttribute("aria-label","反応マップのサイズ変更");resize.textContent="↘";dock.append(resize);
  const tip=document.createElement("div");tip.id="labTooltip";tip.hidden=true;tip.setAttribute("role","tooltip");body.append(tip);
  let resizingFrame=0;
@@ -58,10 +58,10 @@
  clearButton.onclick=()=>{const hidden=body.classList.toggle('lab-clean');clearButton.textContent=hidden?'パネルを復元':'動画だけ表示';clearButton.setAttribute('aria-pressed',String(hidden));tip.hidden=true;clearDockCandidate();closeDetails();document.getElementById('tvNamePanel').hidden=true;if(!hidden)redraw()};
  document.addEventListener('pulse-view-mode',()=>{body.classList.remove('lab-clean');clearButton.textContent='動画だけ表示';clearButton.setAttribute('aria-pressed','false');if(active()){controls.classList.add('is-collapsed');menu.setAttribute('aria-expanded','false');if(storageWarning)notice.textContent='保存設定を利用できない場合は標準配置を使います。'}});
 
- function makePanel(id,title,selector,initial,fixed=false){
+ function makePanel(id,title,selector,initial,fixed=false,description=''){
   const source=document.querySelector(selector),anchor=document.createComment(id+" original position");source.before(anchor);
   const panel=document.createElement("section");panel.id=id;panel.className="lab-only lab-panel";panel.hidden=true;
-  const grip=document.createElement("div");grip.className="lab-panel-grip";grip.tabIndex=0;grip.textContent=title+" ─ 移動";
+  const grip=document.createElement("div");grip.className="lab-panel-grip";grip.tabIndex=0;grip.innerHTML=`<span>${title} ─ 移動</span>${description?`<small>${description}</small>`:''}`;
   const content=document.createElement("div");content.className="lab-panel-content";
   const corner=document.createElement("button");corner.className="lab-panel-resize";corner.type="button";corner.textContent="↘";corner.setAttribute("aria-label",title+"のサイズ変更");
   panel.append(grip,content);if(!fixed)panel.append(corner);body.append(panel);
@@ -69,7 +69,9 @@
   function fit(left,top,width,height){
    const floor=8;
    if(fixed){width=effectiveDock()?Math.min(720,parseFloat(dock.style.width)||720):Math.min(720,Math.max(1,innerWidth-16));height=barHeight(width)}
-   width=Math.min(Math.max(fixed?1:280,width),Math.max(1,innerWidth-16));height=Math.min(Math.max(fixed?1:140,height),Math.max(1,innerHeight-floor-8));
+   const minimums={labPosting:[300,290],labTimeline:[250,140],labReactions:[610,84],labMatchLog:[310,160]};
+   const [minWidth,minHeight]=minimums[id]||[280,140];
+   width=Math.min(Math.max(fixed?1:minWidth,width),Math.max(1,innerWidth-16));height=Math.min(Math.max(fixed?1:minHeight,height),Math.max(1,innerHeight-floor-8));
    Object.assign(panel.style,{left:Math.max(8,Math.min(left,innerWidth-width-8))+"px",top:Math.max(floor,Math.min(top,innerHeight-height-8))+"px",width:width+"px",height:height+"px"});remember(id,panel);
   }
   toggle.onclick=()=>{layout[id].visible=!layout[id].visible;applyEntry(savedEntry);saveLayout()};
@@ -84,8 +86,15 @@
   const entry={panel,update(){if(active())applyEntry(savedEntry)},mode(){if(active()){content.append(source);applyEntry(savedEntry)}else{anchor.after(source);panel.hidden=true}}};
   panels.push(entry);return savedEntry;
  }
- makePanel("labPosting","投稿・音声・ここな！",".controls",()=>[16,64,340,350]);
- makePanel("labTimeline","タイムライン",".timeline-card",()=>[innerWidth-316,56,300,240]);
+ makePanel("labPosting","ECHO+",".controls",()=>[16,130,360,350],false,"声・ひとこと");
+ makePanel("labTimeline","REACT",".timeline-card",()=>[innerWidth-316,56,300,240],false,"みんなの反応");
+ const goalLog=document.createElement('section');goalLog.className='lab-only lab-goal-log';goalLog.innerHTML='<div class="lab-goal-warning">仮データ・仮配色</div><div class="lab-goal-list"></div>';body.append(goalLog);
+ const goalRows=[{team:'SUNFIRES',n:1,home:1,away:0,color:'#00cec9'},{team:'8motion',n:1,home:1,away:1,color:'#ff9b50'},{team:'SUNFIRES',n:2,home:2,away:1,color:'#00cec9'},{team:'8motion',n:2,home:2,away:2,color:'#ff9b50'}];
+ const goalList=goalLog.querySelector('.lab-goal-list');goalRows.forEach(row=>{const item=document.createElement('div');item.className='lab-goal-row';item.style.setProperty('--goal-color',row.color);item.innerHTML=`<strong>${row.team}</strong><span>GOAL ${['','①','②','③','④'][row.n]}</span><b>${row.home}–${row.away}</b>`;goalList.append(item)});
+ goalLog.dataset.labPrototype='true';
+ // This prototype is LAB-only and does not write or navigate.
+ const goalPanel=makePanel('labMatchLog','MATCH LOG','.lab-goal-log',()=>[16,510,340,260],false,'押すとゴールの場面へ');
+ goalPanel.panel.dataset.mockOnly='true';
  document.getElementById("labReset").textContent="標準配置に戻す";
  document.getElementById("labReset").addEventListener("click",()=>{docked=false;clearDockCandidate();entries.forEach(entry=>{layout[entry.id]=entry.initial();entry.range.value=layout[entry.id].transparency;entry.output.textContent=entry.range.value+'％';applyEntry(entry)});saveLayout()});
  window.addEventListener("resize",()=>panels.forEach(p=>p.update()));
@@ -99,7 +108,7 @@
  }
  function mapInitial(){const width=Math.min(1200,innerWidth-32),height=Math.min(180,innerHeight-32);return[(innerWidth-width)/2,innerHeight-height-16,width,height]}
  const mapEntry=register("map",dock,"反応マップ",bounds,mapInitial,document.getElementById("labMapToggle"),78);
- function updateToggle(){const b=document.getElementById("labMapToggle");b.textContent=dock.hidden?"マップを表示":"マップを隠す";b.setAttribute("aria-pressed",String(!dock.hidden))}
+ function updateToggle(){const b=document.getElementById("labMapToggle");b.textContent='PULSE';b.setAttribute("aria-pressed",String(!dock.hidden))}
  function activate(){window.PULSE_VIEW.setMode(true,"lab")}
  document.getElementById("labEnter").addEventListener("click",activate);
  document.getElementById("labToTv").addEventListener("click",()=>{returnFromTv=true;window.PULSE_VIEW.setMode(true)});
@@ -156,11 +165,11 @@
  const reactionSource=document.createElement('div');reactionSource.className='lab-reaction-source';reactionSource.hidden=true;body.append(reactionSource);
  const reactions=[document.getElementById('tvNameOpen'),...document.querySelectorAll('.controls .react[data-kind]')];
  const origins=reactions.map(node=>{const anchor=document.createComment('LAB reaction original');node.before(anchor);return{node,anchor}});
- const barEntry=makePanel('labReactions','反応バー','.lab-reaction-source',()=>[Math.max(8,(innerWidth-720)/2),Math.max(8,innerHeight-300),720,88],true);
+ const barEntry=makePanel('labReactions','ECHO','.lab-reaction-source',()=>[Math.max(8,(innerWidth-720)/2),Math.max(8,innerHeight-130),720,88],true,'反応する');
  barEntry.panel.classList.add('lab-reaction-bar');
  const splitButton=document.createElement('button');splitButton.id='labUndock';splitButton.type='button';splitButton.className='btn';splitButton.textContent='分離';splitButton.hidden=true;barEntry.panel.querySelector('.lab-panel-grip').after(splitButton);
  splitButton.onclick=()=>splitDock(true);
- function barHeight(width){const columns=Math.max(1,Math.floor((width-16+6)/118));return 56+Math.ceil(6/columns)*40+(Math.ceil(6/columns)-1)*6}
+ function barHeight(width){const columns=Math.max(1,Math.floor((width-16+6)/118)),rows=Math.ceil(5/columns);return 74+rows*40+(rows-1)*6}
  function effectiveDock(){return dockingReady&&docked&&active()&&!dock.hidden&&!barEntry.panel.hidden}
  function clearDockCandidate(){dockCandidate=false;dock.classList.remove('lab-dock-candidate')}
  function updateDockCandidate(x,y){
@@ -251,9 +260,12 @@
   const modeButtons=document.createElement('div');modeButtons.className='pc-menu-modes';modeButtons.append(pc,tv,clearButton);modes.append(modeButtons,videoChoice,home);
   const visibility=document.createElement('div');visibility.className='pc-menu-visibility';
   const posting=entries.find(entry=>entry.id==='labPosting');
-  posting.panel.querySelector('.lab-panel-grip').textContent='ECHO投稿 ─ 移動';posting.toggle.textContent='ECHO投稿';
-  posting.panel.querySelector('.lab-panel-resize').setAttribute('aria-label','ECHO投稿のサイズ変更');
-  posting.range.setAttribute('aria-label','ECHO投稿の背景透明度');posting.range.closest('label').firstChild.textContent='ECHO投稿 背景透明度 ';
+  posting.toggle.textContent='ECHO+';
+  posting.panel.querySelector('.lab-panel-resize').setAttribute('aria-label','ECHO+のサイズ変更');
+  posting.range.setAttribute('aria-label','ECHO+の背景透明度');posting.range.closest('label').firstChild.textContent='ECHO+ 背景透明度 ';
+  const panelNames={map:'PULSE',labReactions:'ECHO',labPosting:'ECHO+',labTimeline:'REACT',labMatchLog:'MATCH LOG'};
+  const descriptions={map:'みんなの熱量',labReactions:'反応する',labPosting:'声・ひとこと',labTimeline:'みんなの反応',labMatchLog:'押すとゴールの場面へ'};
+  entries.forEach(entry=>{const title=panelNames[entry.id]||entry.id,grip=entry.id==='map'?document.getElementById('labMapHandle'):entry.panel.querySelector('.lab-panel-grip');entry.toggle.textContent=title;entry.toggle.classList.add('lab-visibility-'+entry.id);grip.querySelector('span').textContent=title+' ─ 移動';grip.querySelector('small')?.remove();if(descriptions[entry.id]){const small=document.createElement('small');small.textContent=descriptions[entry.id];grip.append(small)}if(entry.range){entry.range.setAttribute('aria-label',title+'の背景透明度');entry.range.closest('label').firstChild.textContent=title+' 背景透明度 '}});
   entries.forEach(entry=>{visibility.append(entry.toggle);entry.toggle.title='パネルの表示／非表示'});
   const opacity=document.createElement('details');opacity.id='pcOpacitySettings';
   const summary=document.createElement('summary');summary.textContent='⚙ 透明度';opacity.append(summary);
