@@ -251,16 +251,18 @@
  function tooltip(context){
   const model=context.tooltip;if(!active()||!model||model.opacity===0){tip.hidden=true;return}
   tip.replaceChildren();
-  const duration=labDuration(),hoverSecond=labHoverSeconds!==null&&duration>0?Math.min(Math.floor(labHoverSeconds),Math.max(0,Math.ceil(duration)-1)):null;
-  const bucket=hoverSecond===null?Number((model.title||[]).join(" "))-1:Math.min(29,Math.floor(hoverSecond/60));
-  const title=document.createElement("strong"),minute=Number.isFinite(bucket)&&bucket>=0?`${bucket+1}分目`:((model.title||[]).join(" ")+"分目");
-  title.textContent=hoverSecond!==null?`${minute} ${fmt(hoverSecond)}`:minute;tip.append(title);
+  const duration=labDuration(),hoverChartX=labHoverSeconds!==null?labSecondsToChartX(labHoverSeconds):model.caretX;
+  const pointerSeconds=hoverChartX!==null?labChartXToSeconds(hoverChartX):null;
+  const hoverSecond=pointerSeconds!==null&&duration>0?Math.min(Math.floor(pointerSeconds),Math.max(0,Math.ceil(duration)-1)):null;
+  const pointIndex=Number(model.dataPoints?.[0]?.dataIndex),bucket=hoverSecond!==null?Math.min(29,Math.floor(hoverSecond/60)):(Number.isInteger(pointIndex)?pointIndex:null);
+  const title=document.createElement("strong");title.textContent=hoverSecond!==null?fmt(hoverSecond):"--:--";tip.append(title);
+  const range=document.createElement("small");range.className="lab-tooltip-range";
+  range.textContent=Number.isInteger(bucket)&&bucket>=0?`${fmt(bucket*60)}〜${fmt(bucket*60+59)} の反応`:"";tip.append(range);
   if(hoverSecond!==null){
    (context.chart.data.datasets||[]).forEach(dataset=>{const value=dataset.data?.[bucket];const count=typeof value==="object"?value?.y:value;if(count===undefined)return;const row=document.createElement("div");row.textContent=dataset.label+"："+count;row.style.borderLeft="4px solid "+dataset.borderColor;row.style.paddingLeft="8px";tip.append(row)});
   }else (model.dataPoints||[]).forEach(point=>{const row=document.createElement("div");row.textContent=point.dataset.label+"："+point.formattedValue;row.style.borderLeft="4px solid "+point.dataset.borderColor;row.style.paddingLeft="8px";tip.append(row)});
   tip.hidden=false;
   const r=context.chart.canvas.getBoundingClientRect(),t=tip.getBoundingClientRect(),area=context.chart.chartArea,scaleY=r.height/context.chart.height;
-  const hoverChartX=labHoverSeconds!==null?labSecondsToChartX(labHoverSeconds):null;
   const hoverX=hoverChartX!==null?r.left+hoverChartX*r.width/context.chart.width:r.left+model.caretX*r.width/context.chart.width;
   const left=Math.max(8,Math.min(hoverX+12,innerWidth-t.width-8));
   const graphTop=r.top+area.top*scaleY,top=graphTop-t.height-8;
