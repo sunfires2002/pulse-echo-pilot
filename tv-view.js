@@ -43,7 +43,7 @@
    const active=body.classList.contains("tv-mode");
    instance.options.plugins.legend.display=!active;
    // Thirty minute-wide bands, retaining the original minute bins and counts.
-   instance.options.scales.x.offset=active;
+   instance.options.scales.x.offset=active&&!body.classList.contains("lab-mode");
   }
  }});
  function setMode(active,variant="tv"){
