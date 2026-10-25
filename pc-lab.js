@@ -102,11 +102,11 @@
  function redraw(){if(resizingFrame)return;resizingFrame=requestAnimationFrame(()=>{resizingFrame=0;if(typeof chart!=="undefined"&&chart)chart.resize()})}
  function bounds(left,top,width,height){
   const floor=8;
-  width=Math.min(Math.max(420,width),Math.max(1,innerWidth-16));height=Math.min(Math.max(160,height),Math.max(1,innerHeight-floor-8-(effectiveDock()?barHeight(Math.min(720,width)):0)));
+  width=Math.min(Math.max(420,width),Math.max(1,innerWidth-16));height=Math.min(Math.max(innerWidth<1440||innerHeight<800?120:160,height),Math.max(1,innerHeight-floor-8-(effectiveDock()?barHeight(Math.min(720,width)):0)));
   left=Math.max(8,Math.min(left,innerWidth-width-8));top=Math.max(floor,Math.min(top,innerHeight-height-8-(effectiveDock()?barHeight(Math.min(720,width)):0)));
   Object.assign(dock.style,{left:left+"px",top:top+"px",width:width+"px",height:height+"px"});tip.hidden=true;redraw();remember("map",dock);if(dockingReady&&!syncingDock)syncDock();
  }
- function mapInitial(){const width=Math.min(1200,innerWidth-376),height=Math.min(180,innerHeight-32),left=Math.max(360,(innerWidth-width)/2);return[left,innerHeight-height-16,width,height]}
+ function mapInitial(){const compact=innerWidth<1440||innerHeight<800,width=Math.min(1200,innerWidth-376),height=compact?Math.min(140,Math.max(120,Math.round(innerHeight*.18))):Math.min(180,innerHeight-32),left=Math.max(360,(innerWidth-width)/2);return[left,innerHeight-height-16,width,height]}
  const mapEntry=register("map",dock,"反応マップ",bounds,mapInitial,document.getElementById("labMapToggle"),78);
  function updateToggle(){const b=document.getElementById("labMapToggle");b.textContent='PULSE';b.setAttribute("aria-pressed",String(!dock.hidden))}
  function activate(){window.PULSE_VIEW.setMode(true,"lab")}
