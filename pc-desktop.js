@@ -2,7 +2,9 @@
 (() => {
  const ua=navigator.userAgent;
  const mobile=/Android|iPhone|iPad|iPod|Silk|Fire TV|AFT/i.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>0)||navigator.userAgentData?.mobile===true;
- const desktop=!mobile&&/Windows NT|Macintosh|X11|CrOS|Linux/.test(ua)&&matchMedia('(any-pointer: fine)').matches&&matchMedia('(any-hover: hover)').matches;
+ const previewDevice=new URLSearchParams(location.search).get('preview_device');
+ const previewForcesMobile=['phone','tablet','ipad','silk'].includes(previewDevice);
+ const desktop=!previewForcesMobile&&!mobile&&/Windows NT|Macintosh|X11|CrOS|Linux/.test(ua)&&matchMedia('(any-pointer: fine)').matches&&matchMedia('(any-hover: hover)').matches;
  window.PULSE_PC_DESKTOP=desktop;
  if(!desktop)return;
  window.PULSE_PC_VERSION='1.2.0';

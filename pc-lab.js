@@ -92,7 +92,7 @@
  const goalRows=[{team:'SUNFIRES',n:1,home:1,away:0,color:'#00cec9'},{team:'8motion',n:1,home:1,away:1,color:'#ff9b50'},{team:'SUNFIRES',n:2,home:2,away:1,color:'#00cec9'},{team:'8motion',n:2,home:2,away:2,color:'#ff9b50'}];
  const goalList=goalLog.querySelector('.lab-goal-list');goalRows.forEach(row=>{const item=document.createElement('div');item.className='lab-goal-row';item.style.setProperty('--goal-color',row.color);item.innerHTML=`<strong>${row.team}</strong><span>GOAL ${['','①','②','③','④'][row.n]}</span><b>${row.home}–${row.away}</b>`;goalList.append(item)});
  goalLog.dataset.labPrototype='true';
- // This prototype is LAB-only and does not write or navigate.
+ // The prototype panel is created only inside PC LAB; it has no jump or data-writing behavior.
  const goalPanel=makePanel('labMatchLog','MATCH LOG','.lab-goal-log',()=>[16,510,340,260],false,'押すとゴールの場面へ');
  goalPanel.panel.dataset.mockOnly='true';
  document.getElementById("labReset").textContent="標準配置に戻す";
@@ -266,11 +266,48 @@
   const panelNames={map:'PULSE',labReactions:'ECHO',labPosting:'ECHO+',labTimeline:'REACT',labMatchLog:'MATCH LOG'};
   const descriptions={map:'みんなの熱量',labReactions:'反応する',labPosting:'声・ひとこと',labTimeline:'みんなの反応',labMatchLog:'押すとゴールの場面へ'};
   entries.forEach(entry=>{const title=panelNames[entry.id]||entry.id,grip=entry.id==='map'?document.getElementById('labMapHandle'):entry.panel.querySelector('.lab-panel-grip');entry.toggle.textContent=title;entry.toggle.classList.add('lab-visibility-'+entry.id);grip.querySelector('span').textContent=title+' ─ 移動';grip.querySelector('small')?.remove();if(descriptions[entry.id]){const small=document.createElement('small');small.textContent=descriptions[entry.id];grip.append(small)}if(entry.range){entry.range.setAttribute('aria-label',title+'の背景透明度');entry.range.closest('label').firstChild.textContent=title+' 背景透明度 '}});
+  const nameButton=document.getElementById('tvNameOpen');
+  const updateNameLabel=()=>{const name=window.PULSE_PROFILE?.getName()||'匿名';nameButton.textContent='名前：'+name;nameButton.title='クリックして名前を変更';nameButton.setAttribute('aria-label','名前：'+name+'。クリックして変更')};
+  updateNameLabel();document.addEventListener('pulse-profile-name-changed',updateNameLabel);
   entries.forEach(entry=>{visibility.append(entry.toggle);entry.toggle.title='パネルの表示／非表示'});
   const opacity=document.createElement('details');opacity.id='pcOpacitySettings';
   const summary=document.createElement('summary');summary.textContent='⚙ 透明度';opacity.append(summary);
   entries.forEach(entry=>opacity.append(entry.range.closest('label')));
-  settings.append(visibility,opacity,document.getElementById('labReset'),notice);
+  const screenInfo=group('画面情報');screenInfo.id='pcScreenInfo';
+  const screenSummary=document.createElement('p');screenSummary.className='pc-screen-info';screenInfo.append(screenSummary);
+  function updateScreenInfo(){
+   const preview=new URLSearchParams(location.search).get('preview_device');
+   const detected=preview?`プレビュー指定: ${preview}`:(desktop?'PC':'スマホ・タブレット');
+   screenSummary.textContent=`表示領域 ${innerWidth} × ${innerHeight} CSS px ／ 倍率 ${devicePixelRatio} ／ 判定 ${detected}`;
+  }
+  updateScreenInfo();window.addEventListener('resize',updateScreenInfo);
+  const previewSection=group('端末プレビュー');previewSection.id='pcDevicePreviewSettings';
+  const previewNote=document.createElement('p');previewNote.className='pc-preview-warning';previewNote.textContent='枠内での投稿も実際のECHOとして保存されます。同じブラウザの名前・投稿者IDを共有します。タッチ操作・画面キーボード・Silk固有の挙動は再現できません。';
+  const previewSelect=document.createElement('select');previewSelect.className='input';previewSelect.setAttribute('aria-label','プレビューする端末');
+  const previewPresets=[
+   ['スマホ縦','phone',390,844],['スマホ横','phone',844,390],['8インチタブレット縦','tablet',800,1280],['8インチタブレット横','tablet',1280,800],['iPad縦','ipad',820,1180],['iPad横','ipad',1180,820],['テレビ 1920×1080','tv',1920,1080],['テレビ Fire TV / Silk相当（推定）','silk',960,450]
+  ];
+  previewPresets.forEach((preset,index)=>{const option=document.createElement('option');option.value=String(index);option.textContent=`${preset[0]} (${preset[2]}×${preset[3]})`;previewSelect.append(option)});
+  const previewOpen=document.createElement('button');previewOpen.type='button';previewOpen.className='btn';previewOpen.textContent='端末プレビューを開く';
+  previewSection.append(previewNote,previewSelect,previewOpen);
+  const previewOverlay=document.createElement('div');previewOverlay.id='pcDevicePreview';previewOverlay.hidden=true;previewOverlay.setAttribute('role','dialog');previewOverlay.setAttribute('aria-modal','true');previewOverlay.setAttribute('aria-label','端末プレビュー');
+  const previewTop=document.createElement('div');previewTop.className='pc-preview-top';
+  const previewTitle=document.createElement('strong');previewTitle.textContent='端末プレビュー';
+  const previewClose=document.createElement('button');previewClose.type='button';previewClose.className='btn';previewClose.textContent='閉じる';previewTop.append(previewTitle,previewClose);
+  const previewStage=document.createElement('div');previewStage.className='pc-preview-stage';
+  const previewFrame=document.createElement('iframe');previewFrame.title='選択した端末サイズの画面';previewFrame.allow='autoplay; microphone';previewFrame.referrerPolicy='strict-origin-when-cross-origin';
+  const previewScale=document.createElement('div');previewScale.className='pc-preview-scale';previewScale.append(previewFrame);previewStage.append(previewScale);previewOverlay.append(previewTop,previewStage);body.append(previewOverlay);
+  function closePreview(){previewOverlay.hidden=true;previewFrame.src='about:blank';previewOpen.focus()}
+  previewClose.onclick=closePreview;previewOverlay.addEventListener('click',event=>{if(event.target===previewOverlay)closePreview()});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!previewOverlay.hidden)closePreview()});
+  function resizePreview(){if(previewOverlay.hidden)return;const preset=previewPresets[Number(previewSelect.value)],scale=Math.min((innerWidth-48)/preset[2],(innerHeight-110)/preset[3],1);previewScale.style.width=preset[2]+'px';previewScale.style.height=preset[3]+'px';previewScale.style.transform=`scale(${Math.max(.1,scale)})`;previewStage.style.width=Math.max(1,preset[2]*scale)+'px';previewStage.style.height=Math.max(1,preset[3]*scale)+'px'}
+  previewOpen.onclick=()=>{
+   const preset=previewPresets[Number(previewSelect.value)],url=new URL(location.href);url.searchParams.delete('mode');url.searchParams.set('preview_device',preset[1]);if(preset[1]==='tv')url.searchParams.set('mode','tv');
+   previewTitle.textContent=`${preset[0]} · ${preset[2]}×${preset[3]} CSS px`;
+   previewFrame.style.width=preset[2]+'px';previewFrame.style.height=preset[3]+'px';previewFrame.src=url.href;previewOverlay.hidden=false;resizePreview();previewClose.focus();
+  };
+  window.addEventListener('resize',resizePreview);
+  settings.append(visibility,opacity,previewSection,screenInfo,document.getElementById('labReset'),notice);
   // The legacy route is retained for explicit development URLs, outside normal UI.
   controls.replaceChildren(modes,settings,document.getElementById('labToReview'));
   const cleanToggle=clearButton.onclick;

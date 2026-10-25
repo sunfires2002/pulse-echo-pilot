@@ -128,6 +128,15 @@ body.tv-mode.lab-mode #labMatchLog .lab-goal-log{display:block!important}
 .lab-goal-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:7px;min-height:34px;padding:4px 7px;border:1px solid #30394b;border-left:5px solid var(--goal-color);border-radius:8px;background:rgba(24,28,39,.88);font-size:12px;white-space:nowrap;overflow:hidden}
 .lab-goal-row strong{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .lab-goal-row span{font-weight:850}.lab-goal-row b{font-size:14px;min-width:34px;text-align:right}
+#pcDevicePreview[hidden]{display:none!important}
+body.tv-mode.lab-mode #pcDevicePreview{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.82);padding:12px;box-sizing:border-box}
+.pc-preview-top{display:flex;justify-content:space-between;align-items:center;gap:12px;width:min(100%,calc(100vw - 32px));margin-bottom:8px}
+.pc-preview-stage{position:relative;overflow:hidden;border:2px solid #00d9d2;border-radius:8px;background:#000;box-shadow:0 10px 40px #000a}
+.pc-preview-scale{position:absolute;left:0;top:0;transform-origin:top left}
+.pc-preview-scale iframe{display:block;border:0;background:#000}
+.pc-preview-warning,.pc-screen-info{font-size:11px;line-height:1.5;color:#b7c1d3;margin:4px 0 8px}
+#pcDevicePreviewSettings .input{width:100%;margin-bottom:6px;padding:7px}
+#pcDevicePreviewSettings .btn{width:100%}
 
 /* PC default entry; legacy remains available through the explicit review URL. */
 body.lab-mode #labToReview{display:none!important}
