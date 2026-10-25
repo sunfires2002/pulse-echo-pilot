@@ -7,7 +7,8 @@
     sheet.textContent = `
       body.tv-mode.lab-mode .lab-feature-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 24px;width:24px;height:24px;vertical-align:middle}
       body.tv-mode.lab-mode .lab-feature-icon svg{display:block;width:100%;height:100%;overflow:visible}
-      body.tv-mode.lab-mode .lab-panel-grip>span,body.tv-mode.lab-mode #labMapHandle>span{display:flex;align-items:center;gap:6px}
+      body.tv-mode.lab-mode .lab-grip-line{display:flex;align-items:center;gap:6px}
+      body.tv-mode.lab-mode .lab-grip-title{display:inline-flex;align-items:center;gap:6px}
     `;
     document.head.append(sheet);
     const asset = 'pc-lab-feature-icons.svg';

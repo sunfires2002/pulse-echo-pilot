@@ -16,7 +16,7 @@
  let returnFromTv=false;
  back.onclick=()=>window.PULSE_VIEW.setMode(true,"lab");
  document.addEventListener("pulse-view-mode",event=>{back.hidden=!(returnFromTv&&event.detail.mode==="tv");if(event.detail.mode==="review")returnFromTv=false});
- const handle=document.createElement("div");handle.id="labMapHandle";handle.className="lab-only";handle.tabIndex=0;handle.innerHTML='<span>PULSE ─ 移動</span><small>みんなの熱量</small>';dock.prepend(handle);
+ const handle=document.createElement("div");handle.id="labMapHandle";handle.className="lab-only";handle.tabIndex=0;handle.innerHTML='<span class="lab-grip-line"><span class="lab-grip-mark" aria-hidden="true">⠿</span><span class="lab-grip-title">PULSE</span></span><small>みんなの熱量</small>';dock.prepend(handle);
  const resize=document.createElement("button");resize.id="labMapResize";resize.type="button";resize.className="lab-only";resize.setAttribute("aria-label","反応マップのサイズ変更");resize.textContent="↘";dock.append(resize);
  const tip=document.createElement("div");tip.id="labTooltip";tip.hidden=true;tip.setAttribute("role","tooltip");body.append(tip);
  let resizingFrame=0;
@@ -61,7 +61,7 @@
  function makePanel(id,title,selector,initial,fixed=false,description=''){
   const source=document.querySelector(selector),anchor=document.createComment(id+" original position");source.before(anchor);
   const panel=document.createElement("section");panel.id=id;panel.className="lab-only lab-panel";panel.hidden=true;
-  const grip=document.createElement("div");grip.className="lab-panel-grip";grip.tabIndex=0;grip.innerHTML=`<span>${title} ─ 移動</span>${description?`<small>${description}</small>`:''}`;
+  const grip=document.createElement("div");grip.className="lab-panel-grip";grip.tabIndex=0;grip.innerHTML=`<span class="lab-grip-line"><span class="lab-grip-mark" aria-hidden="true">⠿</span><span class="lab-grip-title">${title}</span></span>${description?`<small>${description}</small>`:''}`;
   const content=document.createElement("div");content.className="lab-panel-content";
   const corner=document.createElement("button");corner.className="lab-panel-resize";corner.type="button";corner.textContent="↘";corner.setAttribute("aria-label",title+"のサイズ変更");
   panel.append(grip,content);if(!fixed)panel.append(corner);body.append(panel);
@@ -265,7 +265,7 @@
   posting.range.setAttribute('aria-label','ECHO+の背景透明度');posting.range.closest('label').firstChild.textContent='ECHO+ 背景透明度 ';
   const panelNames={map:'PULSE',labReactions:'ECHO',labPosting:'ECHO+',labTimeline:'REACT',labMatchLog:'MATCH LOG'};
   const descriptions={map:'みんなの熱量',labReactions:'反応する',labPosting:'声・ひとこと',labTimeline:'みんなの反応',labMatchLog:'押すとゴールの場面へ'};
-  entries.forEach(entry=>{const title=panelNames[entry.id]||entry.id,grip=entry.id==='map'?document.getElementById('labMapHandle'):entry.panel.querySelector('.lab-panel-grip');entry.toggle.textContent=title;entry.toggle.classList.add('lab-visibility-'+entry.id);grip.querySelector('span').textContent=title+' ─ 移動';grip.querySelector('small')?.remove();if(descriptions[entry.id]){const small=document.createElement('small');small.textContent=descriptions[entry.id];grip.append(small)}if(entry.range){entry.range.setAttribute('aria-label',title+'の背景透明度');entry.range.closest('label').firstChild.textContent=title+' 背景透明度 '}});
+  entries.forEach(entry=>{const title=panelNames[entry.id]||entry.id,grip=entry.id==='map'?document.getElementById('labMapHandle'):entry.panel.querySelector('.lab-panel-grip');entry.toggle.textContent=title;entry.toggle.classList.add('lab-visibility-'+entry.id);grip.querySelector('.lab-grip-title').textContent=title;grip.querySelector('small')?.remove();if(descriptions[entry.id]){const small=document.createElement('small');small.textContent=descriptions[entry.id];grip.append(small)}if(entry.range){entry.range.setAttribute('aria-label',title+'の背景透明度');entry.range.closest('label').firstChild.textContent=title+' 背景透明度 '}});
   const nameButton=document.getElementById('tvNameOpen');
   const updateNameLabel=()=>{const name=window.PULSE_PROFILE?.getName()||'匿名';nameButton.textContent='名前：'+name;nameButton.title='クリックして名前を変更';nameButton.setAttribute('aria-label','名前：'+name+'。クリックして変更')};
   updateNameLabel();document.addEventListener('pulse-profile-name-changed',updateNameLabel);

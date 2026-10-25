@@ -31,6 +31,9 @@ body.tv-mode.lab-mode #labControls{max-height:25dvh;overflow:auto;padding:4px;ba
 body.tv-mode.lab-mode .lab-panel{position:fixed;display:flex;flex-direction:column;padding:8px;background:rgba(8,10,16,.72);border:1px solid #778098;border-radius:12px;z-index:71;min-width:0;min-height:0;box-sizing:border-box;color:#fff}
 body.tv-mode.lab-mode .lab-panel[hidden]{display:none!important}
 .lab-panel-grip{flex:0 0 30px;cursor:grab;touch-action:none;user-select:none;font-size:13px;border-bottom:1px solid #778098;padding:4px}
+.lab-panel-grip:hover{cursor:move}
+body.tv-mode.lab-mode #labMapHandle:hover{cursor:move}
+.lab-grip-mark{display:inline-flex;align-items:center;justify-content:center;flex:0 0 16px;width:16px;font-size:18px;line-height:1;color:#d8dfec;cursor:move}
 .lab-panel-content{flex:1;min-height:0;overflow:auto;padding:8px 0 22px;overscroll-behavior:contain}
 .lab-panel-resize{position:absolute;right:2px;bottom:2px;width:30px;height:30px;cursor:nwse-resize;touch-action:none;background:#253047;color:white;border:1px solid #8994ab;border-radius:5px}
 body.tv-mode.lab-mode .lab-panel .controls,body.tv-mode.lab-mode .lab-panel .timeline-card{display:block!important;margin:0;padding:0;border:0;background:transparent;min-width:0}
@@ -121,7 +124,7 @@ body.tv-mode.lab-mode .lab-reaction-source{flex-wrap:nowrap;justify-content:flex
 body.tv-mode.lab-mode .lab-reaction-source .react{flex-basis:100px;width:100px;flex-shrink:0}
 body.tv-mode.lab-mode #labReactions #tvNameOpen{flex:0 1 170px;width:170px;max-width:170px;min-width:112px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;justify-content:flex-start}
 body.tv-mode.lab-mode #labTimeline .timeline-title,body.tv-mode.lab-mode #tvMapDock .heat-title{display:none!important}
-body.tv-mode.lab-mode #labMatchLog .lab-panel-content{overflow:hidden;padding:7px 0 22px}
+body.tv-mode.lab-mode #labMatchLog .lab-panel-content{box-sizing:border-box;overflow:auto;padding:7px 36px 38px 0}
 body.tv-mode.lab-mode #labMatchLog .lab-goal-log{display:block!important}
 .lab-goal-warning{font-size:10px;color:#ffcf86;margin:0 0 6px}
 .lab-goal-list{display:flex;flex-direction:column;gap:5px}
