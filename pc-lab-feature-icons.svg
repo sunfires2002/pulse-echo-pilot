@@ -30,8 +30,8 @@
       <path d="M13 24h3l3-6 4 12 4-16 4 16 3-6h5" stroke="#22d3d4" stroke-width="2.3" />
     </g>
     <g id="room-new2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="5.5" cy="42.5" r="5.3" fill="#08111a" stroke="#f4fbff" stroke-width="2.8" />
-      <circle cx="42.5" cy="5.5" r="5.3" fill="#08111a" stroke="#f4fbff" stroke-width="2.8" />
+      <circle cx="4.8" cy="43.2" r="6.3" fill="#08111a" stroke="#f4fbff" stroke-width="2.8" />
+      <circle cx="43.2" cy="4.8" r="6.3" fill="#08111a" stroke="#f4fbff" stroke-width="2.8" />
       <circle cx="24" cy="24" r="13" fill="#08111a" stroke="#f4fbff" stroke-width="2.8" />
       <path d="M13 24h3l3-6 4 12 4-16 4 16 3-6h5" stroke="#f4fbff" stroke-width="3.8" />
       <path d="M13 24h3l3-6 4 12 4-16 4 16 3-6h5" stroke="#22d3d4" stroke-width="2.3" />
