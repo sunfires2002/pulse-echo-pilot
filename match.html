@@ -162,7 +162,7 @@ function createPlayer(v,attempt){
  const attemptId=++playerAttempt;playerReady=false;
  console.info('[PULSE PLAYER] create requested',{attempt,videoId:v});
  try{
-  player=new YT.Player('player',{videoId:v,playerVars:{playsinline:1,rel:0,autoplay:0},events:{
+  player=new YT.Player('player',{videoId:v,playerVars:{playsinline:1,rel:0,autoplay:0,controls:tacticsLabRequested?0:1},events:{
    onReady:event=>{if(attemptId!==playerAttempt)return;playerReady=true;clearTimeout(playerReadyTimer);playerReadyTimer=null;console.info('[PULSE PLAYER] onReady',{attempt});startEchoPlayback(event)},
    onStateChange:event=>{if(attemptId===playerAttempt)startEchoPlayback(event)},
    onError:event=>{if(attemptId!==playerAttempt)return;console.error('[PULSE PLAYER] player error',{attempt,code:event.data});retryPlayer(v,attempt,'player-error-'+event.data)}
