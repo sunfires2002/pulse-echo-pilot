@@ -18,8 +18,10 @@ body.tv-mode.lab-mode #tvMapDock .lab-pulse-play-button{display:inline-flex;alig
 body.tv-mode.lab-mode #tvMapDock .lab-pulse-clock{min-width:78px;color:#fff;font-size:12px;font-variant-numeric:tabular-nums;text-align:right}
 body.tv-mode.lab-mode #tvMapDock .lab-playhead{position:absolute;width:2px;margin-left:-1px;background:#fff;box-shadow:0 0 3px #000;pointer-events:none;z-index:3}
 body.tv-mode.lab-mode #tvMapDock .lab-playhead[hidden]{display:none!important}
-body.tv-mode.lab-mode #tvMapDock:not(.lab-scrub-ready):not(.lab-scrubbing) canvas{cursor:crosshair}
-body.tv-mode.lab-mode #tvMapDock.lab-scrub-ready canvas,body.tv-mode.lab-mode #tvMapDock.lab-scrubbing canvas{cursor:ew-resize}
+body.tv-mode.lab-mode #tvMapDock .lab-playhead-knob{position:absolute;left:50%;top:0;transform:translate(-50%,-50%);width:12px;min-width:12px;height:12px;min-height:12px;padding:0;border:2px solid #fff;border-radius:50%;background:#182033;box-shadow:0 0 3px #000;pointer-events:auto;cursor:ew-resize;touch-action:none}
+body.tv-mode.lab-mode #tvMapDock .lab-playhead-knob:focus-visible{outline:2px solid #00cec9;outline-offset:2px}
+body.tv-mode.lab-mode #tvMapDock .lab-hover-line{position:absolute;width:1px;margin-left:-.5px;background:rgba(255,255,255,.38);pointer-events:none;z-index:2}
+body.tv-mode.lab-mode #tvMapDock .lab-hover-line[hidden]{display:none!important}
 body.tv-mode.lab-mode #tvMapDock .tv-reactions{flex:0 0 auto;width:100%;margin:0;gap:5px}
 body.tv-mode.lab-mode #tvMapDock #tvNameOpen{flex-basis:88px;width:88px;min-height:40px;font-size:12px}
 body.tv-mode.lab-mode #tvMapDock .tv-react{font-size:12px;padding:4px;min-height:40px}
