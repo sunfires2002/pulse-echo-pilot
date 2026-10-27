@@ -58,14 +58,34 @@ async function cloudMatches(){
  if(error){console.warn("Supabase matches error",error);return null}
  return data&&data.length?data.map(row=>({id:row.id,...row.data})):null;
 }
+const youtubeIdPattern=/^[A-Za-z0-9_-]{11}$/;
+function youtubeVideoId(value){
+ const source=String(value||"").trim();if(!source)return "";
+ if(youtubeIdPattern.test(source))return source;
+ try{
+  const url=new URL(/^https?:\/\//i.test(source)?source:`https://${source}`),host=url.hostname.toLowerCase().replace(/^www\./,"");
+  let id="";
+  if(host==="youtu.be")id=url.pathname.split("/").filter(Boolean)[0]||"";
+  else if(host==="youtube.com"||host.endsWith(".youtube.com")||host==="youtube-nocookie.com"||host.endsWith(".youtube-nocookie.com")){
+   id=url.searchParams.get("v")||"";
+   if(!id){const parts=url.pathname.split("/").filter(Boolean),kindIndex=parts.findIndex(part=>["embed","shorts","live","v"].includes(part));if(kindIndex>=0)id=parts[kindIndex+1]||""}
+  }
+  return youtubeIdPattern.test(id)?id:"";
+ }catch{return ""}
+}
 function renderMatches(matches){
  const grid=document.getElementById("matchGrid");
  const list=(matches||[]).filter(x=>x.published!==false).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
  if(!list.length){grid.innerHTML='<div class="empty">掲載中の試合はまだありません。</div>';return}
- grid.innerHTML=list.map(m=>`<a class="card match-card" href="match.html?id=${encodeURIComponent(m.id)}">
-<div class="card-cover"><div class="teams"><div class="team-name">${esc(m.home)}</div><div><div class="vs">MATCH</div><div class="score">${esc(m.homeScore)} - ${esc(m.awayScore)}</div></div><div class="team-name">${esc(m.away)}</div></div></div>
+ grid.innerHTML=list.map(m=>{
+  const thumbnailId=[m.firstHalfVideo,m.secondHalfVideo,m.highlightVideo].map(youtubeVideoId).find(Boolean);
+  const thumbnail=thumbnailId?`<img class="match-thumbnail" src="https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg" alt="" loading="lazy" decoding="async">`:"";
+  return `<a class="card match-card" href="match.html?id=${encodeURIComponent(m.id)}">
+<div class="card-cover${thumbnailId?" has-thumbnail":""}">${thumbnail}<div class="teams"><div class="team-name">${esc(m.home)}</div><div><div class="vs">MATCH</div><div class="score">${esc(m.homeScore)} - ${esc(m.awayScore)}</div></div><div class="team-name">${esc(m.away)}</div></div></div>
 <div class="card-body"><div class="meta"><span class="competition">${esc(m.competition||"MATCH")}</span><span>${esc((m.date||"").replaceAll("-","."))}</span></div>
-<div class="echo-counts"><span class="echo-pill">🔥 ナイスプレー</span><span class="echo-pill">😅 あちゃー</span><span class="echo-pill">😳 マジで</span><span class="echo-pill">💬 コメント</span></div></div></a>`).join("");
+<div class="echo-counts"><span class="echo-pill">🔥 ナイスプレー</span><span class="echo-pill">😅 あちゃー</span><span class="echo-pill">😳 マジで</span><span class="echo-pill">💬 コメント</span></div></div></a>`;
+ }).join("");
+ grid.querySelectorAll(".match-thumbnail").forEach(image=>image.addEventListener("error",()=>{image.parentElement.classList.remove("has-thumbnail");image.remove()},{once:true}));
 }
 (async()=>{renderMatches(await cloudMatches()||localMatches()||window.PULSE_MATCHES||[])})();
 </script>
