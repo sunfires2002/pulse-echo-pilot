@@ -2,7 +2,7 @@
 <html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080a10"><title>試合を見る | PULSE ECHO</title>
-<link rel="stylesheet" href="style.css?v=1.0.1"><link rel="stylesheet" href="feature-icons.css?v=1.0.1"><script src="profile.js?v=1.2.0"></script><script src="pc-desktop.js?v=1.2.4"></script></head><body>
+<link rel="stylesheet" href="style.css?v=1.0.1"><link rel="stylesheet" href="feature-icons.css?v=1.0.1"><script src="profile.js?v=1.2.0"></script><script src="pc-desktop.js?v=1.2.5"></script></head><body>
 <header class="site-header"><div class="container nav"><a class="brand" href="./">PULSE <span>ECHO</span></a><nav class="navlinks"><a href="./">試合一覧</a></nav></div></header>
 <main><div class="container match-hero"></div>
 <section class="section" style="padding-top:10px"><div class="container">
@@ -343,15 +343,20 @@ function render(){
  draw(f)
 }
 function draw(list){
- const bins=30,labels=Array.from({length:bins},(_,i)=>i+1),groups=[
+ const bins=30,labels=Array.from({length:bins},(_,i)=>i+1),lab=document.body.classList.contains("lab-mode"),duration=Math.max(1,Number(player?.getDuration?.())||1800),groups=[
   {label:"🔥 ナイスプレー",color:"#ff4757",match:d=>String(d).startsWith("🔥 ナイス")},
   {label:"😫 惜しい",color:"#8b5cf6",match:d=>d==="😫 惜しい"},
   {label:"😅 あちゃー",color:"#ffa502",match:d=>d==="😅 あちゃー"},
   {label:"😳 マジで",color:"#2ed573",match:d=>d==="😳 マジで"},
   {label:"🎙 その他",color:"#00cec9",match:d=>d==="🤖 AIにお任せ"}
  ];
- const ds=groups.map(g=>({label:g.label,data:labels.map((_,i)=>list.filter(e=>g.match(e.description)&&Math.floor((Number(e.good_time)||0)/60)===i).length),borderColor:g.color,backgroundColor:g.color+"33",tension:.35,fill:true}));
- if(chart)chart.destroy();chart=new Chart(document.getElementById("chart"),{type:"line",data:{labels,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#aaa"}}},scales:{x:{ticks:{color:"#777",maxTicksLimit:8},grid:{color:"#252a37"}},y:{beginAtZero:true,ticks:{display:false},grid:{color:"#252a37"}}}}})
+ const counts=groups.map(g=>labels.map((_,i)=>list.filter(e=>g.match(e.description)&&Math.floor((Number(e.good_time)||0)/60)===i).length));
+ const ds=groups.map((g,index)=>({label:g.label,data:lab?counts[index].map((y,i)=>({x:i*60+30,y})):counts[index],borderColor:g.color,backgroundColor:g.color+"33",tension:.35,fill:true}));
+ const xScale=lab?{type:"linear",min:0,max:duration,offset:false,ticks:{color:"#777",maxTicksLimit:8,callback:value=>fmt(Math.max(0,Math.floor(Number(value))))},grid:{color:"#252a37"},border:{display:false}}:{ticks:{color:"#777",maxTicksLimit:8},grid:{color:"#252a37"}};
+ const yScale={beginAtZero:true,ticks:{display:false},grid:{color:"#252a37"},...(lab?{border:{display:false}}:{})};
+ const options={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#aaa"}}},scales:{x:xScale,y:yScale}};
+ window.PULSE_PC_CHART_OPTIONS?.(options);
+ if(chart)chart.destroy();chart=new Chart(document.getElementById("chart"),{type:"line",data:{labels,datasets:ds},options})
 }
 function displayEchoKind(kind){return kind==="🤖 AIにお任せ"?"🎙 その他":kind}
 window.deleteEvent=deleteEvent;

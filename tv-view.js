@@ -44,7 +44,7 @@
    const active=body.classList.contains("tv-mode");
    instance.options.plugins.legend.display=!active;
    // Thirty minute-wide bands, retaining the original minute bins and counts.
-   instance.options.scales.x.offset=active;
+   instance.options.scales.x.offset=active&&!body.classList.contains("lab-mode");
   }
  }});
  function setMode(active,variant="tv"){
@@ -72,7 +72,7 @@
  const playhead=document.createElement("div");playhead.className="tv-playhead";playhead.hidden=true;map.append(playhead);
  const timeLabel=document.createElement("span");timeLabel.className="tv-map-time";toolbar.append(timeLabel);
  canvas.addEventListener("click",event=>{
-  if(!body.classList.contains("tv-mode"))return;
+  if(!body.classList.contains("tv-mode")||body.classList.contains("lab-mode"))return;
   if(typeof chart==="undefined"||!chart?.chartArea||!player?.seekTo){announce("動画とマップの読み込みをお待ちください");return}
   const rect=canvas.getBoundingClientRect(),area=chart.chartArea;
   const x=(event.clientX-rect.left)*chart.width/rect.width;
@@ -90,7 +90,7 @@
   }catch{announce("動画の準備後にもう一度クリックしてください")}
  });
  setInterval(()=>{
-  if(!body.classList.contains("tv-mode")){playhead.hidden=true;return}
+  if(!body.classList.contains("tv-mode")||body.classList.contains("lab-mode")){playhead.hidden=true;return}
   if(typeof chart==="undefined"||!chart?.chartArea||!player?.getCurrentTime)return;
   const now=Number(player.getCurrentTime())||0,area=chart.chartArea;
   const scale=canvas.clientWidth/chart.width;

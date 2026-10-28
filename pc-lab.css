@@ -156,3 +156,16 @@ body.pc-default.tv-mode.lab-mode #pcPulseMenu .pc-menu-visibility .btn{display:f
 body.pc-default.tv-mode.lab-mode #pcPulseMenu .pc-menu-visibility small{font-size:10px;color:#b8c1d2}
 #pcDockHelp{font-size:12px;line-height:1.6;color:#b8c1d2;margin:8px 0}
 body.pc-default.tv-mode.lab-mode #labPosting .inputs #echoNameInput{display:none}
+
+/* Adopted PULSE playback and tooltip presentation, flexible PC only. */
+body.tv-mode.lab-mode #labMapHandle .pc-grip-line{width:100%;min-width:0}
+body.tv-mode.lab-mode #tvMapDock .lab-pulse-playback{display:flex;align-items:center;gap:6px;margin-left:auto;white-space:nowrap}
+body.tv-mode.lab-mode #tvMapDock .lab-pulse-play-button{display:inline-flex;align-items:center;justify-content:center;width:28px;min-width:28px;height:24px;min-height:24px;padding:0;border:1px solid #8994ab;border-radius:5px;background:#253047;color:#fff;font-size:13px;line-height:1;cursor:pointer}
+body.tv-mode.lab-mode #tvMapDock .lab-pulse-clock{min-width:78px;color:#fff;font-size:12px;font-variant-numeric:tabular-nums;text-align:right}
+body.tv-mode.lab-mode #tvMapDock .lab-playhead{position:absolute;width:2px;margin-left:-1px;background:#fff;box-shadow:0 0 3px #000;pointer-events:none;z-index:3}
+body.tv-mode.lab-mode #tvMapDock .lab-playhead[hidden]{display:none!important}
+body.tv-mode.lab-mode #tvMapDock .lab-playhead-knob{position:absolute;left:50%;top:0;transform:translate(-50%,-50%);width:12px;min-width:12px;height:12px;min-height:12px;padding:0;border:2px solid #fff;border-radius:50%;background:#182033;box-shadow:0 0 3px #000;pointer-events:auto;cursor:ew-resize;touch-action:none}
+body.tv-mode.lab-mode #tvMapDock .lab-playhead-knob:focus-visible{outline:2px solid #00cec9;outline-offset:2px}
+body.tv-mode.lab-mode #tvMapDock .lab-hover-line{position:absolute;width:1px;margin-left:-.5px;background:rgba(255,255,255,.38);pointer-events:none;z-index:2}
+body.tv-mode.lab-mode #tvMapDock .lab-hover-line[hidden]{display:none!important}
+#labTooltip>.lab-tooltip-range{display:block;margin-top:2px;color:#aab4c7;font-size:11px;line-height:1.3}
