@@ -3,7 +3,7 @@
  const body=document.body, shell=document.getElementById("videoShell");
  const map=document.querySelector(".heatmap"), toolbar=document.getElementById("tvToolbar");
  const enter=document.getElementById("tvEnter");
- const home=document.createElement("a");home.id="tvHome";home.href="./";home.textContent="⌂ ホーム";home.setAttribute("aria-label","試合一覧へ戻る");body.append(home);
+ const home=document.createElement("a");home.id="tvHome";home.href="./?mode=tv";home.textContent="⌂ ホーム";home.setAttribute("aria-label","試合一覧へ戻る");body.append(home);
  const nameField=document.getElementById("echoNameInput"), namePanel=document.getElementById("tvNamePanel"), nameInput=document.getElementById("tvNameInput");
  const nameButton=document.getElementById("tvNameOpen"), status=document.getElementById("tvStatus");
  let statusTimer;
