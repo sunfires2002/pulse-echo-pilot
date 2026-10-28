@@ -50,7 +50,7 @@ h1{font-size:clamp(2.5rem,7vw,5.7rem);line-height:.95;margin:14px 0 18px;letter-
 .teams{position:relative;z-index:2;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:15px;width:100%;text-align:center;font-weight:900}
 .score{font-size:2rem;white-space:nowrap}.team-name{font-size:.95rem;overflow-wrap:anywhere}
 .card-body{padding:18px}.meta{color:var(--muted);font-size:.78rem;display:flex;justify-content:space-between;gap:8px}.competition{color:var(--cyan);font-weight:850}
-.echo-counts{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}.echo-pill{font-size:.78rem;background:#0d1017;border:1px solid var(--line);padding:6px 9px;border-radius:999px}
+.echo-counts{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap}.echo-pill{font-size:.78rem;color:var(--muted);background:transparent;border:0;padding:0;border-radius:0;cursor:default}
 .empty{grid-column:1/-1;padding:50px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:18px}
 .statement{border:1px solid var(--line);border-radius:24px;padding:32px;background:linear-gradient(135deg,rgba(119,88,255,.13),rgba(0,217,210,.06));text-align:center}
 .statement strong{font-size:clamp(1.35rem,4vw,2.35rem);display:block;margin-bottom:10px}.statement p{color:var(--muted);line-height:1.8;margin:0}
