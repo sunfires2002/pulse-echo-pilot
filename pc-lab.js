@@ -16,8 +16,14 @@
  let returnFromTv=false;
  back.onclick=()=>window.PULSE_VIEW.setMode(true,"lab");
  document.addEventListener("pulse-view-mode",event=>{back.hidden=!(returnFromTv&&event.detail.mode==="tv");if(event.detail.mode==="review")returnFromTv=false});
- const handle=document.createElement("div");handle.id="labMapHandle";handle.className="lab-only";handle.tabIndex=0;handle.textContent="反応マップ ─ ドラッグで移動";dock.prepend(handle);
- const resize=document.createElement("button");resize.id="labMapResize";resize.type="button";resize.className="lab-only";resize.setAttribute("aria-label","反応マップのサイズ変更");resize.textContent="↘";dock.append(resize);
+ const panelInfo={PULSE:['pulse','みんなの熱量'],ECHO:['echo','反応する'],'ECHO+':['echo-plus','声・ひとこと'],REACT:['react','みんなの反応']};
+ function labelGrip(grip,title){
+  const [symbol,description]=panelInfo[title];
+  grip.innerHTML=`<span class="pc-grip-line"><span class="pc-grip-mark" aria-hidden="true">⠿</span><span class="pc-grip-title"><svg class="feature-icon pc-panel-icon" aria-hidden="true"><use href="feature-icons.svg?v=1.0.0#${symbol}"></use></svg><span>${title}</span></span></span><small>${description}</small>`;
+  grip.setAttribute('aria-label',title+'：'+description+'。ドラッグまたは矢印キーで移動');grip.title='ドラッグで移動';
+ }
+ const handle=document.createElement("div");handle.id="labMapHandle";handle.className="lab-only";handle.tabIndex=0;labelGrip(handle,"PULSE");dock.prepend(handle);
+ const resize=document.createElement("button");resize.id="labMapResize";resize.type="button";resize.className="lab-only";resize.setAttribute("aria-label","PULSEのサイズ変更");resize.textContent="↘";dock.append(resize);
  const tip=document.createElement("div");tip.id="labTooltip";tip.hidden=true;tip.setAttribute("role","tooltip");body.append(tip);
  let resizingFrame=0;
  const active=()=>body.classList.contains("lab-mode");
@@ -61,7 +67,7 @@
  function makePanel(id,title,selector,initial,fixed=false){
   const source=document.querySelector(selector),anchor=document.createComment(id+" original position");source.before(anchor);
   const panel=document.createElement("section");panel.id=id;panel.className="lab-only lab-panel";panel.hidden=true;
-  const grip=document.createElement("div");grip.className="lab-panel-grip";grip.tabIndex=0;grip.textContent=title+" ─ 移動";
+  const grip=document.createElement("div");grip.className="lab-panel-grip";grip.tabIndex=0;labelGrip(grip,title);
   const content=document.createElement("div");content.className="lab-panel-content";
   const corner=document.createElement("button");corner.className="lab-panel-resize";corner.type="button";corner.textContent="↘";corner.setAttribute("aria-label",title+"のサイズ変更");
   panel.append(grip,content);if(!fixed)panel.append(corner);body.append(panel);
@@ -84,8 +90,8 @@
   const entry={panel,update(){if(active())applyEntry(savedEntry)},mode(){if(active()){content.append(source);applyEntry(savedEntry)}else{anchor.after(source);panel.hidden=true}}};
   panels.push(entry);return savedEntry;
  }
- makePanel("labPosting","投稿・音声・ここな！",".controls",()=>[16,64,340,350]);
- makePanel("labTimeline","タイムライン",".timeline-card",()=>[innerWidth-316,56,300,240]);
+ makePanel("labPosting","ECHO+",".controls",()=>innerHeight<800?[16,Math.max(56,Math.round(innerHeight*.1)),360,290]:[16,130,360,350]);
+ makePanel("labTimeline","REACT",".timeline-card",()=>[innerWidth-316,56,300,240]);
  document.getElementById("labReset").textContent="標準配置に戻す";
  document.getElementById("labReset").addEventListener("click",()=>{docked=false;clearDockCandidate();entries.forEach(entry=>{layout[entry.id]=entry.initial();entry.range.value=layout[entry.id].transparency;entry.output.textContent=entry.range.value+'％';applyEntry(entry)});saveLayout()});
  window.addEventListener("resize",()=>panels.forEach(p=>p.update()));
@@ -93,13 +99,13 @@
  function redraw(){if(resizingFrame)return;resizingFrame=requestAnimationFrame(()=>{resizingFrame=0;if(typeof chart!=="undefined"&&chart)chart.resize()})}
  function bounds(left,top,width,height){
   const floor=8;
-  width=Math.min(Math.max(420,width),Math.max(1,innerWidth-16));height=Math.min(Math.max(160,height),Math.max(1,innerHeight-floor-8-(effectiveDock()?barHeight(Math.min(720,width)):0)));
+  width=Math.min(Math.max(420,width),Math.max(1,innerWidth-16));height=Math.min(Math.max(innerWidth<1440||innerHeight<800?120:160,height),Math.max(1,innerHeight-floor-8-(effectiveDock()?barHeight(Math.min(720,width)):0)));
   left=Math.max(8,Math.min(left,innerWidth-width-8));top=Math.max(floor,Math.min(top,innerHeight-height-8-(effectiveDock()?barHeight(Math.min(720,width)):0)));
   Object.assign(dock.style,{left:left+"px",top:top+"px",width:width+"px",height:height+"px"});tip.hidden=true;redraw();remember("map",dock);if(dockingReady&&!syncingDock)syncDock();
  }
- function mapInitial(){const width=Math.min(1200,innerWidth-32),height=Math.min(180,innerHeight-32);return[(innerWidth-width)/2,innerHeight-height-16,width,height]}
- const mapEntry=register("map",dock,"反応マップ",bounds,mapInitial,document.getElementById("labMapToggle"),78);
- function updateToggle(){const b=document.getElementById("labMapToggle");b.textContent=dock.hidden?"マップを表示":"マップを隠す";b.setAttribute("aria-pressed",String(!dock.hidden))}
+ function mapInitial(){const compact=innerWidth<1440||innerHeight<800,width=Math.min(1200,Math.max(420,innerWidth-376)),height=compact?Math.min(140,Math.max(120,Math.round(innerHeight*.18))):Math.min(180,innerHeight-32),left=Math.max(360,(innerWidth-width)/2);return[left,innerHeight-height-16,width,height]}
+ const mapEntry=register("map",dock,"PULSE",bounds,mapInitial,document.getElementById("labMapToggle"),78);
+ function updateToggle(){const b=document.getElementById("labMapToggle");b.setAttribute("aria-pressed",String(!dock.hidden))}
  function activate(){window.PULSE_VIEW.setMode(true,"lab")}
  document.getElementById("labEnter").addEventListener("click",activate);
  document.getElementById("labToTv").addEventListener("click",()=>{returnFromTv=true;window.PULSE_VIEW.setMode(true)});
@@ -156,11 +162,11 @@
  const reactionSource=document.createElement('div');reactionSource.className='lab-reaction-source';reactionSource.hidden=true;body.append(reactionSource);
  const reactions=[document.getElementById('tvNameOpen'),...document.querySelectorAll('.controls .react[data-kind]')];
  const origins=reactions.map(node=>{const anchor=document.createComment('LAB reaction original');node.before(anchor);return{node,anchor}});
- const barEntry=makePanel('labReactions','反応バー','.lab-reaction-source',()=>[Math.max(8,(innerWidth-720)/2),Math.max(8,innerHeight-300),720,88],true);
+ const barEntry=makePanel('labReactions','ECHO','.lab-reaction-source',()=>{const m=mapInitial(),width=Math.min(720,m[2]);return[m[0]+(m[2]-width)/2,Math.max(8,m[1]-barHeight(width)-12),width,88]},true);
  barEntry.panel.classList.add('lab-reaction-bar');
  const splitButton=document.createElement('button');splitButton.id='labUndock';splitButton.type='button';splitButton.className='btn';splitButton.textContent='分離';splitButton.hidden=true;barEntry.panel.querySelector('.lab-panel-grip').after(splitButton);
  splitButton.onclick=()=>splitDock(true);
- function barHeight(width){const columns=Math.max(1,Math.floor((width-16+6)/118));return 56+Math.ceil(6/columns)*40+(Math.ceil(6/columns)-1)*6}
+ function barHeight(width){const columns=Math.max(1,Math.floor((width-16+6)/118));return 74+Math.ceil(6/columns)*40+(Math.ceil(6/columns)-1)*6}
  function effectiveDock(){return dockingReady&&docked&&active()&&!dock.hidden&&!barEntry.panel.hidden}
  function clearDockCandidate(){dockCandidate=false;dock.classList.remove('lab-dock-candidate')}
  function updateDockCandidate(x,y){
@@ -250,15 +256,16 @@
   const tv=document.getElementById('labToTv');tv.textContent='テレビ鑑賞';
   const modeButtons=document.createElement('div');modeButtons.className='pc-menu-modes';modeButtons.append(pc,tv,clearButton);modes.append(modeButtons,videoChoice,home);
   const visibility=document.createElement('div');visibility.className='pc-menu-visibility';
-  const posting=entries.find(entry=>entry.id==='labPosting');
-  posting.panel.querySelector('.lab-panel-grip').textContent='ECHO投稿 ─ 移動';posting.toggle.textContent='ECHO投稿';
-  posting.panel.querySelector('.lab-panel-resize').setAttribute('aria-label','ECHO投稿のサイズ変更');
-  posting.range.setAttribute('aria-label','ECHO投稿の背景透明度');posting.range.closest('label').firstChild.textContent='ECHO投稿 背景透明度 ';
-  entries.forEach(entry=>{visibility.append(entry.toggle);entry.toggle.title='パネルの表示／非表示'});
+  const nameButton=document.getElementById('tvNameOpen');
+  const updateNameLabel=()=>{const name=window.PULSE_PROFILE?.getName()||'匿名';nameButton.textContent='名前：'+name;nameButton.title='クリックして名前を変更';nameButton.setAttribute('aria-label','名前：'+name+'。クリックして変更')};
+  updateNameLabel();document.addEventListener('pulse-profile-name-changed',updateNameLabel);
+  const titles={map:'PULSE',labReactions:'ECHO',labPosting:'ECHO+',labTimeline:'REACT'};
+  entries.forEach(entry=>{const title=titles[entry.id],description=panelInfo[title][1];entry.toggle.innerHTML=`<span>${title}</span><small>${description}</small>`;visibility.append(entry.toggle);entry.toggle.title=title+'の表示／非表示';entry.toggle.setAttribute('aria-label',title+'：'+description+'の表示／非表示')});
   const opacity=document.createElement('details');opacity.id='pcOpacitySettings';
   const summary=document.createElement('summary');summary.textContent='⚙ 透明度';opacity.append(summary);
   entries.forEach(entry=>opacity.append(entry.range.closest('label')));
-  settings.append(visibility,opacity,document.getElementById('labReset'),notice);
+  const dockHelp=document.createElement('p');dockHelp.id='pcDockHelp';dockHelp.textContent='合体：ECHOのつまみをPULSEの下端へドラッグし、「離すと合体」が出たら離します。合体後はECHOの「分離」で戻せます。';
+  settings.append(visibility,opacity,dockHelp,document.getElementById('labReset'),notice);
   // The legacy route is retained for explicit development URLs, outside normal UI.
   controls.replaceChildren(modes,settings,document.getElementById('labToReview'));
   const cleanToggle=clearButton.onclick;

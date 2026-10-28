@@ -141,3 +141,18 @@ body.pc-default.tv-mode.lab-mode #pcPulseMenu #labClearAll{display:block;positio
 #pcPulseMenu #pcOpacitySettings{margin:8px 0}
 #pcPulseMenu #pcOpacitySettings summary{cursor:pointer;padding:8px 4px;font-size:13px;color:#fff}
 #pcPulseMenu #pcOpacitySettings summary:focus-visible{outline:2px solid #00cec9;border-radius:4px}
+
+/* Adopted PC panel UI. Keep TV and phone selectors untouched. */
+body.pc-default.tv-mode.lab-mode .lab-panel-grip,body.pc-default.tv-mode.lab-mode #labMapHandle{display:flex;flex-direction:column;justify-content:center;gap:2px;flex:0 0 44px;align-items:stretch;line-height:1.2;cursor:move}
+body.pc-default.tv-mode.lab-mode .pc-grip-line,body.pc-default.tv-mode.lab-mode .pc-grip-title{display:flex;align-items:center;gap:6px}
+body.pc-default.tv-mode.lab-mode .pc-grip-mark{display:inline-flex;align-items:center;justify-content:center;flex:0 0 16px;width:16px;font-size:18px;color:#d8dfec}
+body.pc-default.tv-mode.lab-mode .lab-panel-grip small,body.pc-default.tv-mode.lab-mode #labMapHandle small{font-size:11px;font-weight:600;color:#b8c1d2}
+body.pc-default.tv-mode.lab-mode .pc-panel-icon{width:24px;height:24px;flex:0 0 24px;pointer-events:none}
+body.pc-default.tv-mode.lab-mode .controls .pc-feature-heading,body.pc-default.tv-mode.lab-mode #labTimeline .timeline-title{display:none}
+body.pc-default.tv-mode.lab-mode .lab-panel-content{padding-bottom:30px}
+body.pc-default.tv-mode.lab-mode #labMapResize{bottom:2px}
+body.pc-default.tv-mode.lab-mode #tvMapDock .heatmap{margin-bottom:26px}
+body.pc-default.tv-mode.lab-mode #pcPulseMenu .pc-menu-visibility .btn{display:flex;flex-direction:column;gap:2px}
+body.pc-default.tv-mode.lab-mode #pcPulseMenu .pc-menu-visibility small{font-size:10px;color:#b8c1d2}
+#pcDockHelp{font-size:12px;line-height:1.6;color:#b8c1d2;margin:8px 0}
+body.pc-default.tv-mode.lab-mode #labPosting .inputs #echoNameInput{display:none}
