@@ -1,0 +1,6 @@
+.feature-icon{display:none;width:24px;height:24px;flex:0 0 24px;overflow:visible}
+.pc-feature-heading{display:none}
+body.pulse-standard-pc .feature-icon{display:block}
+body.pulse-standard-pc .pc-feature-heading{display:flex;align-items:center;gap:8px;margin:4px 0 10px;color:#f4fbff;font-weight:900;letter-spacing:.04em}
+body.pulse-standard-pc .heat-title,body.pulse-standard-pc .timeline-title{display:flex;align-items:center;gap:8px}
+@media(max-width:640px){.mobile-panel-tab strong,.mobile-panel-tab small{display:block;line-height:1.25}.mobile-panel-tab strong{font-size:.78rem}.mobile-panel-tab small{font-size:.62rem;font-weight:700}}
