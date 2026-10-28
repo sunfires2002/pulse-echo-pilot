@@ -8,9 +8,9 @@
  if(!desktop&&!tvOnly)return;
  window.PULSE_PC_VERSION='1.2.0';
  const styles=Promise.all((desktop?['pc-base.css','tv-view.css','pc-lab.css']:['tv-view.css']).map(path=>new Promise((resolve,reject)=>{
-  const link=document.createElement('link');link.rel='stylesheet';link.href=path+'?v=1.2.0';link.onload=resolve;link.onerror=()=>reject(new Error('PC stylesheet unavailable: '+path));document.head.append(link);
+  const link=document.createElement('link');link.rel='stylesheet';link.href=path+(path==='tv-view.css'?'?v=1.2.1':'?v=1.2.0');link.onload=resolve;link.onerror=()=>reject(new Error('PC stylesheet unavailable: '+path));document.head.append(link);
  })));
- function script(path){return new Promise((resolve,reject)=>{const node=document.createElement('script');node.src=path+'?v=1.2.0';node.onload=resolve;node.onerror=()=>reject(new Error('PC script unavailable: '+path));document.body.append(node)})}
+ function script(path){return new Promise((resolve,reject)=>{const node=document.createElement('script');node.src=path+(path==='tv-view.js'?'?v=1.2.1':'?v=1.2.0');node.onload=resolve;node.onerror=()=>reject(new Error('PC script unavailable: '+path));document.body.append(node)})}
  document.addEventListener('DOMContentLoaded',async()=>{
   try{
    await styles;document.body.classList.add('match-page');
