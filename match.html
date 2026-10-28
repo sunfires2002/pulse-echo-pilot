@@ -2,7 +2,7 @@
 <html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080a10"><title>試合を見る | PULSE ECHO</title>
-<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="feature-icons.css"><script src="profile.js?v=1.2.0"></script><script src="pc-desktop.js?v=1.2.3"></script></head><body>
+<link rel="stylesheet" href="style.css?v=1.0.1"><link rel="stylesheet" href="feature-icons.css"><script src="profile.js?v=1.2.0"></script><script src="pc-desktop.js?v=1.2.3"></script></head><body>
 <header class="site-header"><div class="container nav"><a class="brand" href="./">PULSE <span>ECHO</span></a><nav class="navlinks"><a href="./">試合一覧</a></nav></div></header>
 <main><div class="container match-hero"></div>
 <section class="section" style="padding-top:10px"><div class="container">
@@ -136,7 +136,7 @@ async function initMatch(){
  match=id?allMatches.find(x=>x.id===id):allMatches[0];
  if(!match){document.body.innerHTML='<div class="container" style="padding:80px 0"><a class="back" href="./">← 試合一覧へ戻る</a><div class="scoreboard"><p class="muted">この試合は見つかりません。削除されたか、まだ公開されていない可能性があります。</p></div></div>';throw new Error("match not found")}
  document.title=`${match.home} vs ${match.away} | PULSE ECHO`;
- document.getElementById("scoreboard").innerHTML=`<div class="match-meta">${esc(match.competition||"MATCH")} ${esc((match.date||"").replaceAll("-","."))}${match.venue?" "+esc(match.venue):""}</div><div class="scoreline"><div class="club">${esc(match.home)}</div><div class="bigscore">${esc(match.homeScore)} - ${esc(match.awayScore)}</div><div class="club">${esc(match.away)}</div></div>${match.description?`<p class="muted">${esc(match.description)}</p>`:""}`;
+ document.getElementById("scoreboard").innerHTML=`<div class="match-meta">${esc(match.competition||"MATCH")} ${esc((match.date||"").replaceAll("-","."))}${match.venue?" "+esc(match.venue):""}</div><div class="scoreline"><div class="club">${esc(match.home)}</div><span class="match-versus">VS</span><div class="club">${esc(match.away)}</div></div>${match.description?`<p class="muted">${esc(match.description)}</p>`:""}`;
  videos=[["前半",match.firstHalfVideo],["後半",match.secondHalfVideo],["ハイライト",match.highlightVideo]].filter(x=>x[1]);
  currentPart=videos[0]?.[0]||"前半";
  document.getElementById("tabs").innerHTML=videos.map((v,i)=>`<button class="tab ${i===0?"active":""}" data-label="${esc(v[0])}" data-video="${esc(videoId(v[1]))}">${esc(v[0])}</button>`).join("");

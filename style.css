@@ -121,3 +121,6 @@ h1{font-size:clamp(2.5rem,7vw,5.7rem);line-height:.95;margin:14px 0 18px;letter-
   .landscape-btn.respect{background:var(--respect)}
   .landscape-btn:active,.landscape-btn.is-hit{transform:scale(1.22);filter:brightness(1.12)}
 }
+
+/* Match viewer: show the matchup without its final score. */
+.match-versus{color:var(--muted);font-size:.8rem;font-weight:900;white-space:nowrap;text-align:center}
