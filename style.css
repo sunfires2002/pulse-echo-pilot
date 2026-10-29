@@ -102,6 +102,16 @@ h1{font-size:clamp(2.5rem,7vw,5.7rem);line-height:.95;margin:14px 0 18px;letter-
 @media(max-width:1100px) and (min-width:641px){.heatmap-chart-wrap{height:220px;min-height:220px}.heatmap-chart-wrap canvas{max-height:none!important}}
 @media(max-width:640px){.heatmap-chart-wrap{height:240px;min-height:240px}.heatmap-chart-wrap canvas{max-height:none!important}}
 
+/* Touch-device charts must shrink with their grid column after rotation. */
+@media(min-width:641px) and (min-height:501px){
+  html.pulse-touch-view body:not(.tv-mode):not(.lab-mode) .side-stack,
+  html.pulse-touch-view body:not(.tv-mode):not(.lab-mode) .heatmap,
+  html.pulse-touch-view body:not(.tv-mode):not(.lab-mode) .heatmap-chart-wrap{min-width:0}
+}
+@media(min-width:1101px) and (min-height:501px) and (orientation:landscape){
+  html.pulse-touch-view body:not(.tv-mode):not(.lab-mode) .heatmap-chart-wrap{height:220px;min-height:220px}
+}
+
 @media(max-height:500px) and (orientation:landscape){
   html,body{height:100%;overflow:hidden;background:#000}
   .site-header,.match-hero,.footer,.echo-visibility,.mobile-panel-tabs,.controls,.scoreboard,.heatmap,.timeline-card,.info-tabs,.tabs{display:none!important}

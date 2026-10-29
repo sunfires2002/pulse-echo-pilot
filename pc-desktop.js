@@ -2,6 +2,8 @@
 (() => {
  const ua=navigator.userAgent;
  const mobile=/Android|iPhone|iPad|iPod|Silk|Fire TV|AFT/i.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>0)||navigator.userAgentData?.mobile===true;
+ // Scope tablet chart sizing to touch-device views, excluding standalone TV.
+ if(mobile&&new URLSearchParams(location.search).get('mode')!=='tv')document.documentElement.classList.add('pulse-touch-view');
  const desktop=!mobile&&/Windows NT|Macintosh|X11|CrOS|Linux/.test(ua)&&matchMedia('(any-pointer: fine)').matches&&matchMedia('(any-hover: hover)').matches;
  window.PULSE_PC_DESKTOP=desktop;
  const tvOnly=!desktop&&new URLSearchParams(location.search).get('mode')==='tv';
