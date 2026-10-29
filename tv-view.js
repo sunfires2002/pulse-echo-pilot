@@ -43,8 +43,8 @@
   if(instance.canvas.id==="chart"){
    const active=body.classList.contains("tv-mode");
    instance.options.plugins.legend.display=!active;
-   // Thirty minute-wide bands, retaining the original minute bins and counts.
-   instance.options.scales.x.offset=active&&!body.classList.contains("lab-mode");
+   // Linear TV seconds and desktop seconds both use exact plot endpoints.
+   instance.options.scales.x.offset=false;
   }
  }});
  function setMode(active,variant="tv"){
@@ -67,37 +67,62 @@
   source.click();
   announce(button.getAttribute("aria-label")+"を選択");
  }));
- // Map navigation uses the plot width, not the canvas margins or label pixels.
+ // TV seconds use the actual Chart.js scale; PC controls remain separate.
  const canvas=document.getElementById("chart");
  const playhead=document.createElement("div");playhead.className="tv-playhead";playhead.hidden=true;map.append(playhead);
  const timeLabel=document.createElement("span");timeLabel.className="tv-map-time";toolbar.append(timeLabel);
- canvas.addEventListener("click",event=>{
-  if(!body.classList.contains("tv-mode")||body.classList.contains("lab-mode"))return;
-  if(typeof chart==="undefined"||!chart?.chartArea||!player?.seekTo){announce("動画とマップの読み込みをお待ちください");return}
-  const rect=canvas.getBoundingClientRect(),area=chart.chartArea;
-  const x=(event.clientX-rect.left)*chart.width/rect.width;
-  if(area.right<=area.left||x<area.left-1||x>area.right+1)return;
-  const selected=Math.min(1,Math.max(0,(x-area.left)/(area.right-area.left)))*1800;
-  let target=Math.max(0,Math.floor(selected)-10);
-  const duration=Number(player.getDuration?.())||0;
-  if(duration>0)target=Math.min(target,Math.max(0,Math.floor(duration)-1));
+ const tvActive=()=>body.classList.contains("tv-mode")&&!body.classList.contains("lab-mode");
+ let expectedVideoId=document.querySelector('.tab.active')?.dataset.video||'',awaitingVideo=false,duration=0;
+ function filteredEvents(){const filter=document.getElementById('viewFilter').value;return filter==='all'?events:events.filter(e=>e.user_name===filter)}
+ function redrawTv(){if(tvActive()&&typeof draw==='function'&&typeof events!=='undefined')draw(filteredEvents())}
+ function actualDuration(){
+  if(awaitingVideo||typeof player==='undefined'||typeof playerReady==='undefined'||!playerReady||!player?.getDuration)return 0;
   try{
-   player.seekTo(target,true);
-   // Replaying a scene should also replay its existing ECHO, without a new query.
-   echoPlayed.clear();
-   if(player.playVideo)player.playVideo();
-   announce(`${Math.floor(target/60)}:${String(target%60).padStart(2,"0")}から再生`);
-  }catch{announce("動画の準備後にもう一度クリックしてください")}
+   const id=player.getVideoData?.().video_id,selected=document.querySelector('.tab.active')?.dataset.video;
+   if(!id||(expectedVideoId&&id!==expectedVideoId)||(selected&&id!==selected))return 0;
+   const value=Number(player.getDuration());return Number.isFinite(value)&&value>0?value:0;
+  }catch{return 0}
+ }
+ function axis(){
+  if(!tvActive()||duration<=0||typeof chart==='undefined'||!chart?.chartArea||chart.scales.x.type!=='linear'||Math.abs(chart.scales.x.max-duration)>.1)return null;
+  return chart.scales.x;
+ }
+ function secondsToX(seconds){const x=axis();return x?x.getPixelForValue(Math.max(0,Math.min(duration,seconds))):null}
+ function xToSeconds(pixel){const x=axis();return x?Math.max(0,Math.min(duration,x.getValueForPixel(pixel))):null}
+ function update(){
+  const next=actualDuration();
+  if(Math.abs(next-duration)>.1){duration=next;redrawTv()}
+  if(!tvActive()){playhead.hidden=true;timeLabel.textContent='';return}
+  const scale=axis();
+  if(!scale){playhead.hidden=true;timeLabel.textContent='動画の長さを確認中…';return}
+  const now=Math.max(0,Number(player.getCurrentTime?.())||0),shown=player.getPlayerState?.()===0?duration:Math.min(now,duration);
+  const pixel=secondsToX(shown),r=canvas.getBoundingClientRect(),parent=map.getBoundingClientRect(),area=chart.chartArea,style=getComputedStyle(map);
+  const sx=r.width/chart.width,sy=r.height/chart.height;
+  Object.assign(playhead.style,{left:(r.left-parent.left-(parseFloat(style.borderLeftWidth)||0)+pixel*sx)+'px',top:(r.top-parent.top-(parseFloat(style.borderTopWidth)||0)+area.top*sy)+'px',height:((area.bottom-area.top)*sy)+'px',bottom:'auto',transform:'translateX(-50%)'});
+  playhead.hidden=false;timeLabel.textContent='▶ '+fmt(Math.floor(shown));
+ }
+ window.PULSE_TV_AXIS=Object.freeze({
+  duration:()=>duration,secondsToX,xToSeconds,
+  loading(id){expectedVideoId=id;awaitingVideo=true;duration=0;playhead.hidden=true;redrawTv();if(tvActive())timeLabel.textContent='動画の長さを確認中…'},
+  onReady(){awaitingVideo=false;update()},
+  onStateChange(event){
+   if(awaitingVideo&&[0,1,2,5].includes(event.data)&&event.target.getVideoData?.().video_id===expectedVideoId)awaitingVideo=false;
+   update();
+  }
  });
- setInterval(()=>{
-  if(!body.classList.contains("tv-mode")||body.classList.contains("lab-mode")){playhead.hidden=true;return}
-  if(typeof chart==="undefined"||!chart?.chartArea||!player?.getCurrentTime)return;
-  const now=Number(player.getCurrentTime())||0,area=chart.chartArea;
-  const scale=canvas.clientWidth/chart.width;
-  playhead.style.left=(canvas.offsetLeft+(area.left+Math.min(1,Math.max(0,now/1800))*(area.right-area.left))*scale)+"px";
-  playhead.hidden=false;
-  timeLabel.textContent=`▶ ${Math.floor(now/60)}:${String(Math.floor(now)%60).padStart(2,"0")}${now>=1800?"（マップ範囲外）":""}`;
- },500);
+ canvas.addEventListener("click",event=>{
+  if(!tvActive())return;
+  if(!axis()||!player?.seekTo){announce("動画とマップの読み込みをお待ちください");return}
+  const r=canvas.getBoundingClientRect(),area=chart.chartArea,x=(event.clientX-r.left)*chart.width/r.width,y=(event.clientY-r.top)*chart.height/r.height;
+  if(x<area.left-1||x>area.right+1||y<area.top-1||y>area.bottom+1)return;
+  const selected=xToSeconds(x);if(selected===null)return;
+  const target=Math.max(0,Math.min(Math.floor(selected+1e-6),Math.max(0,Math.ceil(duration)-1)));
+  try{player.seekTo(target,true);echoPlayed.clear();player.playVideo?.();announce(fmt(target)+'から再生')}
+  catch{announce("動画の準備後にもう一度クリックしてください")}
+ });
+ document.addEventListener('pulse-view-mode',()=>{if(typeof chart!=='undefined'&&chart)draw(filteredEvents());update()});
+ setInterval(update,250);
+ update();
  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&body.classList.contains("tv-mode")){event.preventDefault();if(!namePanel.hidden)closeName()}});
  if(new URLSearchParams(location.search).get("mode")==="tv")setMode(true);
 })();

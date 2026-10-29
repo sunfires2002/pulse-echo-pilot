@@ -2,7 +2,7 @@
 <html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080a10"><title>試合を見る | PULSE ECHO</title>
-<link rel="stylesheet" href="style.css?v=1.0.1"><link rel="stylesheet" href="feature-icons.css?v=1.0.1"><script src="profile.js?v=1.2.0"></script><script src="pc-desktop.js?v=1.2.6"></script><script src="pc-video-controls.js?v=1.0.0"></script></head><body>
+<link rel="stylesheet" href="style.css?v=1.0.1"><link rel="stylesheet" href="feature-icons.css?v=1.0.1"><script src="profile.js?v=1.2.0"></script><script src="pc-desktop.js?v=1.2.7"></script><script src="pc-video-controls.js?v=1.0.0"></script></head><body>
 <header class="site-header"><div class="container nav"><a class="brand" href="./">PULSE <span>ECHO</span></a><nav class="navlinks"><a href="./">試合一覧</a></nav></div></header>
 <main><div class="container match-hero"></div>
 <section class="section" style="padding-top:10px"><div class="container">
@@ -160,13 +160,14 @@ function ensurePlayerHost(){
 }
 function createPlayer(v,attempt){
  if(!window.YT?.Player){console.info('[PULSE PLAYER] waiting for API',{attempt});return}
+ window.PULSE_TV_AXIS?.loading(v);
  if(!ensurePlayerHost()){console.error('[PULSE PLAYER] mount element missing');return}
  const attemptId=++playerAttempt;playerReady=false;
  console.info('[PULSE PLAYER] create requested',{attempt,videoId:v});
  try{
   player=new YT.Player('player',{videoId:v,playerVars:{playsinline:1,rel:0,autoplay:0,...window.PULSE_PC_VIDEO?.playerVars(v)},events:{
-   onReady:event=>{if(attemptId!==playerAttempt)return;playerReady=true;clearTimeout(playerReadyTimer);playerReadyTimer=null;console.info('[PULSE PLAYER] onReady',{attempt});window.PULSE_PC_VIDEO?.onReady(event.target);startEchoPlayback(event)},
-   onStateChange:event=>{if(attemptId===playerAttempt){window.PULSE_PC_VIDEO?.onStateChange(event);startEchoPlayback(event)}},
+   onReady:event=>{if(attemptId!==playerAttempt)return;playerReady=true;clearTimeout(playerReadyTimer);playerReadyTimer=null;console.info('[PULSE PLAYER] onReady',{attempt});window.PULSE_PC_VIDEO?.onReady(event.target);window.PULSE_TV_AXIS?.onReady(event.target);startEchoPlayback(event)},
+   onStateChange:event=>{if(attemptId===playerAttempt){window.PULSE_PC_VIDEO?.onStateChange(event);window.PULSE_TV_AXIS?.onStateChange(event);startEchoPlayback(event)}},
    onError:event=>{if(attemptId!==playerAttempt)return;console.error('[PULSE PLAYER] player error',{attempt,code:event.data});retryPlayer(v,attempt,'player-error-'+event.data)}
   }});
   clearTimeout(playerReadyTimer);
@@ -189,7 +190,7 @@ function retryPlayer(v,attempt,reason){
 }
 function loadVideo(v){
  if(!v)return;window.PULSE_PC_VIDEO?.videoChanging(v);echoPlayed.clear();
- if(player&&player.loadVideoById){console.info('[PULSE PLAYER] load video',{videoId:v});player.loadVideoById(v);return}
+ if(player&&player.loadVideoById){window.PULSE_TV_AXIS?.loading(v);console.info('[PULSE PLAYER] load video',{videoId:v});player.loadVideoById(v);return}
  if(window.YT?.Player){createPlayer(v,1);return}
  console.info('[PULSE PLAYER] API not ready yet',{videoId:v})
 }
@@ -355,19 +356,23 @@ function render(){
  draw(f)
 }
 function draw(list){
- const bins=30,labels=Array.from({length:bins},(_,i)=>i+1),lab=document.body.classList.contains("lab-mode"),duration=Math.max(1,Number(player?.getDuration?.())||1800),groups=[
+ const lab=document.body.classList.contains("lab-mode"),tv=document.body.classList.contains("tv-mode")&&!lab;
+ const duration=tv?(window.PULSE_TV_AXIS?.duration()||0):Math.max(1,Number(player?.getDuration?.())||1800);
+ const bins=tv?(duration>0?Math.ceil(duration/60):0):30,labels=Array.from({length:bins},(_,i)=>i+1),groups=[
   {label:"🔥 ナイスプレー",color:"#ff4757",match:d=>String(d).startsWith("🔥 ナイス")},
   {label:"😫 惜しい",color:"#8b5cf6",match:d=>d==="😫 惜しい"},
   {label:"😅 あちゃー",color:"#ffa502",match:d=>d==="😅 あちゃー"},
   {label:"😳 マジで",color:"#2ed573",match:d=>d==="😳 マジで"},
   {label:"🎙 その他",color:"#00cec9",match:d=>d==="🤖 AIにお任せ"}
  ];
- const counts=groups.map(g=>labels.map((_,i)=>list.filter(e=>g.match(e.description)&&Math.floor((Number(e.good_time)||0)/60)===i).length));
- const ds=groups.map((g,index)=>({label:g.label,data:lab?counts[index].map((y,i)=>({x:i*60+30,y})):counts[index],borderColor:g.color,backgroundColor:g.color+"33",tension:.35,fill:true}));
- const xScale=lab?{type:"linear",min:0,max:duration,offset:false,ticks:{color:"#777",maxTicksLimit:8,callback:value=>fmt(Math.max(0,Math.floor(Number(value))))},grid:{color:"#252a37"},border:{display:false}}:{ticks:{color:"#777",maxTicksLimit:8},grid:{color:"#252a37"}};
+ const samples=tv?list.filter(e=>Number.isFinite(Number(e.good_time))&&Number(e.good_time)>=0&&Number(e.good_time)<=duration):list;
+ const counts=groups.map(g=>labels.map((_,i)=>samples.filter(e=>g.match(e.description)&&Math.floor((Number(e.good_time)||0)/60)===i).length));
+ const ds=groups.map((g,index)=>({label:g.label,data:lab||tv?counts[index].map((y,i)=>({x:tv?(i*60+Math.min((i+1)*60,duration))/2:i*60+30,y})):counts[index],borderColor:g.color,backgroundColor:g.color+"33",tension:.35,fill:true}));
+ const xScale=lab||tv?{type:"linear",min:0,max:duration||1,offset:false,ticks:{display:!tv||duration>0,color:"#777",maxTicksLimit:8,callback:value=>fmt(Math.max(0,Math.floor(Number(value))))},grid:{color:"#252a37"},border:{display:tv}}:{ticks:{color:"#777",maxTicksLimit:8},grid:{color:"#252a37"}};
  const yScale={beginAtZero:true,ticks:{display:false},grid:{color:"#252a37"},...(lab?{border:{display:false}}:{})};
  const options={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#aaa"}}},scales:{x:xScale,y:yScale}};
  window.PULSE_PC_CHART_OPTIONS?.(options);
+ if(tv)options.plugins.tooltip={...options.plugins.tooltip,callbacks:{title:points=>points.length?fmt(Math.floor(points[0].parsed.x)):""}};
  if(chart)chart.destroy();chart=new Chart(document.getElementById("chart"),{type:"line",data:{labels,datasets:ds},options})
 }
 function displayEchoKind(kind){return kind==="🤖 AIにお任せ"?"🎙 その他":kind}
