@@ -386,7 +386,8 @@
   const dockHelp=document.createElement('p');dockHelp.id='pcDockHelp';dockHelp.textContent='合体：ECHOのつまみをPULSEの下端へドラッグし、「離すと合体」が出たら離します。合体後はECHOの「分離」で戻せます。';
   settings.append(visibility,opacity,dockHelp,document.getElementById('labReset'),notice);
   // The legacy route is retained for explicit development URLs, outside normal UI.
-  controls.replaceChildren(modes,settings,document.getElementById('labToReview'));
+  const videoControls=window.PULSE_PC_VIDEO?.createMenu(labPlaybackClick);
+  controls.replaceChildren(...(videoControls?[videoControls]:[]),modes,settings,document.getElementById('labToReview'));
   const cleanToggle=clearButton.onclick;
   function syncMode(){const clean=body.classList.contains('lab-clean');pc.setAttribute('aria-pressed',String(!clean));clearButton.setAttribute('aria-pressed',String(clean));clearButton.textContent='動画だけ'}
   function collapse(){controls.classList.add('is-collapsed');menu.setAttribute('aria-expanded','false')}

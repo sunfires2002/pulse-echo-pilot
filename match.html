@@ -2,7 +2,7 @@
 <html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080a10"><title>試合を見る | PULSE ECHO</title>
-<link rel="stylesheet" href="style.css?v=1.0.1"><link rel="stylesheet" href="feature-icons.css?v=1.0.1"><script src="profile.js?v=1.2.0"></script><script src="pc-desktop.js?v=1.2.5"></script></head><body>
+<link rel="stylesheet" href="style.css?v=1.0.1"><link rel="stylesheet" href="feature-icons.css?v=1.0.1"><script src="profile.js?v=1.2.0"></script><script src="pc-desktop.js?v=1.2.6"></script><script src="pc-video-controls.js?v=1.0.0"></script></head><body>
 <header class="site-header"><div class="container nav"><a class="brand" href="./">PULSE <span>ECHO</span></a><nav class="navlinks"><a href="./">試合一覧</a></nav></div></header>
 <main><div class="container match-hero"></div>
 <section class="section" style="padding-top:10px"><div class="container">
@@ -164,9 +164,9 @@ function createPlayer(v,attempt){
  const attemptId=++playerAttempt;playerReady=false;
  console.info('[PULSE PLAYER] create requested',{attempt,videoId:v});
  try{
-  player=new YT.Player('player',{videoId:v,playerVars:{playsinline:1,rel:0,autoplay:0},events:{
-   onReady:event=>{if(attemptId!==playerAttempt)return;playerReady=true;clearTimeout(playerReadyTimer);playerReadyTimer=null;console.info('[PULSE PLAYER] onReady',{attempt});startEchoPlayback(event)},
-   onStateChange:event=>{if(attemptId===playerAttempt)startEchoPlayback(event)},
+  player=new YT.Player('player',{videoId:v,playerVars:{playsinline:1,rel:0,autoplay:0,...window.PULSE_PC_VIDEO?.playerVars(v)},events:{
+   onReady:event=>{if(attemptId!==playerAttempt)return;playerReady=true;clearTimeout(playerReadyTimer);playerReadyTimer=null;console.info('[PULSE PLAYER] onReady',{attempt});window.PULSE_PC_VIDEO?.onReady(event.target);startEchoPlayback(event)},
+   onStateChange:event=>{if(attemptId===playerAttempt){window.PULSE_PC_VIDEO?.onStateChange(event);startEchoPlayback(event)}},
    onError:event=>{if(attemptId!==playerAttempt)return;console.error('[PULSE PLAYER] player error',{attempt,code:event.data});retryPlayer(v,attempt,'player-error-'+event.data)}
   }});
   clearTimeout(playerReadyTimer);
@@ -188,11 +188,23 @@ function retryPlayer(v,attempt,reason){
  ensurePlayerHost();console.warn('[PULSE PLAYER] retrying once',{reason,nextAttempt:attempt+1});createPlayer(v,attempt+1)
 }
 function loadVideo(v){
- if(!v)return;echoPlayed.clear();
+ if(!v)return;window.PULSE_PC_VIDEO?.videoChanging(v);echoPlayed.clear();
  if(player&&player.loadVideoById){console.info('[PULSE PLAYER] load video',{videoId:v});player.loadVideoById(v);return}
  if(window.YT?.Player){createPlayer(v,1);return}
  console.info('[PULSE PLAYER] API not ready yet',{videoId:v})
 }
+// Rebuild only when desktop/TV controls differ; keep application data and layout intact.
+window.PULSE_PC_VIDEO?.bind({
+ getPlayer:()=>player,isReady:()=>playerReady,
+ getVideoId:()=>videoId(videos.find(part=>part[0]===currentPart)?.[1]||""),
+ recreate(){
+  const v=videoId(videos.find(part=>part[0]===currentPart)?.[1]||"");if(!v||!window.YT?.Player)return;
+  clearTimeout(playerReadyTimer);playerReadyTimer=null;
+  const old=player;player=null;playerReady=false;playerAttempt++;
+  try{old?.destroy()}catch(error){console.warn('[PULSE PLAYER] mode switch cleanup',error)}
+  createPlayer(v,1);
+ }
+});
 const key=()=>`pulse_echo_${match.id}_${currentPart}`;
 function nowTime(back=0){try{return Math.max(0,Math.floor((player.getCurrentTime()||0)-back))}catch{return 0}}
 function fmt(s){s=Number(s)||0;return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`}
