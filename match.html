@@ -13,9 +13,9 @@
 <div class="echo-visibility"><label><input type="checkbox" id="echoVisible" checked> みんなの足跡を表示</label></div>
 <div class="mobile-panel-tabs" aria-label="スマホ表示切替"><button class="mobile-panel-tab active" data-mobile-panel="react" type="button"><strong>ECHO</strong><small>反応する</small></button><button class="mobile-panel-tab" data-mobile-panel="map" type="button"><strong>PULSE</strong><small>みんなの熱量</small></button><button class="mobile-panel-tab" data-mobile-panel="timeline" type="button"><strong>REACT</strong><small>みんなの反応</small></button></div>
 <div class="controls">
-<div class="pc-feature-heading"><svg class="feature-icon" aria-hidden="true"><use href="feature-icons.svg?v=1.0.0#echo-plus"></use></svg><span>ECHO+</span></div>
+<div class="pc-feature-heading"><svg class="feature-icon" aria-hidden="true"><use href="feature-icons.svg?v=1.0.0#echo-plus"></use></svg><span data-feature-label="echo-plus">ECHO+</span></div>
 <div class="inputs"><input class="input" id="echoNameInput" autocomplete="nickname" placeholder="名前を入力"><input class="input" id="commentText" placeholder="この瞬間に一言…"><button class="btn btn-primary" id="commentBtn">💬 残す</button></div>
-<div class="pc-feature-heading"><svg class="feature-icon" aria-hidden="true"><use href="feature-icons.svg?v=1.0.0#echo"></use></svg><span>ECHO</span></div>
+<div class="pc-feature-heading"><svg class="feature-icon" aria-hidden="true"><use href="feature-icons.svg?v=1.0.0#echo"></use></svg><span data-feature-label="echo">ECHO</span></div>
 <div class="reactions"><button class="react hot" id="niceButton" data-kind="🔥 ナイスプレー">🔥 ナイスプレー</button><button class="react miss" data-kind="😫 惜しい">😫 惜しい</button><button class="react laugh" data-kind="😅 あちゃー">😅 あちゃー</button><button class="react respect" data-kind="😳 マジで">😳 マジで</button></div>
 <div class="nice-options" id="niceOptions" aria-hidden="true"><button class="nice-chip" data-kind="🔥 ナイスシュート" type="button">ナイスシュート</button><button class="nice-chip" data-kind="🔥 ナイスキーパー" type="button">ナイスキーパー</button><button class="nice-chip" data-kind="🔥 ナイスパス" type="button">ナイスパス</button><button class="nice-chip" data-kind="🔥 ナイス守備" type="button">ナイス守備</button></div>
 
@@ -33,9 +33,9 @@
 </div>
 <aside class="side-stack">
 <div class="landscape-btns" aria-label="横画面リアクション"><button class="landscape-btn hot" data-kind="🔥 ナイスプレー" data-offset="4" type="button">🔥</button><button class="landscape-btn miss" data-kind="😫 惜しい" data-offset="3" type="button">😫</button><button class="landscape-btn laugh" data-kind="😅 あちゃー" data-offset="3" type="button">😅</button><button class="landscape-btn respect" data-kind="😳 マジで" data-offset="2" type="button">😳</button></div>
-<div class="info-tabs" aria-label="表示切替"><button class="info-tab active" data-info-tab="map" type="button">反応マップ</button><button class="info-tab" data-info-tab="timeline" type="button">タイムライン</button></div>
-<div class="heatmap info-panel is-active" data-info-panel="map"><div class="heat-title"><svg class="feature-icon" aria-hidden="true"><use href="feature-icons.svg?v=1.0.0#pulse"></use></svg><span>みんなの反応マップ</span></div><div class="heatmap-chart-wrap"><canvas id="chart" height="120"></canvas></div></div>
-<aside class="timeline-card info-panel" data-info-panel="timeline"><div class="timeline-title"><svg class="feature-icon" aria-hidden="true"><use href="feature-icons.svg?v=1.0.0#react"></use></svg><span>ECHO TIMELINE</span></div>
+<div class="info-tabs" aria-label="表示切替"><button class="info-tab active" data-info-tab="map" data-feature-label="pulse" type="button">反応マップ</button><button class="info-tab" data-info-tab="timeline" data-feature-label="react" type="button">タイムライン</button></div>
+<div class="heatmap info-panel is-active" data-info-panel="map"><div class="heat-title"><svg class="feature-icon" aria-hidden="true"><use href="feature-icons.svg?v=1.0.0#pulse"></use></svg><span data-feature-label="pulse">みんなの反応マップ</span></div><div class="heatmap-chart-wrap"><canvas id="chart" height="120"></canvas></div></div>
+<aside class="timeline-card info-panel" data-info-panel="timeline"><div class="timeline-title"><svg class="feature-icon" aria-hidden="true"><use href="feature-icons.svg?v=1.0.0#react"></use></svg><span data-feature-label="react">ECHO TIMELINE</span></div>
 <div class="filter"><select class="input" id="viewFilter"><option value="all">👁️ 全員の熱量を表示</option></select></div>
 <div class="timeline" id="timeline"><div class="muted">思い出を読み込み中…</div></div></aside>
 </aside>
@@ -504,6 +504,17 @@ function syncStandardPcFeatures(){
  const standard=Boolean(window.PULSE_PC_DESKTOP)&&(!document.body.classList.contains("tv-mode")||flexible);
  document.body.classList.toggle("pulse-standard-pc",standard);
 }
+// Update existing captions only; leave the mobile tabs and TV presentation intact.
+function syncPanelFeatureLabels(){
+ const tv=(document.body.classList.contains("tv-mode")&&!document.body.classList.contains("lab-mode"))||new URLSearchParams(location.search).get("mode")==="tv";
+ const names={pulse:"PULSE／みんなの熱量",echo:"ECHO／反応する","echo-plus":"ECHO+／声・ひとこと",react:"REACT／みんなの反応"};
+ document.querySelectorAll("[data-feature-label]").forEach(node=>{
+  if(!node.dataset.originalFeatureLabel)node.dataset.originalFeatureLabel=node.textContent;
+  node.textContent=tv?node.dataset.originalFeatureLabel:names[node.dataset.featureLabel];
+ });
+}
+syncPanelFeatureLabels();
+document.addEventListener("pulse-view-mode",syncPanelFeatureLabels);
 document.addEventListener("pulse-pc-ready",syncStandardPcFeatures);
 document.addEventListener("pulse-view-mode",syncStandardPcFeatures);
 </script>
