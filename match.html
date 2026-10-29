@@ -34,8 +34,8 @@
 <aside class="side-stack">
 <div class="landscape-btns" aria-label="横画面リアクション"><button class="landscape-btn hot" data-kind="🔥 ナイスプレー" data-offset="4" type="button">🔥</button><button class="landscape-btn miss" data-kind="😫 惜しい" data-offset="3" type="button">😫</button><button class="landscape-btn laugh" data-kind="😅 あちゃー" data-offset="3" type="button">😅</button><button class="landscape-btn respect" data-kind="😳 マジで" data-offset="2" type="button">😳</button></div>
 <div class="info-tabs" aria-label="表示切替"><button class="info-tab active" data-info-tab="map" type="button">反応マップ</button><button class="info-tab" data-info-tab="timeline" type="button">タイムライン</button></div>
-<div class="heatmap info-panel is-active" data-info-panel="map"><div class="heat-title"><svg class="feature-icon" aria-hidden="true"><use href="feature-icons.svg?v=1.0.0#pulse"></use></svg><span>みんなの反応マップ</span></div><div class="heatmap-chart-wrap"><canvas id="chart" height="120"></canvas></div></div>
-<aside class="timeline-card info-panel" data-info-panel="timeline"><div class="timeline-title"><svg class="feature-icon" aria-hidden="true"><use href="feature-icons.svg?v=1.0.0#react"></use></svg><span>ECHO TIMELINE</span></div>
+<div class="heatmap info-panel is-active" data-info-panel="map"><div class="heat-title"><svg class="feature-icon" aria-hidden="true"><use href="feature-icons.svg?v=1.0.0#pulse"></use></svg><span id="pulsePanelHeading">みんなの反応マップ</span></div><div class="heatmap-chart-wrap"><canvas id="chart" height="120"></canvas></div></div>
+<aside class="timeline-card info-panel" data-info-panel="timeline"><div class="timeline-title"><svg class="feature-icon" aria-hidden="true"><use href="feature-icons.svg?v=1.0.0#react"></use></svg><span id="reactPanelHeading">ECHO TIMELINE</span></div>
 <div class="filter"><select class="input" id="viewFilter"><option value="all">👁️ 全員の熱量を表示</option></select></div>
 <div class="timeline" id="timeline"><div class="muted">思い出を読み込み中…</div></div></aside>
 </aside>
@@ -504,6 +504,14 @@ function syncStandardPcFeatures(){
  const standard=Boolean(window.PULSE_PC_DESKTOP)&&(!document.body.classList.contains("tv-mode")||flexible);
  document.body.classList.toggle("pulse-standard-pc",standard);
 }
+// Text only: preserve PC/TV headings and the existing mobile tab handlers.
+function syncMobilePanelHeadings(){
+ const mobile=window.PULSE_PC_DESKTOP===false&&!document.body.classList.contains("tv-mode")&&new URLSearchParams(location.search).get("mode")!=="tv";
+ document.getElementById("pulsePanelHeading").textContent=mobile?"PULSE／みんなの熱量":"みんなの反応マップ";
+ document.getElementById("reactPanelHeading").textContent=mobile?"REACT／みんなの反応":"ECHO TIMELINE";
+}
+syncMobilePanelHeadings();
+document.addEventListener("pulse-view-mode",syncMobilePanelHeadings);
 document.addEventListener("pulse-pc-ready",syncStandardPcFeatures);
 document.addEventListener("pulse-view-mode",syncStandardPcFeatures);
 </script>
