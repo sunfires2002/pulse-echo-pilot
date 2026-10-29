@@ -72,7 +72,10 @@ const specs=[
   else if(spec.ua&&!spec.mode)assertTablet(m);
   if(spec.hidden||spec.mode||!spec.ua){
    const prior=await open(spec,true);const old=await measure(prior.page);
-   assert.deepEqual(m,old,spec.name+' existing layout changed');await prior.context.close();
+   // TV chart contents intentionally changed to seconds; compare its layout here.
+   if(spec.mode){for(const key of ['clientWidth','scrollWidth','map','canvas','geometry','storage'])assert.deepEqual(m[key],old[key],spec.name+' '+key+' layout changed')}
+   else assert.deepEqual(m,old,spec.name+' existing layout changed');
+   await prior.context.close();
   }
   if(m.mapVisible){await page.locator('.heatmap').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,spec.name+'.png')});await page.locator('.heatmap').screenshot({path:path.join(out,spec.name+'-panel.png')});}
   else await page.screenshot({path:path.join(out,spec.name+'.png')});
