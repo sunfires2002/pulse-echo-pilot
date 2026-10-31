@@ -25,6 +25,8 @@
  map.before(placeholder);
  const dock=document.createElement("div");dock.id="tvMapDock";dock.hidden=true;shell.append(dock);
  const legend=document.createElement("div");legend.className="tv-reactions";legend.setAttribute("aria-label","反応マップの凡例兼投稿ボタン");
+ const reactionGroup=document.createElement("div");reactionGroup.className="tv-reaction-group";
+ const reactLabel=document.createElement("span");reactLabel.className="tv-react-planned";reactLabel.textContent="REACT";reactLabel.setAttribute("aria-label","REACT（表示のみ）");
  const reactions=[
   ["🔥 ナイスプレー","🔥 ナイスプレー","#ff4757"],
   ["😫 惜しい","😫 惜しい","#8b5cf6"],
@@ -35,9 +37,9 @@
  reactions.forEach(([label,kind,color])=>{
   const button=document.createElement("button");button.className="tv-react";button.type="button";
   button.dataset.tvKind=kind;button.style.setProperty("--reaction-color",color);button.textContent=label;button.setAttribute("aria-label",label);
-  legend.append(button);
+  reactionGroup.append(button);
  });
- legend.prepend(nameButton);dock.append(legend);shell.append(toolbar);
+ legend.append(home,nameButton,reactionGroup,reactLabel);dock.append(legend);shell.append(toolbar);
  // Hide the canvas legend only in TV mode: the five buttons serve as its legend.
  if(window.Chart)Chart.register({id:"pulseTvLegend",beforeUpdate(instance){
   if(instance.canvas.id==="chart"){
