@@ -64,11 +64,12 @@ body.tv-mode[data-tv-layout="large"] .tv-reactions .tv-react{flex:1 1 0;width:0}
 /* Display only: keep internal playback time and map playhead calculations. */
 body.tv-mode .tv-map-time{display:none!important}
 
-/* TV-only bottom bar: keep the original home size and all existing control metrics. */
+/* TV-only home: match the 40px reaction row without reallocating its width. */
 #tvHome{display:none}
-body.tv-mode:not(.lab-mode) #tvHome{position:static;flex:0 0 120px;align-self:flex-end;margin-top:-8px;margin-right:16px;z-index:90;display:inline-flex;align-items:center;justify-content:center;min-width:120px;min-height:48px;padding:8px 16px;border:1px solid rgba(255,255,255,.55);border-radius:10px;background:rgba(8,10,16,.55);color:#fff;font-size:16px;font-weight:800;text-decoration:none}
-body.tv-mode:not(.lab-mode) #tvHome:focus{outline:4px solid #fff;outline-offset:3px;background:#006e73;border-color:#fff}
-/* Home is 48px high; its -8px top margin keeps the existing 40px bar and PULSE intact. */
+body.tv-mode:not(.lab-mode) #tvHome{position:static;flex:0 0 96px;align-self:center;margin:0 6px 0 34px;z-index:90;display:inline-flex;align-items:center;justify-content:center;min-width:96px;height:40px;min-height:40px;padding:4px 12px;border:1px solid rgba(255,255,255,.55);border-radius:10px;background:rgba(8,10,16,.55);color:#fff;font-size:16px;font-weight:800;text-decoration:none}
+body.tv-mode:not(.lab-mode) #tvHome:is(:hover,:focus){outline:3px solid #fff;outline-offset:-3px;background:#006e73;border-color:#fff}
+/* The old left slot was 120+16=136px. Keep 34+96+6=136px, so reactions stay fixed.
+   With the existing 6px row gap, home-to-Nice clearance is now 12px. */
 .tv-reaction-group{display:contents}
 .tv-react-planned{display:none}
 body.tv-mode:not(.lab-mode) .tv-reaction-group{display:flex;flex:1 1 0;min-width:0;gap:inherit}
