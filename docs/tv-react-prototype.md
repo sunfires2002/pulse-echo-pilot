@@ -41,3 +41,11 @@ After d810236: only the outer panel background changes from 88% to 82% (`rgba(8,
 The heading reuses `feature-icons.svg#react` at 18×18px to the right of REACT. It is decorative (`aria-hidden`, non-focusable, pointer-events none), with no activation handler. The existing header remains 28px tall; the time label cannot shrink.
 
 All three appearance comparisons and behavioral tests pass. Panel/video/PULSE/toolbar geometry, reaction colors, fonts, item counts and long-comment scroll dimensions match d810236. Bright/dark background comparison captures are in `../tv-react-icon-evidence/`. Fire TV physical confirmation remains separate.
+
+## 75% outer-background comparison trial
+
+From 272f14e, only the panel background changes from 82% to 75% (`rgba(8,10,16,0.75)`), with a stylesheet cache-version update. No JavaScript runtime or shared icon changes. This value is experimental until Fire TV hardware review.
+
+At 960×540, 1280×720 and 1920×1080, appearance tests compare synthetic bright/dark video backgrounds and large white title lettering behind the panel. Geometry, fonts, button colors, item counts and scroll dimensions match the 82% baseline. At 75%, video title lettering shows through more; row text retains the existing additional 72% row background. Physical-TV readability remains for user judgment.
+
+Evidence: `../tv-react-opacity75-evidence/`. REACT behavior tests pass with production HTTP/WebSocket attempts at zero.
