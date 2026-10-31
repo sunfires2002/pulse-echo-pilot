@@ -72,5 +72,6 @@ body.tv-mode:not(.lab-mode) #tvHome:focus{outline:4px solid #fff;outline-offset:
 .tv-reaction-group{display:contents}
 .tv-react-planned{display:none}
 body.tv-mode:not(.lab-mode) .tv-reaction-group{display:flex;flex:1 1 0;min-width:0;gap:inherit}
-body.tv-mode:not(.lab-mode) .tv-react-planned{display:flex;flex:0 0 auto;align-items:center;justify-content:center;padding:0 8px;min-width:72px;color:#aab4c7;font-size:14px;pointer-events:none;user-select:none}
-body.tv-mode:not(.lab-mode) #tvMapDock #tvNameOpen:focus-visible{outline:4px solid #fff;outline-offset:2px}
+body.tv-mode:not(.lab-mode) .tv-react-planned{display:flex;flex:0 0 auto;align-items:center;justify-content:center;padding:4px 8px;min-width:72px;min-height:40px;border:1px solid #657087;border-radius:10px;background:rgba(8,10,16,.5);color:#aab4c7;font-size:14px;cursor:default;pointer-events:none;user-select:none}
+/* Keep the shared identity control for PC, but remove it from standalone TV. */
+body.tv-mode:not(.lab-mode) #tvNameOpen{display:none!important}
