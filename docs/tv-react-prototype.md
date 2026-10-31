@@ -33,3 +33,11 @@ Fire TV hardware, Silk rendering and physical remote selection remain unverified
 - Panel background `rgba(8,10,16,0.78)` → `rgba(8,10,16,0.88)` (78% → 88%; +10 percentage points). Row background remains 72%.
 - `tv-react-appearance.cjs` compares the 769476a runtime with the update at 960×540, 1280×720 and 1920×1080. Bright/dark synthetic video backgrounds isolate the contrast difference. Geometry, fonts, reaction colors, item counts and long-text scroll dimensions are identical. Click / keyboard / Escape and the actual YouTube integration are also checked.
 - Evidence: `../tv-react-appearance-evidence/`. The separate LAN preview uses port 8059; neither the 8053 preview nor main is changed.
+
+## Header icon and 82% panel background
+
+After d810236: only the outer panel background changes from 88% to 82% (`rgba(8,10,16,0.82)`). Row backgrounds, selection colors, white outlines, text and toggle styles remain unchanged.
+
+The heading reuses `feature-icons.svg#react` at 18×18px to the right of REACT. It is decorative (`aria-hidden`, non-focusable, pointer-events none), with no activation handler. The existing header remains 28px tall; the time label cannot shrink.
+
+All three appearance comparisons and behavioral tests pass. Panel/video/PULSE/toolbar geometry, reaction colors, fonts, item counts and long-comment scroll dimensions match d810236. Bright/dark background comparison captures are in `../tv-react-icon-evidence/`. Fire TV physical confirmation remains separate.

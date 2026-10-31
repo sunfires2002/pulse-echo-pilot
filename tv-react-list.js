@@ -4,7 +4,7 @@
  if(!shell||!dock||!placeholder||!window.PULSE_TV_AXIS)return;
  const toggle=document.createElement('button');toggle.type='button';toggle.id='tvReactToggle';toggle.className='tv-react-planned tv-react-toggle';toggle.textContent='▲ REACT';toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-controls','tvReactList');placeholder.replaceWith(toggle);
  const panel=document.createElement('section');panel.id='tvReactList';panel.hidden=true;panel.setAttribute('aria-labelledby','tvReactTitle');
- const header=document.createElement('header'),title=document.createElement('h2'),until=document.createElement('span');title.id='tvReactTitle';title.textContent='REACT';until.id='tvReactUntil';header.append(title,until);
+ const header=document.createElement('header'),title=document.createElement('h2'),until=document.createElement('span');title.id='tvReactTitle';title.textContent='REACT';const icon=document.createElementNS('http://www.w3.org/2000/svg','svg'),use=document.createElementNS('http://www.w3.org/2000/svg','use');icon.classList.add('tv-react-heading-icon');icon.setAttribute('viewBox','0 0 48 48');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');use.setAttribute('href','feature-icons.svg#react');icon.append(use);title.append(icon);until.id='tvReactUntil';header.append(title,until);
  const list=document.createElement('ol');list.id='tvReactItems';list.setAttribute('aria-label','現在の再生位置までの反応');
  const empty=document.createElement('p');empty.id='tvReactEmpty';panel.append(header,empty,list);shell.append(panel);
  let opened=false,lastSignature='',limit=8;
