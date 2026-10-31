@@ -103,8 +103,15 @@
   Object.assign(playhead.style,{left:(r.left-parent.left-(parseFloat(style.borderLeftWidth)||0)+pixel*sx)+'px',top:(r.top-parent.top-(parseFloat(style.borderTopWidth)||0)+area.top*sy)+'px',height:((area.bottom-area.top)*sy)+'px',bottom:'auto',transform:'translateX(-50%)'});
   playhead.hidden=false;timeLabel.textContent='▶ '+fmt(Math.floor(shown));
  }
+ // Shared standalone-TV seek path. PULSE keeps its integer target; REACT may use stored decimals.
+ function seekTv(seconds,exact=false){
+  if(!axis()||!player?.seekTo||!Number.isFinite(seconds)||seconds<0||seconds>duration){announce("動画とマップの読み込みをお待ちください");return false}
+  const target=exact?Math.min(seconds,duration):Math.max(0,Math.min(Math.floor(seconds+1e-6),Math.max(0,Math.ceil(duration)-1)));
+  try{player.seekTo(target,true);echoPlayed.clear();player.playVideo?.();announce(fmt(Math.floor(target))+'から再生');return true}
+  catch{announce("動画の準備後にもう一度クリックしてください");return false}
+ }
  window.PULSE_TV_AXIS=Object.freeze({
-  duration:()=>duration,secondsToX,xToSeconds,
+  duration:()=>duration,secondsToX,xToSeconds,seek:seekTv,
   loading(id){expectedVideoId=id;awaitingVideo=true;duration=0;playhead.hidden=true;redrawTv();if(tvActive())timeLabel.textContent='動画の長さを確認中…'},
   onReady(){awaitingVideo=false;update()},
   onStateChange(event){
@@ -118,9 +125,7 @@
   const r=canvas.getBoundingClientRect(),area=chart.chartArea,x=(event.clientX-r.left)*chart.width/r.width,y=(event.clientY-r.top)*chart.height/r.height;
   if(x<area.left-1||x>area.right+1||y<area.top-1||y>area.bottom+1)return;
   const selected=xToSeconds(x);if(selected===null)return;
-  const target=Math.max(0,Math.min(Math.floor(selected+1e-6),Math.max(0,Math.ceil(duration)-1)));
-  try{player.seekTo(target,true);echoPlayed.clear();player.playVideo?.();announce(fmt(target)+'から再生')}
-  catch{announce("動画の準備後にもう一度クリックしてください")}
+  seekTv(selected);
  });
  document.addEventListener('pulse-view-mode',()=>{if(typeof chart!=='undefined'&&chart)draw(filteredEvents());update()});
  setInterval(update,250);
