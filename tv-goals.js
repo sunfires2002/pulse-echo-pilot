@@ -2,7 +2,7 @@
 (() => {
  const qs=new URLSearchParams(location.search);if(qs.get('mode')!=='tv'||qs.get('goalLab')!=='1'||!window.PULSE_PRISM_GOALS)return;
  const shell=document.getElementById('videoShell'),dock=document.getElementById('tvMapDock'),canvas=document.getElementById('chart');if(!shell||!dock||!canvas||!window.PULSE_TV_AXIS)return;
- const store=PULSE_PRISM_GOALS.createStore(),lead=3,width=36,gap=6;
+ const store=PULSE_PRISM_GOALS.createStore(),lead=10,width=36,gap=6;
  const layer=document.createElement('div');layer.className='tv-goal-layer';layer.id='tvGoalLayer';layer.setAttribute('role','group');layer.setAttribute('aria-label','GOAL 検証サンプル');dock.append(layer);
  const menu=document.createElement('section');menu.id='tvGoalMenu';menu.className='tv-goal-menu';menu.hidden=true;menu.setAttribute('aria-label','近接GOALを選択');shell.append(menu);
  let signature='',openNos=null,opener=null;
@@ -20,17 +20,17 @@
  function jump(no){const c=context(),goal=eligible(c).find(g=>g.no===no);if(!goal){render();return}if(PULSE_TV_AXIS.seek(Math.max(0,goal.sec-lead),true)){close();render()}}
  function showMenu(group,button,focus=false){
   const c=context(),valid=eligible(c).filter(g=>group.goals.some(old=>old.no===g.no));if(!valid.length){close();return}
-  const focused=menu.contains(document.activeElement)?document.activeElement.dataset.no:null;openNos=valid.map(g=>g.no);opener=button;menu.replaceChildren();const header=document.createElement('header'),text=document.createElement('span'),dismiss=document.createElement('button');text.textContent=`近接GOAL ${valid.length}件 · 3秒前から再生`;dismiss.textContent='閉じる';dismiss.type='button';dismiss.onclick=()=>close(true);header.append(text,dismiss);menu.append(header);
+  const focused=menu.contains(document.activeElement)?document.activeElement.dataset.no:null;openNos=valid.map(g=>g.no);opener=button;menu.replaceChildren();const header=document.createElement('header'),text=document.createElement('span'),dismiss=document.createElement('button');text.textContent=`近接GOAL ${valid.length}件 · ${lead}秒前から再生`;dismiss.textContent='閉じる';dismiss.type='button';dismiss.onclick=()=>close(true);header.append(text,dismiss);menu.append(header);
   for(const goal of valid){const choice=document.createElement('button');choice.type='button';choice.className='choice';choice.dataset.no=goal.no;choice.textContent=label(goal,c);choice.onclick=()=>jump(goal.no);menu.append(choice)}
   const s=shell.getBoundingClientRect(),d=dock.getBoundingClientRect(),b=button.getBoundingClientRect(),w=Math.min(360,s.width-32);Object.assign(menu.style,{left:Math.max(16,Math.min(s.width-w-16,b.left-s.left-w/2))+'px',bottom:(s.bottom-d.top+8)+'px',maxHeight:Math.max(40,Math.min(240,d.top-s.top-16))+'px'});menu.hidden=false;if(focus)menu.querySelector('.choice')?.focus({preventScroll:true});else if(focused)[...menu.querySelectorAll('.choice')].find(b=>b.dataset.no===focused)?.focus({preventScroll:true});
  }
  function render(){
   const c=context(),r=canvas.getBoundingClientRect(),d=dock.getBoundingClientRect();Object.assign(layer.style,{top:(r.top-d.top-dock.clientTop)+'px',height:r.height+'px'});
-  const host=layer.getBoundingClientRect(),goals=eligible(c),groups=[];
+  const host=layer.getBoundingClientRect(),chartHeight=Number(chart?.height)||r.height||1,zeroY=(chart?.scales?.y?.getPixelForValue(0)??0)*r.height/chartHeight,hitTop=Math.max(0,Math.min(r.height-32,zeroY-24)),goals=eligible(c),groups=[];
   for(const goal of goals){const pixel=PULSE_TV_AXIS.secondsToX(goal.sec);if(pixel===null)continue;const x=r.left-host.left+pixel*r.width/chart.width,left=Math.max(0,Math.min(host.width-width,x-width/2)),last=groups.at(-1);if(last&&left<last.left+width+gap)last.goals.push(goal);else groups.push({x,left,goals:[goal]})}
-  const next=JSON.stringify([c?.key,host.width,r.height,groups.map(g=>[g.x,g.left,g.goals.map(x=>x.no)])]);if(next===signature)return;signature=next;
+  const next=JSON.stringify([c?.key,host.width,r.height,zeroY,hitTop,groups.map(g=>[g.x,g.left,g.goals.map(x=>x.no)])]);if(next===signature)return;signature=next;
   const focused=layer.contains(document.activeElement)?document.activeElement.dataset.nos:null;layer.replaceChildren();
-  for(const group of groups){const button=document.createElement('button'),ball=document.createElement('span');button.type='button';button.className='tv-goal-ball';button.dataset.nos=group.goals.map(g=>g.no).join(',');button.dataset.sec=group.goals[0].sec;button.style.left=group.left+'px';button.setAttribute('aria-label',group.goals.length>1?`近接GOAL ${group.goals.length}件を選択`:label(group.goals[0],c)+' · 3秒前から再生');ball.className='ball';ball.textContent='⚽';ball.style.left=(group.x-group.left)+'px';ball.setAttribute('aria-hidden','true');button.append(ball);
+  for(const group of groups){const button=document.createElement('button'),ball=document.createElement('span');button.type='button';button.className='tv-goal-ball';button.dataset.nos=group.goals.map(g=>g.no).join(',');button.dataset.sec=group.goals[0].sec;button.style.left=group.left+'px';button.style.top=hitTop+'px';button.setAttribute('aria-label',group.goals.length>1?`近接GOAL ${group.goals.length}件を選択`:label(group.goals[0],c)+` · ${lead}秒前から再生`);ball.className='ball';ball.textContent='⚽';ball.style.left=(group.x-group.left)+'px';ball.style.top=(zeroY-hitTop-8)+'px';ball.setAttribute('aria-hidden','true');button.append(ball);
    if(group.goals.length>1){const count=document.createElement('span');count.className='count';count.textContent=group.goals.length;button.append(count);button.setAttribute('aria-haspopup','true')}
    button.onclick=()=>{if(group.goals.length>1)showMenu(group,button,true);else jump(group.goals[0].no)};layer.append(button);
   }

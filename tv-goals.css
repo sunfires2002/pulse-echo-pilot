@@ -1,8 +1,8 @@
 /* Opt-in TV GOAL prototype: no layout or chart-domain changes. */
 .tv-goal-layer{position:absolute;left:0;right:0;pointer-events:none;z-index:5}
 .tv-goal-ball{position:absolute;top:0;width:36px;height:32px;min-width:36px;min-height:32px;margin:0;padding:0;border:0;border-radius:8px;background:rgba(8,10,16,.62);color:#fff;pointer-events:auto;cursor:pointer;box-sizing:border-box}
-.tv-goal-ball .ball{position:absolute;top:3px;transform:translateX(-50%);font:24px/26px sans-serif;pointer-events:none}
-.tv-goal-ball .count{position:absolute;right:0;top:0;min-width:12px;padding:0 2px;border-radius:5px;background:#f2c94c;color:#080a10;font:900 10px/12px sans-serif;pointer-events:none}
+.tv-goal-ball .ball{position:absolute;transform:translateX(-50%);font:16px/16px sans-serif;pointer-events:none}
+.tv-goal-ball .count{position:absolute;right:0;top:2px;min-width:12px;padding:0 2px;border-radius:5px;background:#f2c94c;color:#080a10;font:900 10px/12px sans-serif;pointer-events:none}
 .tv-goal-ball:is(:hover,:focus-visible){outline:3px solid #fff;outline-offset:-3px;background:#64551e}
 .tv-goal-menu[hidden]{display:none!important}
 .tv-goal-menu{position:absolute;z-index:65;width:360px;max-width:calc(100% - 32px);overflow:auto;padding:8px;border:1px solid #f2c94c;border-radius:10px;background:rgba(8,10,16,.94);color:#fff;box-sizing:border-box}
