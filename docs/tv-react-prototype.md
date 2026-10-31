@@ -24,3 +24,12 @@ Existing suites passed: `tv-toolbar.cjs`, `tv-home-cycle.cjs`, `tv-seconds-axis.
 Screenshots and JSON measurements are stored separately in `../tv-react-list-evidence/`. Controlled-player screenshots have a black video background; `react-real-youtube.png` is the actual YouTube integration capture.
 
 Fire TV hardware, Silk rendering and physical remote selection remain unverified. This prototype has not been merged into main or deployed.
+
+## Appearance adjustment after Fire TV feedback
+
+- Closed: `▲ REACT`; open: `▼ REACT`. The 96×40px button is unchanged.
+- Closed background `#392651`, border `#bb9bea`, text `#f0e7ff`; open background `#654292`, border `#dcc5ff`, white text. Pointer hover / keyboard focus adds a 4px white inset outline without changing the state color.
+- Selected row background `#16465f`, with a 4px white inset outline. Reaction buttons retain their original colors.
+- Panel background `rgba(8,10,16,0.78)` → `rgba(8,10,16,0.88)` (78% → 88%; +10 percentage points). Row background remains 72%.
+- `tv-react-appearance.cjs` compares the 769476a runtime with the update at 960×540, 1280×720 and 1920×1080. Bright/dark synthetic video backgrounds isolate the contrast difference. Geometry, fonts, reaction colors, item counts and long-text scroll dimensions are identical. Click / keyboard / Escape and the actual YouTube integration are also checked.
+- Evidence: `../tv-react-appearance-evidence/`. The separate LAN preview uses port 8059; neither the 8053 preview nor main is changed.

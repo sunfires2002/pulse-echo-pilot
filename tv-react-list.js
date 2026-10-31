@@ -2,7 +2,7 @@
 (() => {
  const shell=document.getElementById('videoShell'),dock=document.getElementById('tvMapDock'),placeholder=document.querySelector('.tv-react-planned');
  if(!shell||!dock||!placeholder||!window.PULSE_TV_AXIS)return;
- const toggle=document.createElement('button');toggle.type='button';toggle.id='tvReactToggle';toggle.className='tv-react-planned tv-react-toggle';toggle.textContent='REACT';toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-controls','tvReactList');placeholder.replaceWith(toggle);
+ const toggle=document.createElement('button');toggle.type='button';toggle.id='tvReactToggle';toggle.className='tv-react-planned tv-react-toggle';toggle.textContent='▲ REACT';toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-controls','tvReactList');placeholder.replaceWith(toggle);
  const panel=document.createElement('section');panel.id='tvReactList';panel.hidden=true;panel.setAttribute('aria-labelledby','tvReactTitle');
  const header=document.createElement('header'),title=document.createElement('h2'),until=document.createElement('span');title.id='tvReactTitle';title.textContent='REACT';until.id='tvReactUntil';header.append(title,until);
  const list=document.createElement('ol');list.id='tvReactItems';list.setAttribute('aria-label','現在の再生位置までの反応');
@@ -23,7 +23,7 @@
    .filter(item=>Number.isFinite(item.sec)&&item.sec>=0&&item.sec<=context.now&&item.sec<=context.duration&&item.row.video_id===context.videoKey)
    .sort((a,b)=>a.sec-b.sec||a.index-b.index).slice(-limit);
  }
- function close(returnFocus=false){opened=false;lastSignature='';panel.hidden=true;toggle.setAttribute('aria-expanded','false');list.replaceChildren();if(returnFocus&&active())toggle.focus({preventScroll:true})}
+ function close(returnFocus=false){opened=false;lastSignature='';panel.hidden=true;toggle.setAttribute('aria-expanded','false');toggle.textContent='▲ REACT';list.replaceChildren();if(returnFocus&&active())toggle.focus({preventScroll:true})}
  function update(){
   if(!active()){if(opened)close();return}if(!opened)return;
   const host=shell.getBoundingClientRect(),bottom=dock.getBoundingClientRect().top-host.top-8,top=48,height=Math.min(432,Math.max(0,bottom-top));
@@ -43,7 +43,7 @@
   if(focused){const button=[...list.querySelectorAll('button')].find(node=>node.dataset.key===focused)||list.querySelector('button');if(button)button.focus({preventScroll:true});else toggle.focus({preventScroll:true})}
   else list.scrollTop=list.scrollHeight;
  }
- toggle.onclick=()=>{if(!active())return;if(opened)close();else{opened=true;lastSignature='';toggle.setAttribute('aria-expanded','true');update()}};
+ toggle.onclick=()=>{if(!active())return;if(opened)close();else{opened=true;lastSignature='';toggle.setAttribute('aria-expanded','true');toggle.textContent='▼ REACT';update()}};
  list.addEventListener('keydown',event=>{if(!['ArrowUp','ArrowDown'].includes(event.key))return;const buttons=[...list.querySelectorAll('button')],index=buttons.indexOf(event.target);if(index<0)return;event.preventDefault();buttons[Math.max(0,Math.min(buttons.length-1,index+(event.key==='ArrowDown'?1:-1)))].focus()});
  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&opened&&active()){event.preventDefault();close(true)}});
  document.addEventListener('pulse-view-mode',()=>{if(!active())close();else update()});window.addEventListener('resize',update);setInterval(update,250);
