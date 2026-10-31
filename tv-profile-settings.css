@@ -1,0 +1,6 @@
+/* Only generated TV identity controls use these classes. */
+.tv-profile-home{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;max-width:55%}
+.tv-profile-home span{min-width:0;overflow-wrap:anywhere;color:#c3c7d3}
+.tv-profile-home .btn{min-height:48px;white-space:nowrap}
+.tv-profile-home .btn:is(:hover,:focus-visible),.tv-profile-dialog button:is(:hover,:focus-visible){outline:4px solid #fff;outline-offset:-4px}
+.tv-profile-dialog input:focus-visible{outline:3px solid #fff;outline-offset:2px}
