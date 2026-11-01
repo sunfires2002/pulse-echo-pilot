@@ -39,12 +39,16 @@
   field?.addEventListener('change',()=>{if(field.value.trim())setName(field.value);else updateField()});
   const gate=document.getElementById('profileSetup'),input=document.getElementById('profileNameInput');
   const save=document.getElementById('profileNameSave'),skip=document.getElementById('profileNameSkip'),status=document.getElementById('profileSetupStatus');
+  let composing=false;
+  input?.addEventListener('compositionstart',()=>composing=true);
+  input?.addEventListener('compositionend',()=>composing=false);
   save?.addEventListener('click',()=>{
+   if(composing)return;
    if(!input.value.trim()){status.textContent='名前か背番号を入力してください。スキップするとゲスト名になります。';input.focus();return}
    finish(input.value);
   });
   skip?.addEventListener('click',()=>finish(guest()));
-  input?.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();save?.click()}});
+  input?.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing&&!composing&&event.keyCode!==229){event.preventDefault();save?.click()}});
   if(gate&&!name)gate.hidden=false;
  }
  function nameForPost(value){if(String(value??'').trim())setName(value);return name||guest()}
