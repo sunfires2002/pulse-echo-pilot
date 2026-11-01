@@ -4,3 +4,6 @@
 .profile-setup-card{box-sizing:border-box;max-height:100%;overflow-y:auto;overscroll-behavior:contain;min-height:0}
 .profile-setup-card input{font-size:16px;min-height:48px;width:100%;box-sizing:border-box}
 @media(max-height:480px){.profile-setup-card{padding:16px}.profile-setup-card label{margin-top:8px}.profile-setup-card p{margin:8px 0}.profile-setup-actions{margin-top:10px}.profile-setup-actions>.btn{flex-basis:110px}}
+
+/* TV identity changes are available on the home page; keep the initial setup gate. */
+body.tv-mode #tvNameOpen{display:none!important}
