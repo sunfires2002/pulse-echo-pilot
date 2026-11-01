@@ -1,0 +1,9 @@
+.home-profile{display:flex;align-items:center;flex-wrap:wrap;gap:12px;max-width:100%}.home-profile span{overflow-wrap:anywhere}.home-profile .btn{min-height:48px}
+#matches .section-head:has(.home-profile){flex-wrap:wrap}
+.profile-setup{top:var(--profile-top,0px);bottom:auto;height:var(--profile-height,100dvh);box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom))}
+.profile-setup-card{box-sizing:border-box;max-height:100%;overflow-y:auto;overscroll-behavior:contain;min-height:0}
+.profile-setup-card input{font-size:16px;min-height:48px;width:100%;box-sizing:border-box}
+@media(max-height:480px){.profile-setup-card{padding:16px}.profile-setup-card label{margin-top:8px}.profile-setup-card p{margin:8px 0}.profile-setup-actions{margin-top:10px}.profile-setup-actions>.btn{flex-basis:110px}}
+
+/* TV identity changes are available on the home page; keep the initial setup gate. */
+body.tv-mode #tvNameOpen{display:none!important}
