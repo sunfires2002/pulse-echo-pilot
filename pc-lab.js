@@ -29,6 +29,7 @@
  const tip=document.createElement("div");tip.id="labTooltip";tip.hidden=true;tip.setAttribute("role","tooltip");body.append(tip);
  let resizingFrame=0;
  const active=()=>body.classList.contains("lab-mode");
+ let echoOptionsController=null;
  const labPlayButton=document.getElementById("labPulsePlay"),labClock=document.getElementById("labPulseClock"),labCanvas=document.getElementById("chart");
  let pendingLabSeekPosition=null,pendingLabSeekSeconds=null,labDrag=null,labPreviewSeconds=null,labHoverSeconds=null,pendingLabPlay=false,ignoreLabClickUntil=0;
  function labDuration(){try{return Math.max(0,Number(player?.getDuration?.())||0)}catch{return 0}}
@@ -310,8 +311,9 @@
  const options=document.getElementById('niceOptions'),optionsAnchor=document.createComment('LAB nice options original');options.before(optionsAnchor);
  const detailClose=document.createElement('button');detailClose.type='button';detailClose.className='btn';detailClose.textContent='閉じる';detailClose.onclick=closeDetails;detail.append(detailClose);
  const namePanel=document.getElementById('tvNamePanel'),nameAnchor=document.createComment('LAB name original');namePanel.before(nameAnchor);
- function closeDetails(){const wasOpen=!detail.hidden;detail.hidden=true;if(active()||wasOpen)hideNiceOptions()}
+ function closeDetails(){echoOptionsController?.close();const wasOpen=!detail.hidden;detail.hidden=true;if(active()||wasOpen)hideNiceOptions()}
  function showDetails(){
+  if(echoOptionsController?.enabled()){echoOptionsController.open('🔥 ナイスプレー');return}
   if(!active()||barEntry.panel.hidden||body.classList.contains('lab-clean'))return;
   detail.hidden=false;const button=document.getElementById('niceButton').getBoundingClientRect();
   const width=Math.min(420,Math.max(1,innerWidth-16));detail.style.width=width+'px';
@@ -322,9 +324,9 @@
  document.getElementById('niceButton').addEventListener('click',showDetails);
  options.querySelectorAll('button').forEach(button=>button.addEventListener('click',closeDetails));
  reactions.filter(node=>node.id!=='niceButton'&&node.id!=='tvNameOpen').forEach(button=>button.addEventListener('click',()=>{if(active())closeDetails()}));
- barEntry.panel.querySelector('.lab-panel-grip').addEventListener('pointerdown',closeDetails);
+ barEntry.panel.querySelector('.lab-panel-grip').addEventListener('pointerdown',()=>{if(!echoOptionsController?.enabled())closeDetails()});
  document.addEventListener('keydown',event=>{if(active()&&event.key==='Escape')closeDetails()});
- window.addEventListener('resize',()=>{if(active())closeDetails()});
+ window.addEventListener('resize',()=>{if(active()&&!echoOptionsController?.enabled())closeDetails()});
  document.addEventListener('pulse-view-mode',()=>{
   closeDetails();
   if(active()){
@@ -332,7 +334,9 @@
   }else{
    origins.forEach(({node,anchor})=>anchor.after(node));reactionSource.hidden=true;optionsAnchor.after(options);nameAnchor.after(namePanel);
   }
+  echoOptionsController?.sync();
  });
+ echoOptionsController=window.PULSE_ECHO_OPTIONS_LAB?.create({panel:barEntry.panel,reactions,options,active})||null;
 
  // Conservative desktop default: dimensions never determine the device category.
  const entryUrl=new URL(location.href),requestedMode=entryUrl.searchParams.get('mode');
