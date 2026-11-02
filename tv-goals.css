@@ -5,9 +5,3 @@
 .tv-goal-ball .ball{z-index:1;position:absolute;transform:translateX(-50%);font:16px/16px sans-serif;pointer-events:none}
 .tv-goal-ball .count{position:absolute;right:0;top:calc(var(--goal-y) - 24px);z-index:2;min-width:12px;padding:0 2px;border-radius:5px;background:#f2c94c;color:#080a10;font:900 10px/12px sans-serif;pointer-events:none}
 .tv-goal-ball:is(:hover,:focus-visible) .tv-goal-frame{box-shadow:inset 0 0 0 3px #fff;background:#64551e}
-.tv-goal-menu[hidden]{display:none!important}
-.tv-goal-menu{position:absolute;z-index:65;width:360px;max-width:calc(100% - 32px);overflow:auto;padding:8px;border:1px solid #f2c94c;border-radius:10px;background:rgba(8,10,16,.94);color:#fff;box-sizing:border-box}
-.tv-goal-menu header{display:flex;align-items:center;justify-content:space-between;font:700 14px sans-serif;margin-bottom:6px}
-.tv-goal-menu button{min-height:36px;background:#28251a;border:1px solid #81733f;border-radius:6px;color:#fff;font:14px/1.4 sans-serif;cursor:pointer}
-.tv-goal-menu .choice{display:block;width:100%;margin-top:4px;padding:6px 8px;text-align:left;overflow-wrap:anywhere}
-.tv-goal-menu button:is(:hover,:focus-visible){outline:3px solid #fff;outline-offset:-3px;background:#64551e}
