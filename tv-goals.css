@@ -1,9 +1,10 @@
 /* Opt-in TV GOAL prototype: no layout or chart-domain changes. */
 .tv-goal-layer{position:absolute;left:0;right:0;pointer-events:none;z-index:5}
-.tv-goal-ball{position:absolute;top:0;width:36px;height:32px;min-width:36px;min-height:32px;margin:0;padding:0;border:0;border-radius:8px;background:rgba(8,10,16,.62);color:#fff;pointer-events:auto;cursor:pointer;box-sizing:border-box}
-.tv-goal-ball .ball{position:absolute;transform:translateX(-50%);font:16px/16px sans-serif;pointer-events:none}
-.tv-goal-ball .count{position:absolute;right:0;top:2px;min-width:12px;padding:0 2px;border-radius:5px;background:#f2c94c;color:#080a10;font:900 10px/12px sans-serif;pointer-events:none}
-.tv-goal-ball:is(:hover,:focus-visible){outline:3px solid #fff;outline-offset:-3px;background:#64551e}
+.tv-goal-ball{position:absolute;top:0;width:36px;height:32px;min-width:36px;min-height:32px;margin:0;padding:0;border:0;border-radius:8px;background:transparent;outline:none;color:#fff;pointer-events:auto;cursor:pointer;box-sizing:border-box}
+.tv-goal-frame{position:absolute;left:var(--goal-x);top:var(--goal-y);transform:translate(-50%,-50%);width:26px;height:22px;border-radius:6px;background:rgba(8,10,16,.62);pointer-events:none}
+.tv-goal-ball .ball{z-index:1;position:absolute;transform:translateX(-50%);font:16px/16px sans-serif;pointer-events:none}
+.tv-goal-ball .count{position:absolute;right:0;top:calc(var(--goal-y) - 24px);z-index:2;min-width:12px;padding:0 2px;border-radius:5px;background:#f2c94c;color:#080a10;font:900 10px/12px sans-serif;pointer-events:none}
+.tv-goal-ball:is(:hover,:focus-visible) .tv-goal-frame{box-shadow:inset 0 0 0 3px #fff;background:#64551e}
 .tv-goal-menu[hidden]{display:none!important}
 .tv-goal-menu{position:absolute;z-index:65;width:360px;max-width:calc(100% - 32px);overflow:auto;padding:8px;border:1px solid #f2c94c;border-radius:10px;background:rgba(8,10,16,.94);color:#fff;box-sizing:border-box}
 .tv-goal-menu header{display:flex;align-items:center;justify-content:space-between;font:700 14px sans-serif;margin-bottom:6px}

@@ -39,3 +39,23 @@ The ball changes24→16px and its vertical center uses the chart y=0 position (r
 Seek lead changes3→10 seconds, clamped at0; imported sec values and all sample JSON remain unchanged. Labels use the same lead constant. Future hiding and redisplay at the original goal time are preserved.
 
 Three-size tests compare against1c4106b and check16px, x/y alignment, badge clearance, tick-label clearance, preserved hit boxes, future disappearance/reappearance, single/nearby fractional seek and existing TV interactions. Evidence: ../tv-goal-16px-evidence/. Actual YouTube targets110.5 and111.2 seconds were observed at110.557 and111.278 seconds respectively after playback started. Physical Fire TV remains unverified for this adjustment.
+
+## 背景・フォーカス枠の中央合わせ
+
+基点1a75cc2。ボール16pxの絶対座標は変更しない。旧ボタン全体の背景/アウトライン（36×32）を、ボール中心に描画する26×22pxの装飾枠へ分離。フォーカス枠は内側3pxで寸法を変えない。透明なクリック領域は36×32pxを維持して中心をそろえる。件数バッジは枠の上に配置し、数字・ボール・枠が重ならないようにする。
+
+旧背景の中心はボールより8px上。Chart.jsや赤い基準線・ボールの時刻/座標は変更せず、枠とヒット領域だけの配置を修正。26×22pxに分けた理由は、中心を下げても時刻の文字を覆わないため。対象3画面で枠下端から時刻文字の上端まで約2.50px、バッジから枠上端まで1px以上の隙間を確認した。
+
+`tests/tv-goals.cjs` の比較元を1a75cc2へ変更。960×540、1280×720、1920×1080で単独/近接/開始/終端のボール・枠・バッジを測定。単独と近接は変更前後のボールx/y/幅/高さが一致し、全ケースで枠中心とボール中心の誤差0.1px未満。クリック領域36×32、ボール16px、時刻文字やPULSE下端との非重複を検査した。
+
+単独GOAL（120.5秒）のボール中心＝背景/フォーカス枠中心（画面上CSS px）:
+
+| 画面 | ボール中心 | 枠中心 | 中心誤差 |
+|---|---|---|---|
+| 960×540 | (115.00,509.00) | (115.00,509.00) | 0px |
+| 1280×720 | (146.69,689.00) | (146.69,689.00) | 0px |
+| 1920×1080 | (210.06,1049.00) | (210.06,1049.00) | 0px |
+
+単独10秒前/先頭下限/終端ジャンプ、未来非表示、近接選択と古い選択の抑止、REACTの開閉と反応ジャンプ、通常PULSEクリック、端末内投稿の名前/送信者ID保持、前後半切替、TVホーム遷移をPASS。動画/PULSE/操作バー/REACTボタンの座標・寸法は基点と一致。実YouTubeでも120.5→110.5秒、近接121.2→111.2秒へのジャンプを確認。本番Supabase HTTP/WebSocketとページ例外は0件。
+
+読込はpc-desktop.js 1.2.20、tv-goals.js/css 0.1.2へ更新。mode=tv&goalLab=1以外には読み込まない。prism-goals/1・GOAL時刻・名前保存・REACT本体・TV本体は変更しない。Fire TV実機の枠の見え方と白丸カーソルの最終判断はユーザー確認待ち。
