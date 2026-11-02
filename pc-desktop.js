@@ -11,7 +11,7 @@
  window.PULSE_PC_VERSION='1.2.0';
  const echoOptionsLab=desktop&&new URLSearchParams(location.search).get('echoOptionsLab')==='1';
  const styles=Promise.all((desktop?['pc-base.css','tv-view.css','pc-lab.css']:['tv-view.css']).concat(echoOptionsLab?['pc-echo-options.css']:[]).map(path=>new Promise((resolve,reject)=>{
-  const link=document.createElement('link');link.rel='stylesheet';link.href=path+(path==='pc-echo-options.css'?'?v=0.1.0':path==='tv-view.css'?'?v=1.2.1':path==='pc-lab.css'?'?v=1.2.4':'?v=1.2.0');link.onload=resolve;link.onerror=()=>reject(new Error('PC stylesheet unavailable: '+path));document.head.append(link);
+  const link=document.createElement('link');link.rel='stylesheet';link.href=path+(path==='pc-echo-options.css'?'?v=0.1.0':path==='tv-view.css'?'?v=1.2.1':path==='pc-lab.css'?'?v=1.2.5':'?v=1.2.0');link.onload=resolve;link.onerror=()=>reject(new Error('PC stylesheet unavailable: '+path));document.head.append(link);
  })));
  function script(path){return new Promise((resolve,reject)=>{const node=document.createElement('script');node.src=path+(path==='pc-echo-options.js'?'?v=0.1.0':path==='tv-view.js'?'?v=1.2.4':path==='pc-lab.js'?'?v=1.2.5':'?v=1.2.0');node.onload=resolve;node.onerror=()=>reject(new Error('PC script unavailable: '+path));document.body.append(node)})}
  document.addEventListener('DOMContentLoaded',async()=>{
