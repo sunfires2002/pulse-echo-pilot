@@ -1,0 +1,94 @@
+{
+  "format": "prism-goals/1",
+  "match_id": "react-goal-b",
+  "half": "1st",
+  "youtube_id": "dSIO3AdVRIs",
+  "video": "edit",
+  "source": "react-goal-tabs-fixture",
+  "teams": [
+    {
+      "name": "TEST A",
+      "color": "#22d3d4"
+    },
+    {
+      "name": "TEST B",
+      "color": "#ff9b50"
+    }
+  ],
+  "kickoff_sec": 0.5,
+  "end_sec": 1639,
+  "goals": [
+    {
+      "no": 1,
+      "sec": 1.5,
+      "team": 0,
+      "score": [
+        1,
+        0
+      ],
+      "scorer": {
+        "number": "07"
+      }
+    },
+    {
+      "no": 2,
+      "sec": 120,
+      "team": 1,
+      "score": [
+        1,
+        1
+      ],
+      "scorer": {
+        "name": "検証選手"
+      }
+    },
+    {
+      "no": 3,
+      "sec": 121.2,
+      "team": 0,
+      "score": [
+        2,
+        1
+      ],
+      "scorer": {
+        "og": true
+      }
+    },
+    {
+      "no": 4,
+      "sec": 122.8,
+      "team": 1,
+      "score": [
+        2,
+        2
+      ]
+    },
+    {
+      "no": 5,
+      "sec": 300,
+      "team": 0,
+      "score": [
+        3,
+        2
+      ]
+    },
+    {
+      "no": 6,
+      "sec": 300.8,
+      "team": 1,
+      "score": [
+        3,
+        3
+      ]
+    },
+    {
+      "no": 7,
+      "sec": 1638,
+      "team": 0,
+      "score": [
+        4,
+        3
+      ]
+    }
+  ]
+}
