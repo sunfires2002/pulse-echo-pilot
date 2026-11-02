@@ -150,6 +150,8 @@ body.pc-default.tv-mode.lab-mode .lab-panel-grip small,body.pc-default.tv-mode.l
 body.pc-default.tv-mode.lab-mode .pc-panel-icon{width:24px;height:24px;flex:0 0 24px;pointer-events:none}
 body.pc-default.tv-mode.lab-mode .controls .pc-feature-heading,body.pc-default.tv-mode.lab-mode #labTimeline .timeline-title{display:none}
 body.pc-default.tv-mode.lab-mode .lab-panel-content{padding-bottom:30px}
+/* ECHO has no resize corner: retain real overflow, without reserving its space. */
+body.pc-default.tv-mode.lab-mode #labReactions>.lab-panel-content{padding-bottom:4px}
 body.pc-default.tv-mode.lab-mode #labMapResize{bottom:2px}
 body.pc-default.tv-mode.lab-mode #tvMapDock .heatmap{margin-bottom:26px}
 body.pc-default.tv-mode.lab-mode #pcPulseMenu .pc-menu-visibility .btn{display:flex;flex-direction:column;gap:2px}
