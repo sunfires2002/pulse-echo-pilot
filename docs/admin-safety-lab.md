@@ -70,7 +70,7 @@ B用SQLはupdated_atをDBトリガーで必ず単調増加させる。2タブの
 
 ## B：別Supabaseプロジェクト（未実施）
 
-利用者回答：未準備、先にローカルLABを確認する。
+2026-11-03：利用者が独立検証用 pulse-echo-security-lab を作成済み。まだ接続・SQL適用・実RLS試験は行っていない。適用前の設定照合と順序は admin-security-project-setup.md を参照。
 
 必要な準備：
 
@@ -78,7 +78,7 @@ B用SQLはupdated_atをDBトリガーで必ず単調増加させる。2タブの
 2. 公開用publishableキー（秘密キー不可）。
 3. 検証用管理者・非管理者のメール/パスワードアカウントを管理画面で用意。アプリに新規登録画面は設けない。
 4. 検証用管理者UUID。公開設定にパスワードを置かない。
-5. sql/admin-safety-lab.sqlのUUIDプレースホルダーを検証用UUIDへ置換し、別プロジェクトでのみ手動適用（現時点で未実行）。
+5. sql/admin-safety-lab.sqlの1か所のUUIDプレースホルダーを検証用UUIDへ置換し、別プロジェクトでのみ手動適用（現時点で未実行）。
 6. admin-lab-config.jsをmode supabaseと検証用設定へ変更して起動。本番ホストへの接続はコードで拒否する。
 7. サーバーに `--test-project-ref <別プロジェクトref>` を付けた場合だけCSPでその接続先とSDK CDNを許可する。デフォルトは全接続を遮断。
 
