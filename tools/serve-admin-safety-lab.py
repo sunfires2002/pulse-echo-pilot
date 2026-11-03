@@ -9,7 +9,8 @@ from admin_lab_settings import read_config
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = {'admin.html', 'admin-lab-config.js', 'admin-lab-fixtures.js',
-         'admin-safety-backend.js', 'admin-safety.js'}
+         'admin-safety-backend.js', 'admin-safety.js',
+         'admin-password-reset.html', 'admin-password-reset.js'}
 parser = argparse.ArgumentParser()
 parser.add_argument('--port', type=int, default=8081)
 parser.add_argument('--test-project-ref', default='')
@@ -48,7 +49,12 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Content-Type', 'text/html; charset=utf-8' if name.endswith('.html') else 'application/javascript; charset=utf-8')
         self.send_header('Content-Length', str(len(blob)))
         self.send_header('Cache-Control', 'no-store')
-        self.send_header('Content-Security-Policy', csp)
+        page_csp = csp
+        if name.startswith('admin-password-reset.'):
+            auth_connect = "'none'" if not args.test_project_ref else f'https://{args.test_project_ref}.supabase.co/auth/v1/'
+            page_csp = csp.replace(f'connect-src {connect};', f'connect-src {auth_connect};')
+        self.send_header('Content-Security-Policy', page_csp)
+        self.send_header('Referrer-Policy', 'no-referrer')
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.end_headers()
         self.wfile.write(blob)
