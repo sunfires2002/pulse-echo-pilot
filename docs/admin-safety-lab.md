@@ -79,12 +79,12 @@ B用SQLはupdated_atをDBトリガーで必ず単調増加させる。2タブの
 3. 検証用管理者・非管理者のメール/パスワードアカウントを管理画面で用意。アプリに新規登録画面は設けない。
 4. 検証用管理者UUID。公開設定にパスワードを置かない。
 5. sql/admin-safety-lab.sqlの1か所のUUIDプレースホルダーを検証用UUIDへ置換し、別プロジェクトでのみ手動適用（現時点で未実行）。
-6. admin-lab-config.jsをmode supabaseと検証用設定へ変更して起動。本番ホストへの接続はコードで拒否する。
-7. サーバーに `--test-project-ref <別プロジェクトref>` を付けた場合だけCSPでその接続先とSDK CDNを許可する。デフォルトは全接続を遮断。
+6. Git管理下のadmin-lab-config.jsには値を書かない。tools/configure-admin-security-lab.pyでGit除外・権限600のローカル設定ファイルを作り、承認後にサーバーの--config-fileへ渡す。本番ホストへの接続はコードで拒否する。
+7. --config-fileのtestProjectRefからCSP許可先を決定する。--test-project-refも指定した場合は一致を要求する。設定なしのデフォルトは全接続を遮断。
 
 SQLは空プロジェクト専用。CREATE TABLEにIF NOT EXISTSを付けず、既存pulse_matchesがあればトランザクションを中止する。既存の本番RLSへ流用する移行SQLではない。futsal_goodsは作成/変更しない。公開行SELECTと、特定UUIDだけの管理CRUDを定義する。
 
-実クライアントでのB試験：tests/admin-safety-rls.cjs。必要な6環境変数がなければSKIP。本番URLを拒否する。管理者/非管理者の実トークンと未ログインで、専用プレフィックスの架空行だけを作成・更新・削除し、公開/非公開SELECT、認可拒否、CAS競合を確認する。SQL Editorの管理者操作をRLS試験の代用にはしない。秘密の値をコマンド履歴や報告へ貼らないこと。
+実クライアントでのB試験：tests/admin-safety-rls.cjs。必要な7環境変数がなければSKIP。パスワードはtools/run-admin-security-lab-tests.pyの対話入力から子プロセスへだけ渡す。本番URLを拒否する。管理者/非管理者の実トークンと未ログインで、専用プレフィックスの架空行だけを作成・更新・削除し、公開/非公開SELECT、認可拒否、CAS競合を確認する。SQL Editorの管理者操作をRLS試験の代用にはしない。秘密の値をコマンド履歴や報告へ貼らないこと。
 
 ## 検証と証跡
 

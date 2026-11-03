@@ -4,6 +4,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 import re
+import json
+from admin_lab_settings import read_config
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = {'admin.html', 'admin-lab-config.js', 'admin-lab-fixtures.js',
@@ -11,7 +13,17 @@ FILES = {'admin.html', 'admin-lab-config.js', 'admin-lab-fixtures.js',
 parser = argparse.ArgumentParser()
 parser.add_argument('--port', type=int, default=8081)
 parser.add_argument('--test-project-ref', default='')
+parser.add_argument('--config-file', type=Path, help='Owner-only local TEST configuration; never a production file')
 args = parser.parse_args()
+private_config = None
+if args.config_file:
+    try:
+        private_config = read_config(args.config_file)
+    except (ValueError, OSError):
+        parser.error('Invalid private TEST configuration; values are not logged')
+    if args.test_project_ref and args.test_project_ref != private_config['testProjectRef']:
+        parser.error('CSP project and configuration project do not match')
+    args.test_project_ref = private_config['testProjectRef']
 if args.test_project_ref and not re.fullmatch(r'[a-z0-9]{20}', args.test_project_ref):
     parser.error('Expected the separate test project reference')
 production_host = re.search(r'supabaseUrl:\s*"https://([^/\"]+)', (ROOT / 'config.js').read_text()).group(1)
@@ -28,7 +40,10 @@ class Handler(BaseHTTPRequestHandler):
         if name not in FILES:
             self.send_error(404)
             return
-        blob = (ROOT / name).read_bytes()
+        if name == 'admin-lab-config.js' and private_config:
+            blob = ('window.PULSE_ADMIN_LAB_CONFIG = Object.freeze(' + json.dumps({**private_config, 'mode':'supabase'}) + ');\n').encode()
+        else:
+            blob = (ROOT / name).read_bytes()
         self.send_response(200)
         self.send_header('Content-Type', 'text/html; charset=utf-8' if name.endswith('.html') else 'application/javascript; charset=utf-8')
         self.send_header('Content-Length', str(len(blob)))

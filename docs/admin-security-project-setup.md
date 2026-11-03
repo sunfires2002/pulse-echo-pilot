@@ -2,6 +2,8 @@
 
 ## 状態
 
+利用者からSQL適用とAuthユーザー作成済みの報告あり。SQLを再適用しない。以下の適用手順は記録として保持し、接続準備はadmin-security-client-test-plan.mdに従う。
+
 2026-11-03：利用者から別Supabaseプロジェクト作成済みと連絡あり。
 GitHub未接続、Data API ON、Automatically expose new tables OFF、Automatic RLS ON。
 Codexはどちらのプロジェクトにも接続・SQL実行していない。以下は静的レビューと、承認後に利用者が行う手順。
@@ -64,8 +66,8 @@ SELECT to_regprocedure('public.admin_lab_touch_match()') AS existing_trigger_fun
 
 admin-lab-config.jsは現時点でmode local、URL・キー・UUIDは空のまま。今回接続しない。
 
-後の承認で別プロジェクトのURL/ref・publishableキー・同じ管理者UUIDを設定する。
-起動サーバーにも同じtest-project-refを渡す。本番ホスト/秘密キーを拒否するチェックを外さない。
+後の承認でtools/configure-admin-security-lab.pyを使い、別プロジェクトのURL/ref・publishableキー・同じ管理者UUIDをGit除外のローカルファイルへ設定する。Git管理下のadmin-lab-config.jsは空のまま保つ。
+起動サーバーの--config-fileへ渡すと、設定ファイルからCSPの接続先を決定する。本番ホスト/秘密キーを拒否するチェックを外さない。
 
 管理者・非管理者・匿名の実トークン/実APIでRLSを検証する。SQL Editorでの成功を代用しない。既存tests/admin-safety-rls.cjsはこの段階でだけ使用し、専用プレフィックスの架空行以外を変更しない。
 

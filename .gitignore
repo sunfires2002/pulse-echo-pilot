@@ -1,0 +1,5 @@
+# Admin security LAB connection details: never commit actual values.
+/admin-lab.private.json
+/.admin-lab.private.json
+/admin-auth.private.*
+/tools/__pycache__/
