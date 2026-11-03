@@ -1,5 +1,9 @@
 # 独立検証用Supabase：接続と実クライアント試験の準備
 
+## Auth診断期間の上書き
+
+ログイン400の切り分け中。現在の--runはAuth診断のみで、以下の試合書込試験は停止中。再開は別途確認後。実行するコマンドと安全な結果の読み方はadmin-auth-diagnostic.mdを参照。
+
 ## 現在の境界
 
 利用者報告：pulse-echo-security-labにSQL適用済み。RLS有効、anon SELECT可・INSERT/UPDATE/DELETE不可、管理者UUID限定と公開閲覧の2ポリシー、検証用2アカウント作成済み。

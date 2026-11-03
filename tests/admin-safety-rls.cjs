@@ -1,4 +1,6 @@
-/* Optional test-project-only RLS integration. Never use production credentials. */
+/* PAUSED during Auth diagnosis. Never use production credentials. */
+const MATCH_TESTS_PAUSED_FOR_AUTH_DIAGNOSIS=true;
+if(MATCH_TESTS_PAUSED_FOR_AUTH_DIAGNOSIS){console.error('Match tests are paused. Use the Auth-only diagnostic.');process.exit(2)}
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const names=['ADMIN_TEST_URL','ADMIN_TEST_KEY','ADMIN_TEST_ADMIN_EMAIL','ADMIN_TEST_ADMIN_PASSWORD','ADMIN_TEST_OTHER_EMAIL','ADMIN_TEST_OTHER_PASSWORD','ADMIN_TEST_ADMIN_ID'];
 if(names.some(k=>!process.env[k])){console.log('SKIP real Auth/RLS: separate test project and accounts are not configured.');process.exit(0)}
