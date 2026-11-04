@@ -1,0 +1,19 @@
+name: Public backup boundary (NO DEPLOY)
+on:
+  push:
+    branches: [main, codex/remove-public-backup-json]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  public-backup-boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/check-public-backups.cjs
+      - run: node --test tests/public-backup-boundary.cjs

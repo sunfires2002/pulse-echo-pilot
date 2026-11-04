@@ -1,12 +1,13 @@
-const fs=require('fs'),assert=require('assert'),{execFileSync}=require('child_process');
-const show=(ref,file)=>execFileSync('git',['show',ref+':'+file],{maxBuffer:4*1024*1024});
-for(const file of ['index.html','config.js','data.js','admin.html','robots.txt','supabase-schema.sql','.github/workflows/keep-alive.yml','pulse-echo-workflow-backup.json'])assert(fs.readFileSync(file).equals(show('6dda028',file)),file+' must retain current production content');
-for(const file of ['pc-lab.js','pc-lab.css','pc-desktop.js','pc-voice-diagnostics.js','assets/pulse-echo-icon.png'])assert(fs.readFileSync(file).equals(show('6dda028',file)),file+' must retain current PC release content');
-assert(fs.readFileSync('pc-base.css','utf8').replaceAll('echoNameInput','userName')===show('6dda028','pc-base.css').toString(),'PC input layout differs only by the name-field id');
-const html=fs.readFileSync('match.html','utf8'),before=show('6dda028','match.html').toString();
-const section=(s,a,b)=>s.slice(s.indexOf(a),s.indexOf(b,s.indexOf(a)));
-for(const [a,b]of [['let realtimeChannel=','const tactic='],['function localMatches()','async function addEvent('],['async function deleteEvent(','const niceOptions=']])assert.equal(section(html,a,b),section(before,a,b),'production logic '+a);
-const token=fs.readFileSync('config.js','utf8').match(/supabaseAnonKey:\s*"([^"]+)"/)[1];if(token.startsWith('sb_publishable_'))assert(!token.startsWith('sb_secret_'));else assert.equal(JSON.parse(Buffer.from(token.split('.')[1],'base64url')).role,'anon');
-for(const name of ['pc-desktop.js','pc-base.css','pc-lab.js','pc-lab.css','tv-view.js','tv-view.css','pc-voice.js','pc-voice-diagnostics.js'])assert(!/-----BEGIN .*PRIVATE KEY-----|github_pat_[A-Za-z0-9_]+|ghp_[A-Za-z0-9]+|sb_secret_[A-Za-z0-9_]+/.test(fs.readFileSync(name,'utf8')),'unexpected credential '+name);
-assert(!html.includes('team-rooms.js'));assert(!html.includes('mobile-landscape.js'));
-console.log('PASS release scope: production content and PC release retained; core player/ECHO/Realtime unchanged; public anon role; no added credential material');
+/* Narrow backup-removal release: every existing non-test file must stay byte-identical. */
+const fs=require('node:fs'),assert=require('node:assert/strict'),path=require('node:path'),{execFileSync}=require('node:child_process');
+const root=path.resolve(__dirname,'..'),BASE='dcca8e78d25537f1c8107f51ce88a4914a6f6fb2';
+const removed='pulse-echo-workflow-backup.json';
+const show=file=>execFileSync('git',['show',BASE+':'+file],{cwd:root,maxBuffer:4*1024*1024});
+const before=execFileSync('git',['ls-tree','-r','--name-only',BASE],{cwd:root}).toString().trim().split('\n');
+for(const file of before){
+ if(file===removed||file==='tests/release-scope.cjs')continue;
+ assert(fs.readFileSync(path.join(root,file)).equals(show(file)),file+' differs from approved main');
+}
+assert(!fs.existsSync(path.join(root,removed)),'public backup must not exist');
+assert.deepEqual(require('../tools/check-public-backups.cjs').inspectRoot(root),[]);
+console.log('PASS release scope: all original runtime/assets/data/config/schema unchanged; public backup absent');
