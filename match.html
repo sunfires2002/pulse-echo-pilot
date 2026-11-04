@@ -2,7 +2,7 @@
 <html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080a10"><title>試合を見る | PULSE ECHO</title>
-<link rel="stylesheet" href="style.css?v=1.0.3"><link rel="stylesheet" href="feature-icons.css?v=1.0.1"><script src="profile.js?v=1.2.1"></script><script src="pc-desktop.js?v=1.2.10"></script><script src="pc-video-controls.js?v=1.0.0"></script><link rel="stylesheet" href="profile-dialog.css?v=1.0.1"><script src="profile-dialog.js?v=1.0.0" defer></script></head><body>
+<link rel="stylesheet" href="public-load.css"><link rel="stylesheet" href="style.css?v=1.0.3"><link rel="stylesheet" href="feature-icons.css?v=1.0.1"><script src="profile.js?v=1.2.1"></script><script src="pc-desktop.js?v=1.2.10"></script><script src="pc-video-controls.js?v=1.0.0"></script><link rel="stylesheet" href="profile-dialog.css?v=1.0.1"><script src="profile-dialog.js?v=1.0.0" defer></script></head><body class="public-blocked"><div id="publicLoadStatus" role="status">試合を読み込み中…</div>
 <header class="site-header"><div class="container nav"><a class="brand" href="./">PULSE <span>ECHO</span></a><nav class="navlinks"><a href="./">試合一覧</a></nav></div></header>
 <main><div class="container match-hero"></div>
 <section class="section" style="padding-top:10px"><div class="container">
@@ -61,16 +61,15 @@ window.onYouTubeIframeAPIReady=function(){
 <script async src="https://www.youtube.com/iframe_api" onerror="console.error('[PULSE PLAYER] API script failed to load')"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="config.js"></script><script src="data.js"></script>
+<script src="config.js"></script><script src="public-matches.js"></script>
 <script src="pc-voice-diagnostics.js?v=1.0.0"></script><script src="pc-voice.js?v=1.1.0"></script>
 <script>
 const qs=new URLSearchParams(location.search), id=qs.get("id"), tacticsLabRequested=qs.get("mode")==="lab";
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const cfg=window.PULSE_CONFIG||{};
 window.PULSE_PROFILE?.init();
-let supa=null;
-if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase) supa=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
-const matchesTable=()=>cfg.matchesTableName||"pulse_matches";
+let supa=window.PULSE_REACTIONS_LAB||null;
+if(!supa&&cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase) supa=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
 const reactionTable=()=>cfg.tableName||"futsal_goods";
 let match=null,videos=[],currentPart="前半",player,playerReady=false,playerAttempt=0,playerReadyTimer=null,events=[],chart,youtubeReady=Boolean(window.__PULSE_YT_API_READY__||(window.YT&&window.YT.Player)),echoTimer=null,echoPlayed=new Set(),recentManualEchoes=[];
 let realtimeChannel=null,realtimeKey="",realtimeGeneration=0,realtimeReceived=[];
@@ -117,24 +116,14 @@ const tactic={open:false,tool:"move",review:"actual",selected:null,drag:null,arr
 function tacticsEnabled(){return tacticsLabRequested&&document.body.classList.contains("lab-mode")}
 function syncTacticsAccess(){const enabled=tacticsEnabled();document.body.classList.toggle("tactics-available",enabled);if(!enabled&&tactic.open)closeTactics();if(match)render()}
 document.addEventListener("pulse-view-mode",syncTacticsAccess);
-function localMatches(){
- try{
-  const saved=JSON.parse(localStorage.getItem("pulse_echo_workflow_v3")||"null");
-  if(saved&&Array.isArray(saved.matches))return saved.matches.map(m=>{const x={...m};delete x.workflow;return x});
- }catch{}
- return null;
-}
-async function cloudMatches(){
- if(!supa)return null;
- const {data,error}=await supa.from(matchesTable()).select("id,data,updated_at");
- if(error){console.warn("Supabase matches error",error);return null}
- return data&&data.length?data.map(row=>({id:row.id,...row.data})):null;
-}
 const videoId=v=>{if(!v)return"";let s=String(v);try{let u=new URL(s);return u.hostname.includes("youtu.be")?u.pathname.slice(1):u.searchParams.get("v")||s}catch{return s}};
 async function initMatch(){
- const allMatches=(await cloudMatches()||localMatches()||window.PULSE_MATCHES||[]).filter(x=>x.published!==false);
+ let allMatches;
+ try{allMatches=await window.PULSE_PUBLIC_MATCHES.load(id||null)}
+ catch{showPublicFailure('試合を読み込めませんでした。通信状態を確認して再試行してください。');return}
  match=id?allMatches.find(x=>x.id===id):allMatches[0];
- if(!match){document.body.innerHTML='<div class="container" style="padding:80px 0"><a class="back" href="./">← 試合一覧へ戻る</a><div class="scoreboard"><p class="muted">この試合は見つかりません。削除されたか、まだ公開されていない可能性があります。</p></div></div>';throw new Error("match not found")}
+ if(!match){showPublicFailure('この試合は現在表示できません。');return}
+ document.body.classList.remove('public-blocked');document.getElementById('publicLoadStatus').hidden=true;
  document.title=`${match.home} vs ${match.away} | PULSE ECHO`;
  document.getElementById("scoreboard").innerHTML=`<div class="match-meta">${esc(match.competition||"MATCH")} ${esc((match.date||"").replaceAll("-","."))}${match.venue?" "+esc(match.venue):""}</div><div class="scoreline"><div class="club">${esc(match.home)}</div><span class="match-versus">VS</span><div class="club">${esc(match.away)}</div></div>${match.description?`<p class="muted">${esc(match.description)}</p>`:""}`;
  videos=[["前半",match.firstHalfVideo],["後半",match.secondHalfVideo],["ハイライト",match.highlightVideo]].filter(x=>x[1]);
@@ -501,6 +490,13 @@ if (voiceBtn) {
 
 }
 
+function showPublicFailure(message){
+ document.body.classList.add('public-blocked');
+ const status=document.getElementById('publicLoadStatus');status.hidden=false;
+ status.replaceChildren();const text=document.createElement('p');text.textContent=message;
+ const retry=document.createElement('button');retry.className='btn';retry.textContent='再試行';retry.onclick=()=>location.reload();
+ const home=document.createElement('a');home.href=new URLSearchParams(location.search).get('mode')==='tv'?'./?mode=tv':'./';home.textContent='試合一覧へ';status.append(text,retry,home);
+}
 initMatch();
 
 // ▼ Android端末の非表示処理

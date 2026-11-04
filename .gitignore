@@ -1,0 +1,5 @@
+/.admin-lab.private.json
+/.public-privacy.private.json
+/dist-public/
+/evidence-public-privacy/
+**/__pycache__/
