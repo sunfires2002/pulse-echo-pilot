@@ -19,7 +19,7 @@
 
 ## データと権限
 
-`sql/public-privacy-lab.sql` はユーザーが検証用SQL Editorで適用する。
+`sql/public-privacy-lab.sql`、続けて `sql/public-privacy-video-conversion.sql` をユーザーが検証用SQL Editorで適用する。
 本番に存在しないadmin-safetyの制約・トリガーを前提とするガード付き。
 専用原本 `public.privacy_lab_matches` と専用関数 `public.public_privacy_matches(text)` を作成する。
 **既存LABの `public.pulse_matches` のGRANT・RLSは変えない。今回の遮断試験は専用原本が対象。**
@@ -37,8 +37,9 @@ firstHalfVideo/secondHalfVideo/highlightVideo/published。
 `published`はJSON boolean trueだけ。文字列"true"は対象外。
 workflow・担当者名・素材URL・メモを含む架空原本を用意し、返却されないことを確認する。
 
-本番の既存動画URLをIDへ正規化する移行処理は未実装。
-本番へ適用する前に実データのURL形式を読み取り監査し、安全な正規化を検証する。
+読取時の短縮URL→ID変換は `sql/public-privacy-video-conversion.sql` に追加。
+管理者の件数集計はSQL Editor専用（一般クライアントからは実行不可）。
+詳細・最新結果は `public-privacy-video-conversion.md` を参照。本番への適用は未実施。
 許可リスト外のvenue/description等は表示しない。追加するなら公開判断が必要。
 
 ## 配信境界

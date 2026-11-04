@@ -22,6 +22,14 @@ try:
  assert all(set(r)==fields and r['published'] is True for r in rows),'PUBLIC_FIELDS_FAILED'
  assert 'PRIVATE_FIXTURE' not in json.dumps(rows),'INTERNAL_CONTENT_LEAK'
  checks.append('anonymous_public_only_allowlisted_fields')
+ sample=next(r for r in rows if r['id']=='privacy-sample-a')
+ assert sample['firstHalfVideo']=='M7lc1UVf-VE' and sample['secondHalfVideo']=='aqz-KE-bpKQ','SHORT_URL_CONVERSION_FAILED'
+ assert next(r for r in rows if r['id']=='privacy-sample-b')['highlightVideo'] is None,'INVALID_FIELD_NOT_EMPTY'
+ checks.append('short_url_conversion_and_invalid_field_handling')
+ for name in ('privacy_lab_video_audit','privacy_lab_youtube_id'):
+  blocked_status,_=get('/rest/v1/rpc/'+name)
+  assert blocked_status in (401,403,404),'ADMIN_OR_HELPER_RPC_EXPOSED'
+ checks.append('anonymous_administrator_report_and_helper_blocked')
  for ident in ('privacy-sample-hidden','privacy-sample-missing','does-not-exist'):
   status,rows=get('/rest/v1/rpc/public_privacy_matches?requested_id='+ident)
   assert status==200 and rows==[],'HIDDEN_OR_UNKNOWN_ID_LEAK'

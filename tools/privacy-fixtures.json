@@ -1,4 +1,30 @@
 [
- {"id":"privacy-sample-a","date":"2026-11-04","competition":"サンプル大会","round":"第1節","home":"サンプルA","away":"サンプルB","homeScore":2,"awayScore":1,"firstHalfVideo":"M7lc1UVf-VE","secondHalfVideo":"dQw4w9WgXcQ","highlightVideo":"","published":true},
- {"id":"privacy-sample-b","date":"2026-11-03","competition":"サンプル大会","round":"","home":"サンプルC","away":"サンプルD","homeScore":null,"awayScore":null,"firstHalfVideo":"","secondHalfVideo":"","highlightVideo":"","published":true}
+  {
+    "id": "privacy-sample-a",
+    "date": "2026-11-04",
+    "competition": "サンプル大会",
+    "round": "第1節",
+    "home": "サンプルA",
+    "away": "サンプルB",
+    "homeScore": 2,
+    "awayScore": 1,
+    "firstHalfVideo": "https://youtu.be/M7lc1UVf-VE?si=privacy-lab",
+    "secondHalfVideo": "https://youtu.be/aqz-KE-bpKQ?si=privacy-lab",
+    "highlightVideo": "",
+    "published": true
+  },
+  {
+    "id": "privacy-sample-b",
+    "date": "2026-11-03",
+    "competition": "サンプル大会",
+    "round": "",
+    "home": "サンプルC",
+    "away": "サンプルD",
+    "homeScore": null,
+    "awayScore": null,
+    "firstHalfVideo": "",
+    "secondHalfVideo": "",
+    "highlightVideo": "INVALID_LAB_VIDEO_FORMAT",
+    "published": true
+  }
 ]

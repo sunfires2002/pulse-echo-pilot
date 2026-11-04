@@ -3,6 +3,8 @@
 調査日: 2026-11-04。今回は調査・設計とLABブランチのpushのみ。
 公開用関数方式の本番採用は未決定。本番DB・main・PRISM CUTは未変更。
 
+追記: このレビュー後、URL変換をLABへ追加し検証済み。最新の実装・結果は `public-privacy-video-conversion.md` を参照。以下の「未実装」は本レビュー時点の記録。
+
 ## 確認した基点とpush
 
 - 正式main: `dcca8e78d25537f1c8107f51ce88a4914a6f6fb2`。

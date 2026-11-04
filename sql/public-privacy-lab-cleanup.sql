@@ -6,6 +6,8 @@ DO $$ BEGIN
  THEN RAISE EXCEPTION 'LAB markers missing; STOP'; END IF;
 END $$;
 DROP FUNCTION public.public_privacy_matches(text) RESTRICT;
+DROP FUNCTION IF EXISTS public.privacy_lab_video_audit() RESTRICT;
+DROP FUNCTION IF EXISTS public.privacy_lab_youtube_id(jsonb) RESTRICT;
 DROP TABLE public.privacy_lab_matches RESTRICT;
 REVOKE USAGE ON SCHEMA public FROM pulse_privacy_lab_reader;
 DROP ROLE pulse_privacy_lab_reader;

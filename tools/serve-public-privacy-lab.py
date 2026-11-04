@@ -6,11 +6,13 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlsplit,parse_qs
 from public_privacy_files import ROOT,FILES,check
 from public_privacy_config import read_config
+from privacy_videos import public_rows,report
 p=argparse.ArgumentParser();p.add_argument('--port',type=int,default=8084);p.add_argument('--config-file');a=p.parse_args()
 check()
 try: config=read_config(a.config_file) if a.config_file else {'publicApiUrl':f'http://127.0.0.1:{a.port}/lab-api','publicApiKey':'sb_publishable_local_fixtures_only'}
 except (ValueError,OSError): p.error('TEST configuration rejected; values not logged')
-fixtures=json.loads((ROOT/'tools/privacy-fixtures.json').read_text())
+original_fixtures=json.loads((ROOT/'tools/privacy-fixtures.json').read_text())
+fixtures=public_rows(original_fixtures)
 test_origin=config['publicApiUrl'] if a.config_file else ''
 class Handler(BaseHTTPRequestHandler):
  def send(self,code,blob=b'',kind='text/plain; charset=utf-8'):
@@ -40,5 +42,6 @@ class Handler(BaseHTTPRequestHandler):
  def log_message(self,*args):pass
 class Server(ThreadingHTTPServer):daemon_threads=True
 server=Server(('127.0.0.1',a.port),Handler)
+print('Administrator local fixture video counts: '+json.dumps(report(original_fixtures)),flush=True)
 print(f'Public privacy LAB ({"pinned TEST RPC" if a.config_file else "local fixtures"}): http://127.0.0.1:{a.port}/',flush=True)
 server.serve_forever()
