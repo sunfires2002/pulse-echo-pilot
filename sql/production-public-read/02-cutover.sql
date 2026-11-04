@@ -19,11 +19,11 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_roles r ON p.proowner=r.oid WHERE p.oid='public.pulse_public_matches_v1(text)'::regprocedure AND r.rolname='pulse_public_reader_v1' AND NOT r.rolcanlogin AND NOT r.rolbypassrls AND p.prosecdef AND p.provolatile='s' AND p.proconfig=ARRAY['search_path=""']::text[])
  THEN RAISE EXCEPTION 'RPC role or execution configuration differs'; END IF;
  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.pulse_matches'::regclass)
- OR has_table_privilege('pulse_public_reader_v1','public.pulse_matches','INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+ OR has_table_privilege('pulse_public_reader_v1','public.pulse_matches','INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES,MAINTAIN')
  OR pg_has_role('anon','pulse_public_reader_v1','MEMBER') OR pg_has_role('authenticated','pulse_public_reader_v1','MEMBER')
  THEN RAISE EXCEPTION 'RLS or read-only role isolation differs'; END IF;
- IF has_table_privilege('anon','public.pulse_matches','INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
- OR has_table_privilege('authenticated','public.pulse_matches','TRUNCATE,TRIGGER,REFERENCES')
+ IF has_table_privilege('anon','public.pulse_matches','INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES,MAINTAIN')
+ OR has_table_privilege('authenticated','public.pulse_matches','TRUNCATE,TRIGGER,REFERENCES,MAINTAIN')
  THEN RAISE EXCEPTION 'Existing write/extra-privilege stop is not intact'; END IF;
  IF EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='public.pulse_matches'::regclass AND polcmd<>'r')
  THEN RAISE EXCEPTION 'Unexpected write/administrator policy; review separately'; END IF;

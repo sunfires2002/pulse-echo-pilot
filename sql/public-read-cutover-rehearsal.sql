@@ -28,12 +28,22 @@ CREATE TEMP TABLE privacy_cutover_state AS SELECT
  (SELECT jsonb_agg(to_jsonb(p) ORDER BY oid) FROM pg_policy p WHERE polrelid=c.oid))::text)
  FROM pg_class c WHERE oid='public.pulse_matches'::regclass) original_metadata;
 
+LOCK TABLE public.privacy_cutover_matches IN SHARE MODE;
+CREATE TEMP TABLE prepare_safety_snapshot ON COMMIT DROP AS
+SELECT
+ (SELECT md5(coalesce(string_agg(id||chr(31)||updated_at::text||chr(31)||data::text,chr(30) ORDER BY id),'')) FROM public.privacy_cutover_matches) AS data_hash,
+ (SELECT md5(coalesce(jsonb_agg(to_jsonb(p) ORDER BY p.oid)::text,'')) FROM pg_policy p WHERE p.polrelid='public.privacy_cutover_matches'::regclass) AS policy_hash,
+ (SELECT md5(coalesce(jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type)::text,'')) FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='public.privacy_cutover_matches'::regclass) AS acl_hash,
+ (SELECT md5(coalesce(jsonb_agg(to_jsonb(m) ORDER BY m.roleid,m.member,m.grantor)::text,'')) FROM pg_auth_members m) AS membership_hash,
+ (SELECT md5(jsonb_build_object('rls',relrowsecurity,'force',relforcerowsecurity)::text) FROM pg_class WHERE oid='public.privacy_cutover_matches'::regclass) AS rls_hash;
+
 DO $$ BEGIN
  IF current_user<>'postgres' OR to_regclass('public.privacy_cutover_matches') IS NULL
  OR NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.privacy_cutover_matches'::regclass)
  THEN RAISE EXCEPTION 'Expected RLS-enabled original table and postgres; STOP'; END IF;
  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='pulse_privacy_cutover_reader')
- OR to_regprocedure('public.privacy_cutover_public_matches_v1(text)') IS NOT NULL
+ OR EXISTS (SELECT 1 FROM pg_proc q JOIN pg_namespace n ON n.oid=q.pronamespace WHERE n.nspname='public' AND q.proname IN ('privacy_cutover_public_matches_v1','privacy_cutover_video_id_v1','privacy_cutover_video_audit_v1'))
+ OR EXISTS (SELECT 1 FROM pg_policy WHERE polrelid='public.privacy_cutover_matches'::regclass AND polname='privacy_cutover_reader')
  THEN RAISE EXCEPTION 'Candidate objects already exist; do not overwrite'; END IF;
 END $$;
 CREATE ROLE pulse_privacy_cutover_reader NOLOGIN NOSUPERUSER NOBYPASSRLS NOINHERIT;
@@ -46,7 +56,7 @@ CREATE FUNCTION public.privacy_cutover_video_id_v1(value jsonb) RETURNS text
 LANGUAGE sql IMMUTABLE PARALLEL SAFE SECURITY INVOKER SET search_path = '' AS $h$
  WITH input AS (SELECT CASE WHEN jsonb_typeof(value)='string' THEN btrim(value #>> '{}') END v)
  SELECT CASE WHEN length(v)>2048 THEN NULL WHEN v ~ '^[A-Za-z0-9_-]{11}$' THEN v
- ELSE (regexp_match(v,'^https://(www\.)?youtu\.be/([A-Za-z0-9_-]{11})(\?[^[:space:]#]*)?(#[^[:space:]]*)?$'))[2] END FROM input
+ ELSE (regexp_match(CASE WHEN v LIKE 'https://www.youtu.be/%' THEN 'https://youtu.be/' || substring(v FROM 22) ELSE v END,'^https://youtu[.]be/([A-Za-z0-9_-]{11})([?][^[:space:]#]*)?(#[^[:space:]]*)?$'))[1] END FROM input
 $h$;
 REVOKE ALL ON FUNCTION public.privacy_cutover_video_id_v1(jsonb) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.privacy_cutover_video_id_v1(jsonb) TO pulse_privacy_cutover_reader;
@@ -80,6 +90,29 @@ $a$;
 REVOKE ALL ON FUNCTION public.privacy_cutover_video_audit_v1() FROM PUBLIC,anon,authenticated,pulse_privacy_cutover_reader;
 COMMENT ON FUNCTION public.privacy_cutover_public_matches_v1(text) IS 'pulse-echo-public-read/v1 candidate';
 REVOKE pulse_privacy_cutover_reader FROM postgres;
+
+DO $verify$
+DECLARE old prepare_safety_snapshot%ROWTYPE; videos int; invalid int; public_count int; private_count int; keys text[];
+BEGIN
+ SELECT * INTO STRICT old FROM prepare_safety_snapshot;
+ IF old.data_hash IS DISTINCT FROM (SELECT md5(coalesce(string_agg(id||chr(31)||updated_at::text||chr(31)||data::text,chr(30) ORDER BY id),'')) FROM public.privacy_cutover_matches)
+ OR old.policy_hash IS DISTINCT FROM (SELECT md5(coalesce(jsonb_agg(to_jsonb(q) ORDER BY q.oid)::text,'')) FROM pg_policy q WHERE q.polrelid='public.privacy_cutover_matches'::regclass AND q.polname<>'privacy_cutover_reader')
+ OR old.acl_hash IS DISTINCT FROM (SELECT md5(coalesce(jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type)::text,'')) FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='public.privacy_cutover_matches'::regclass AND a.grantee<>'pulse_privacy_cutover_reader'::regrole::oid)
+ OR old.membership_hash IS DISTINCT FROM (SELECT md5(coalesce(jsonb_agg(to_jsonb(m) ORDER BY m.roleid,m.member,m.grantor)::text,'')) FROM pg_auth_members m WHERE m.roleid<>'pulse_privacy_cutover_reader'::regrole::oid AND m.member<>'pulse_privacy_cutover_reader'::regrole::oid)
+ OR old.rls_hash IS DISTINCT FROM (SELECT md5(jsonb_build_object('rls',relrowsecurity,'force',relforcerowsecurity)::text) FROM pg_class WHERE oid='public.privacy_cutover_matches'::regclass)
+ THEN RAISE EXCEPTION 'Existing data, policies, permissions, memberships or RLS changed'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_auth_members WHERE roleid='pulse_privacy_cutover_reader'::regrole::oid AND member IN ('anon'::regrole::oid,'authenticated'::regrole::oid))
+ OR has_table_privilege('pulse_privacy_cutover_reader','public.privacy_cutover_matches','INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES,MAINTAIN')
+ THEN RAISE EXCEPTION 'Reader privileges unexpected'; END IF;
+ SELECT count(*) FILTER (WHERE data @> '{"published":true}'), count(*) FILTER (WHERE data @> '{"published":false}') INTO public_count,private_count FROM public.privacy_cutover_matches;
+ IF public_count<>17 OR private_count<>1 OR (SELECT count(*) FROM public.privacy_cutover_matches)<>18 THEN RAISE EXCEPTION 'Match counts differ'; END IF;
+ IF (SELECT count(*) FROM public.privacy_cutover_public_matches_v1())<>public_count OR EXISTS(SELECT 1 FROM public.privacy_cutover_matches m CROSS JOIN LATERAL public.privacy_cutover_public_matches_v1(m.id) x WHERE NOT (m.data @> '{"published":true}')) THEN RAISE EXCEPTION 'Public or private projection differs'; END IF;
+ SELECT array_agg(k ORDER BY k) INTO keys FROM (SELECT jsonb_object_keys(to_jsonb(x)) k FROM public.privacy_cutover_public_matches_v1() x LIMIT 12) q;
+ IF keys IS DISTINCT FROM ARRAY['away','awayScore','competition','date','firstHalfVideo','highlightVideo','home','homeScore','id','published','round','secondHalfVideo']::text[] THEN RAISE EXCEPTION 'Public fields differ'; END IF;
+ SELECT count(*),count(*) FILTER(WHERE public.privacy_cutover_video_id_v1(value) IS NULL) INTO videos,invalid FROM public.privacy_cutover_matches m CROSS JOIN LATERAL (VALUES(m.data->'firstHalfVideo'),(m.data->'secondHalfVideo'),(m.data->'highlightVideo')) v(value) WHERE value IS NOT NULL AND value<>'null'::jsonb AND value<>'""'::jsonb;
+ IF videos<>21 OR invalid<>0 THEN RAISE EXCEPTION 'Video validation failed'; END IF;
+END $verify$;
+DROP TABLE prepare_safety_snapshot;
 NOTIFY pgrst,'reload schema';
 
 CREATE TEMP TABLE privacy_cutover_membership_state AS SELECT
@@ -95,11 +128,11 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_roles r ON p.proowner=r.oid WHERE p.oid='public.privacy_cutover_public_matches_v1(text)'::regprocedure AND r.rolname='pulse_privacy_cutover_reader' AND NOT r.rolcanlogin AND NOT r.rolbypassrls AND p.prosecdef AND p.provolatile='s' AND p.proconfig=ARRAY['search_path=""']::text[])
  THEN RAISE EXCEPTION 'RPC role or execution configuration differs'; END IF;
  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.privacy_cutover_matches'::regclass)
- OR has_table_privilege('pulse_privacy_cutover_reader','public.privacy_cutover_matches','INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+ OR has_table_privilege('pulse_privacy_cutover_reader','public.privacy_cutover_matches','INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES,MAINTAIN')
  OR pg_has_role('anon','pulse_privacy_cutover_reader','MEMBER') OR pg_has_role('authenticated','pulse_privacy_cutover_reader','MEMBER')
  THEN RAISE EXCEPTION 'RLS or read-only role isolation differs'; END IF;
- IF has_table_privilege('anon','public.privacy_cutover_matches','INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
- OR has_table_privilege('authenticated','public.privacy_cutover_matches','TRUNCATE,TRIGGER,REFERENCES')
+ IF has_table_privilege('anon','public.privacy_cutover_matches','INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES,MAINTAIN')
+ OR has_table_privilege('authenticated','public.privacy_cutover_matches','TRUNCATE,TRIGGER,REFERENCES,MAINTAIN')
  THEN RAISE EXCEPTION 'Existing write/extra-privilege stop is not intact'; END IF;
  IF EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='public.privacy_cutover_matches'::regclass AND polcmd<>'r')
  THEN RAISE EXCEPTION 'Unexpected write/administrator policy; review separately'; END IF;

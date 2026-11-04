@@ -3,19 +3,21 @@ No network, execution, secrets, or production writes. Fixed identifiers only.
 """
 from pathlib import Path
 import sys
+from prepare_safety import before, after
 ROOT=Path(__file__).resolve().parents[1]
 
 def spec(lab=False):
  return dict(table='privacy_cutover_matches' if lab else 'pulse_matches',role='pulse_privacy_cutover_reader' if lab else 'pulse_public_reader_v1',fn='privacy_cutover_public_matches_v1' if lab else 'pulse_public_matches_v1',helper='privacy_cutover_video_id_v1' if lab else 'pulse_public_video_id_v1',audit='privacy_cutover_video_audit_v1' if lab else 'pulse_public_video_audit_v1',policy='privacy_cutover_reader' if lab else 'pulse_public_reader_v1')
 def prepare(v):
  t,r,f,h,a,p=(v[k] for k in ('table','role','fn','helper','audit','policy'))
- return f'''
+ return before(v)+f'''
 DO $$ BEGIN
  IF current_user<>'postgres' OR to_regclass('public.{t}') IS NULL
  OR NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.{t}'::regclass)
  THEN RAISE EXCEPTION 'Expected RLS-enabled original table and postgres; STOP'; END IF;
  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='{r}')
- OR to_regprocedure('public.{f}(text)') IS NOT NULL
+ OR EXISTS (SELECT 1 FROM pg_proc q JOIN pg_namespace n ON n.oid=q.pronamespace WHERE n.nspname='public' AND q.proname IN ('{f}','{h}','{a}'))
+ OR EXISTS (SELECT 1 FROM pg_policy WHERE polrelid='public.{t}'::regclass AND polname='{p}')
  THEN RAISE EXCEPTION 'Candidate objects already exist; do not overwrite'; END IF;
 END $$;
 CREATE ROLE {r} NOLOGIN NOSUPERUSER NOBYPASSRLS NOINHERIT;
@@ -28,7 +30,7 @@ CREATE FUNCTION public.{h}(value jsonb) RETURNS text
 LANGUAGE sql IMMUTABLE PARALLEL SAFE SECURITY INVOKER SET search_path = '' AS $h$
  WITH input AS (SELECT CASE WHEN jsonb_typeof(value)='string' THEN btrim(value #>> '{{}}') END v)
  SELECT CASE WHEN length(v)>2048 THEN NULL WHEN v ~ '^[A-Za-z0-9_-]{{11}}$' THEN v
- ELSE (regexp_match(v,'^https://(www\\.)?youtu\\.be/([A-Za-z0-9_-]{{11}})(\\?[^[:space:]#]*)?(#[^[:space:]]*)?$'))[2] END FROM input
+ ELSE (regexp_match(CASE WHEN v LIKE 'https://www.youtu.be/%' THEN 'https://youtu.be/' || substring(v FROM 22) ELSE v END,'^https://youtu[.]be/([A-Za-z0-9_-]{{11}})([?][^[:space:]#]*)?(#[^[:space:]]*)?$'))[1] END FROM input
 $h$;
 REVOKE ALL ON FUNCTION public.{h}(jsonb) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.{h}(jsonb) TO {r};
@@ -62,8 +64,7 @@ $a$;
 REVOKE ALL ON FUNCTION public.{a}() FROM PUBLIC,anon,authenticated,{r};
 COMMENT ON FUNCTION public.{f}(text) IS 'pulse-echo-public-read/v1 candidate';
 REVOKE {r} FROM postgres;
-NOTIFY pgrst,'reload schema';
-'''
+'''+after(v)+"NOTIFY pgrst,'reload schema';\n"
 def cutover(v):
  t,r,f=(v[k] for k in ('table','role','fn'))
  return f'''
@@ -75,11 +76,11 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_roles r ON p.proowner=r.oid WHERE p.oid='public.{f}(text)'::regprocedure AND r.rolname='{r}' AND NOT r.rolcanlogin AND NOT r.rolbypassrls AND p.prosecdef AND p.provolatile='s' AND p.proconfig=ARRAY['search_path=""']::text[])
  THEN RAISE EXCEPTION 'RPC role or execution configuration differs'; END IF;
  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.{t}'::regclass)
- OR has_table_privilege('{r}','public.{t}','INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+ OR has_table_privilege('{r}','public.{t}','INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES,MAINTAIN')
  OR pg_has_role('anon','{r}','MEMBER') OR pg_has_role('authenticated','{r}','MEMBER')
  THEN RAISE EXCEPTION 'RLS or read-only role isolation differs'; END IF;
- IF has_table_privilege('anon','public.{t}','INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
- OR has_table_privilege('authenticated','public.{t}','TRUNCATE,TRIGGER,REFERENCES')
+ IF has_table_privilege('anon','public.{t}','INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES,MAINTAIN')
+ OR has_table_privilege('authenticated','public.{t}','TRUNCATE,TRIGGER,REFERENCES,MAINTAIN')
  THEN RAISE EXCEPTION 'Existing write/extra-privilege stop is not intact'; END IF;
  IF EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='public.{t}'::regclass AND polcmd<>'r')
  THEN RAISE EXCEPTION 'Unexpected write/administrator policy; review separately'; END IF;
