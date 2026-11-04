@@ -13,5 +13,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/public-read-contract.cjs
+      - run: python3 tools/render_public_read_plan.py
       - run: python3 tools/public_privacy_files.py --build
       - run: python3 -m unittest discover -s tests -p 'public_privacy_*.py'

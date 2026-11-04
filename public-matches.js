@@ -13,9 +13,11 @@
   }return Object.freeze(result);
  }
  async function load(requestedId=null){
-  const config=window.PULSE_CONFIG||{},base=config.publicApiUrl,key=config.publicApiKey;
+  const config=window.PULSE_CONFIG||{},base=config.publicApiUrl||config.supabaseUrl,key=config.publicApiKey||config.supabaseAnonKey;
+  const rpc=config.publicMatchesRpc||'pulse_public_matches_v1';
+  if(!['public_privacy_matches','privacy_cutover_public_matches_v1','pulse_public_matches_v1'].includes(rpc))throw Error('PUBLIC_RPC_REJECTED');
   if(!base||!key)throw Error('PUBLIC_CONFIG_UNAVAILABLE');
-  const url=new URL(base+'/rest/v1/rpc/public_privacy_matches');
+  const url=new URL(base+'/rest/v1/rpc/'+rpc);
   if(requestedId!==null)url.searchParams.set('requested_id',requestedId);
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
   try{

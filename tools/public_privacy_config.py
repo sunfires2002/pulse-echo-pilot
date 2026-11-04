@@ -11,4 +11,4 @@ def read_config(path):
     ref=v['testProjectRef']
     if not re.fullmatch('[a-z0-9]{20}',ref) or hashlib.sha256(ref.encode()).hexdigest()!=PIN or v['supabaseUrl'].rstrip('/')!='https://'+ref+'.supabase.co': raise ValueError('Only the pinned security TEST project is allowed')
     if not re.fullmatch(r'sb_publishable_[A-Za-z0-9_-]{10,}',v['publishableKey']): raise ValueError('Publishable key only; secret/JWT keys forbidden')
-    return {'publicApiUrl':v['supabaseUrl'].rstrip('/'),'publicApiKey':v['publishableKey']}
+    return {'publicApiUrl':v['supabaseUrl'].rstrip('/'),'publicApiKey':v['publishableKey'],'publicMatchesRpc':'public_privacy_matches'}

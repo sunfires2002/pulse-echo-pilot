@@ -9,7 +9,7 @@ from public_privacy_config import read_config
 from privacy_videos import public_rows,report
 p=argparse.ArgumentParser();p.add_argument('--port',type=int,default=8084);p.add_argument('--config-file');a=p.parse_args()
 check()
-try: config=read_config(a.config_file) if a.config_file else {'publicApiUrl':f'http://127.0.0.1:{a.port}/lab-api','publicApiKey':'sb_publishable_local_fixtures_only'}
+try: config=read_config(a.config_file) if a.config_file else {'publicApiUrl':f'http://127.0.0.1:{a.port}/lab-api','publicApiKey':'sb_publishable_local_fixtures_only','publicMatchesRpc':'public_privacy_matches'}
 except (ValueError,OSError): p.error('TEST configuration rejected; values not logged')
 original_fixtures=json.loads((ROOT/'tools/privacy-fixtures.json').read_text())
 fixtures=public_rows(original_fixtures)
