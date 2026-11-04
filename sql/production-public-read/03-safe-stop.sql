@@ -12,6 +12,8 @@ DO $$ BEGIN
 END $$;
 
 -- Safe stop, NOT restoration of the former anonymous-read state.
+-- Temporarily recover ownership authority; never keep runtime membership.
+GRANT pulse_public_reader_v1 TO postgres;
 REVOKE EXECUTE ON FUNCTION public.pulse_public_matches_v1(text) FROM PUBLIC,anon,authenticated RESTRICT;
 REVOKE SELECT ON TABLE public.pulse_matches FROM PUBLIC,anon,authenticated RESTRICT;
 DO $$ BEGIN
@@ -20,4 +22,5 @@ DO $$ BEGIN
  OR EXISTS(SELECT 1 FROM pg_attribute a WHERE a.attrelid='public.pulse_matches'::regclass AND a.attnum>0 AND NOT a.attisdropped AND (has_column_privilege('anon',a.attrelid,a.attnum,'SELECT') OR has_column_privilege('authenticated',a.attrelid,a.attnum,'SELECT')))
  THEN RAISE EXCEPTION 'Safe stop did not close general access'; END IF;
 END $$;
+REVOKE pulse_public_reader_v1 FROM postgres;
 COMMIT;

@@ -60,8 +60,8 @@ LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $a$
  count(*) FILTER(WHERE NOT is_empty AND video_id IS NULL) FROM classified GROUP BY field ORDER BY field
 $a$;
 REVOKE ALL ON FUNCTION public.{a}() FROM PUBLIC,anon,authenticated,{r};
-REVOKE {r} FROM postgres;
 COMMENT ON FUNCTION public.{f}(text) IS 'pulse-echo-public-read/v1 candidate';
+REVOKE {r} FROM postgres;
 NOTIFY pgrst,'reload schema';
 '''
 def cutover(v):
@@ -105,9 +105,11 @@ BEGIN
 END $$;
 '''
 def stop(v):
- t,f=(v[k] for k in ('table','fn'))
+ t,r,f=(v[k] for k in ('table','role','fn'))
  return f'''
 -- Safe stop, NOT restoration of the former anonymous-read state.
+-- Temporarily recover ownership authority; never keep runtime membership.
+GRANT {r} TO postgres;
 REVOKE EXECUTE ON FUNCTION public.{f}(text) FROM PUBLIC,anon,authenticated RESTRICT;
 REVOKE SELECT ON TABLE public.{t} FROM PUBLIC,anon,authenticated RESTRICT;
 DO $$ BEGIN
@@ -116,6 +118,7 @@ DO $$ BEGIN
  OR EXISTS(SELECT 1 FROM pg_attribute a WHERE a.attrelid='public.{t}'::regclass AND a.attnum>0 AND NOT a.attisdropped AND (has_column_privilege('anon',a.attrelid,a.attnum,'SELECT') OR has_column_privilege('authenticated',a.attrelid,a.attnum,'SELECT')))
  THEN RAISE EXCEPTION 'Safe stop did not close general access'; END IF;
 END $$;
+REVOKE {r} FROM postgres;
 '''
 def guard(phase):
  return f'''-- DRAFT ONLY. No production execution is authorized. Review every precondition first.
@@ -134,6 +137,8 @@ END $$;
 def rehearsal():
  v=spec(True);t,r,f=(v[k] for k in ('table','role','fn'))
  s='''-- SECURITY TEST PROJECT ONLY. All changes are rolled back at the end.
+-- Clear any previous failed rehearsal transaction in this connection.
+ROLLBACK;
 BEGIN;
 DO $$ BEGIN
  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.pulse_matches') AND conname='admin_lab_id_matches')
@@ -160,7 +165,12 @@ CREATE TEMP TABLE privacy_cutover_state AS SELECT
  (SELECT md5(jsonb_build_object('acl',relacl,'rls',relrowsecurity,'force',relforcerowsecurity,'policies',
  (SELECT jsonb_agg(to_jsonb(p) ORDER BY oid) FROM pg_policy p WHERE polrelid=c.oid))::text)
  FROM pg_class c WHERE oid='public.pulse_matches'::regclass) original_metadata;
-'''+prepare(v)+cutover(v)+f'''
+'''+prepare(v)+f'''
+CREATE TEMP TABLE privacy_cutover_membership_state AS SELECT
+ pg_has_role('postgres','{r}','USAGE') AS inherited_access,
+ coalesce((SELECT jsonb_agg(jsonb_build_object('grantor',m.grantor,'admin',m.admin_option,'inherit',to_jsonb(m)->'inherit_option','set',to_jsonb(m)->'set_option') ORDER BY m.grantor)
+ FROM pg_auth_members m WHERE m.roleid='{r}'::regrole AND m.member='postgres'::regrole),'[]'::jsonb) AS membership;
+'''+cutover(v)+f'''
 SET LOCAL ROLE anon;
 DO $$ BEGIN
  IF (SELECT count(*) FROM public.{f}())<>17 OR EXISTS(SELECT 1 FROM public.{f}('public-cutover-fixture-18'))
@@ -179,6 +189,12 @@ DO $$ BEGIN
 END $$;
 RESET ROLE;
 '''+stop(v)+f'''
+DO $$ BEGIN
+ IF (SELECT membership FROM privacy_cutover_membership_state) IS DISTINCT FROM
+ coalesce((SELECT jsonb_agg(jsonb_build_object('grantor',m.grantor,'admin',m.admin_option,'inherit',to_jsonb(m)->'inherit_option','set',to_jsonb(m)->'set_option') ORDER BY m.grantor)
+ FROM pg_auth_members m WHERE m.roleid='{r}'::regrole AND m.member='postgres'::regrole),'[]'::jsonb)
+ THEN RAISE EXCEPTION 'Temporary owner membership not restored'; END IF;
+END $$;
 SET LOCAL ROLE anon;
 DO $$ BEGIN
  BEGIN PERFORM * FROM public.{f}(); RAISE EXCEPTION 'Safe stop unexpectedly accepted RPC';
@@ -190,6 +206,8 @@ INSERT INTO privacy_cutover_result VALUES(jsonb_build_object(
  'public_only',true,'internal_fields_absent',true,'safe_stop_passed',true,'administrator_policy_added',false,
  'fictional_rows',18,'public_rows',17,'source_data_unchanged',(SELECT data_hash FROM privacy_cutover_state)=(SELECT md5(string_agg(id||data::text||updated_at::text,',' ORDER BY id)) FROM public.{t}),
  'existing_lab_metadata_unchanged',(SELECT original_metadata FROM privacy_cutover_state)=(SELECT md5(jsonb_build_object('acl',relacl,'rls',relrowsecurity,'force',relforcerowsecurity,'policies',(SELECT jsonb_agg(to_jsonb(p) ORDER BY oid) FROM pg_policy p WHERE polrelid=c.oid))::text) FROM pg_class c WHERE oid='public.pulse_matches'::regclass),
+ 'membership_metadata_restored',true,
+ 'runtime_membership_restored',(SELECT inherited_access FROM privacy_cutover_membership_state)=pg_has_role('postgres','{r}','USAGE'),
  'rollback_at_end',true));
 SELECT result AS cutover_rehearsal FROM privacy_cutover_result;
 ROLLBACK;

@@ -61,7 +61,7 @@ LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $a$
  count(*) FILTER(WHERE NOT is_empty AND video_id IS NULL) FROM classified GROUP BY field ORDER BY field
 $a$;
 REVOKE ALL ON FUNCTION public.pulse_public_video_audit_v1() FROM PUBLIC,anon,authenticated,pulse_public_reader_v1;
-REVOKE pulse_public_reader_v1 FROM postgres;
 COMMENT ON FUNCTION public.pulse_public_matches_v1(text) IS 'pulse-echo-public-read/v1 candidate';
+REVOKE pulse_public_reader_v1 FROM postgres;
 NOTIFY pgrst,'reload schema';
 COMMIT;

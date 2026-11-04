@@ -1,4 +1,6 @@
 -- SECURITY TEST PROJECT ONLY. All changes are rolled back at the end.
+-- Clear any previous failed rehearsal transaction in this connection.
+ROLLBACK;
 BEGIN;
 DO $$ BEGIN
  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.pulse_matches') AND conname='admin_lab_id_matches')
@@ -76,9 +78,14 @@ LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $a$
  count(*) FILTER(WHERE NOT is_empty AND video_id IS NULL) FROM classified GROUP BY field ORDER BY field
 $a$;
 REVOKE ALL ON FUNCTION public.privacy_cutover_video_audit_v1() FROM PUBLIC,anon,authenticated,pulse_privacy_cutover_reader;
-REVOKE pulse_privacy_cutover_reader FROM postgres;
 COMMENT ON FUNCTION public.privacy_cutover_public_matches_v1(text) IS 'pulse-echo-public-read/v1 candidate';
+REVOKE pulse_privacy_cutover_reader FROM postgres;
 NOTIFY pgrst,'reload schema';
+
+CREATE TEMP TABLE privacy_cutover_membership_state AS SELECT
+ pg_has_role('postgres','pulse_privacy_cutover_reader','USAGE') AS inherited_access,
+ coalesce((SELECT jsonb_agg(jsonb_build_object('grantor',m.grantor,'admin',m.admin_option,'inherit',to_jsonb(m)->'inherit_option','set',to_jsonb(m)->'set_option') ORDER BY m.grantor)
+ FROM pg_auth_members m WHERE m.roleid='pulse_privacy_cutover_reader'::regrole AND m.member='postgres'::regrole),'[]'::jsonb) AS membership;
 
 DO $$
 DECLARE before_acl jsonb; after_acl jsonb; column_acl text; policies text; goods text;
@@ -136,6 +143,8 @@ END $$;
 RESET ROLE;
 
 -- Safe stop, NOT restoration of the former anonymous-read state.
+-- Temporarily recover ownership authority; never keep runtime membership.
+GRANT pulse_privacy_cutover_reader TO postgres;
 REVOKE EXECUTE ON FUNCTION public.privacy_cutover_public_matches_v1(text) FROM PUBLIC,anon,authenticated RESTRICT;
 REVOKE SELECT ON TABLE public.privacy_cutover_matches FROM PUBLIC,anon,authenticated RESTRICT;
 DO $$ BEGIN
@@ -144,7 +153,14 @@ DO $$ BEGIN
  OR EXISTS(SELECT 1 FROM pg_attribute a WHERE a.attrelid='public.privacy_cutover_matches'::regclass AND a.attnum>0 AND NOT a.attisdropped AND (has_column_privilege('anon',a.attrelid,a.attnum,'SELECT') OR has_column_privilege('authenticated',a.attrelid,a.attnum,'SELECT')))
  THEN RAISE EXCEPTION 'Safe stop did not close general access'; END IF;
 END $$;
+REVOKE pulse_privacy_cutover_reader FROM postgres;
 
+DO $$ BEGIN
+ IF (SELECT membership FROM privacy_cutover_membership_state) IS DISTINCT FROM
+ coalesce((SELECT jsonb_agg(jsonb_build_object('grantor',m.grantor,'admin',m.admin_option,'inherit',to_jsonb(m)->'inherit_option','set',to_jsonb(m)->'set_option') ORDER BY m.grantor)
+ FROM pg_auth_members m WHERE m.roleid='pulse_privacy_cutover_reader'::regrole AND m.member='postgres'::regrole),'[]'::jsonb)
+ THEN RAISE EXCEPTION 'Temporary owner membership not restored'; END IF;
+END $$;
 SET LOCAL ROLE anon;
 DO $$ BEGIN
  BEGIN PERFORM * FROM public.privacy_cutover_public_matches_v1(); RAISE EXCEPTION 'Safe stop unexpectedly accepted RPC';
@@ -156,6 +172,8 @@ INSERT INTO privacy_cutover_result VALUES(jsonb_build_object(
  'public_only',true,'internal_fields_absent',true,'safe_stop_passed',true,'administrator_policy_added',false,
  'fictional_rows',18,'public_rows',17,'source_data_unchanged',(SELECT data_hash FROM privacy_cutover_state)=(SELECT md5(string_agg(id||data::text||updated_at::text,',' ORDER BY id)) FROM public.privacy_cutover_matches),
  'existing_lab_metadata_unchanged',(SELECT original_metadata FROM privacy_cutover_state)=(SELECT md5(jsonb_build_object('acl',relacl,'rls',relrowsecurity,'force',relforcerowsecurity,'policies',(SELECT jsonb_agg(to_jsonb(p) ORDER BY oid) FROM pg_policy p WHERE polrelid=c.oid))::text) FROM pg_class c WHERE oid='public.pulse_matches'::regclass),
+ 'membership_metadata_restored',true,
+ 'runtime_membership_restored',(SELECT inherited_access FROM privacy_cutover_membership_state)=pg_has_role('postgres','pulse_privacy_cutover_reader','USAGE'),
  'rollback_at_end',true));
 SELECT result AS cutover_rehearsal FROM privacy_cutover_result;
 ROLLBACK;
