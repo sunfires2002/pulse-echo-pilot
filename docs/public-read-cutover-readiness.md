@@ -29,7 +29,7 @@ firstHalfVideo/secondHalfVideo/highlightVideo/published の12個。
 - ECHO/投稿処理、PULSE集計・秒単位操作、REACT、PCレイアウト保存キー・名前設定キーは変更しない。
 - 新しい端末プレビュー・GOAL・管理者認証等は追加しない。
 
-検証: オフライン契約12件、Python15件、Chromeホーム320/390/800/1440px、
+検証: オフライン契約12件、Python16件、Chromeホーム320/390/800/1440px、
 PC1280x720/1920x1080・TV相当1280x720・スマホ390x844の回帰が成功。
 0件/503/不正JSON/非公開ID/旧端末データ残存/直接URL失敗、PULSEクリック、REACT、
 合体→再読込→復元→分離を確認。本番通信はブラウザーテストで遮断。
@@ -77,7 +77,15 @@ COMMENTを所属解除より前へ移し、安全停止でも関数の権限変�
 処理後の所属・ADMIN/INHERIT/SET設定が処理前と同じことをリハーサルで比較する。
 権限を恒久的に増やす修正は行っていない。
 再実行用SQLの先頭にROLLBACKを置き、前回の失敗トランザクションを解消してから開始する。
-結果はユーザーがSQL Editorで実行して共有する。修正版のDB実行結果はまだ未確認。
+修正版はユーザーが検証用SQL Editorで実行し、2026-11-04に次の結果を共有した。
+- 架空18件に対して公開17件だけを取得。非公開行・内部項目の除外が成功。
+- cutover_passed / anon_original_blocked / authenticated_original_blocked / safe_stop_passed は全てtrue。
+- source_data_unchanged / existing_lab_metadata_unchanged はtrue。
+- runtime_membership_restored / membership_metadata_restored はtrue。一時所属を恒久化せず、所属設定を復元できた。
+- administrator_policy_added はfalse。管理者限定RLSの新規導入はしていない。
+- rollback_at_end はtrue。実行SQLは最後にROLLBACKする構成。
+これはSQLロールの実行結果であり、新RPCの実HTTP/JWT試験や本番適用の証明ではない。
+また、rollback_at_endはSQL内の報告値のため、終了後に別SELECTでの残留確認は未実施として区別する。
 
 ## 5. 本番移行の承認前チェックと順序
 
