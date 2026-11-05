@@ -7,8 +7,9 @@ class MigrationDraft(unittest.TestCase):
   for name,text in rendered().items():self.assertEqual((ROOT/'sql/production-public-read'/name).read_text(),text)
   self.assertEqual((ROOT/'sql/public-read-cutover-rehearsal.sql').read_text(),rehearsal())
  def test_production_scripts_default_to_stop(self):
-  for text in rendered().values():
-   self.assertIn("'NOT_APPROVED'",text);self.assertIn('Production change NOT APPROVED; STOP',text)
+  for name,text in rendered().items():
+   if name == '01-prepare.sql': self.assertIn('run_prepare boolean := false',text); self.assertIn("RAISE EXCEPTION 'NOT APPROVED'",text)
+   else: self.assertIn("'NOT_APPROVED'",text); self.assertIn('Production change NOT APPROVED; STOP',text)
    self.assertNotRegex(text,r'(?i)\b(?:INSERT INTO|UPDATE|DELETE FROM)\s+public\.pulse_matches')
    self.assertNotIn('auth.uid',text);self.assertNotIn('CASCADE',text)
  def test_safe_stop_never_restores_original_access(self):

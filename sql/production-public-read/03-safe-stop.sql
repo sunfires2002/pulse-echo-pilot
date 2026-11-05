@@ -1,3 +1,4 @@
+-- AFTER CUTOVER ONLY: closes original SELECT; NOT the prepare-stage stop.
 -- DRAFT ONLY. No production execution is authorized. Review every precondition first.
 BEGIN;
 SET LOCAL lock_timeout='5s';

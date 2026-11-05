@@ -42,11 +42,11 @@ PC1280x720/1920x1080・TV相当1280x720・スマホ390x844の回帰が成功。
 | ファイル | 目的 | 状態 |
 | --- | --- | --- |
 | 00-preflight.sql | 本番の列・RLS・GRANT・件数・依存ビュー/RPC候補を値なしで集計 | 読取専用、今回はSQL Editorで未実行 |
-| 01-prepare.sql | 読取専用ロール・12項目RPC・URL変換・SQL管理者向け件数集計を作成 | NOT_APPROVEDで必ず停止 |
+| 01-prepare.sql | 読取専用ロール・12項目RPC・URL変換・SQL管理者向け件数集計を作成 | run_prepare=falseで必ず停止 |
 | 02-cutover.sql | 原本のPUBLIC/anon/authenticated SELECTだけを閉じる | NOT_APPROVEDで必ず停止 |
 | 03-safe-stop.sql | 障害時に一般RPC実行を止め、原本SELECTも閉じたままにする | NOT_APPROVEDで必ず停止 |
 
-本番用3ファイルは承認用の値を別途変更しない限り例外停止する。
+本番用3ファイルは承認用の値を別途変更しない限り例外停止する。01は正式追加の単一DO文であり、成功すれば変更は永続化する。予行演習や停止SQLと取り違えない。
 プロジェクト名/refと接続先はSQL Editor画面で別途照合する。SQLの表構造ガードだけで接続先を保証しない。
 管理者UUIDを使うポリシー、Authアカウント作成、INSERT/UPDATE/DELETEの解禁は一切含めない。
 

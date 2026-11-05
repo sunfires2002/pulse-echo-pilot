@@ -1,3 +1,4 @@
+-- PREPARE STAGE ONLY: keeps old original SELECT; NOT formal addition or post-cutover stop.
 -- DRAFT: DO NOT RUN IN PRODUCTION WITHOUT SEPARATE APPROVAL
 BEGIN;
 SET LOCAL lock_timeout='5s';

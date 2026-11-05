@@ -1,26 +1,23 @@
--- DRAFT ONLY. No production execution is authorized. Review every precondition first.
-BEGIN;
-SET LOCAL lock_timeout='5s';
-SET LOCAL statement_timeout='30s';
--- Replace this literal ONLY after separate explicit production approval.
-SELECT set_config('pulse_echo.public_read_approval','NOT_APPROVED',true);
-DO $$ BEGIN
- IF current_setting('pulse_echo.public_read_approval',true)<>'APPROVED_PREPARE'
- THEN RAISE EXCEPTION 'Production change NOT APPROVED; STOP'; END IF;
- IF EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.pulse_matches') AND conname='admin_lab_id_matches')
- THEN RAISE EXCEPTION 'This is the security LAB; do not apply production SQL'; END IF;
-END $$;
-
-LOCK TABLE public.pulse_matches IN SHARE MODE;
-CREATE TEMP TABLE prepare_safety_snapshot ON COMMIT DROP AS
+-- FORMAL ADDITION: successful execution persists changes. NOT A ROLLBACK OR SAFE STOP. Separate approval required.
+DO $prepare$
+DECLARE
+ run_prepare boolean := false; -- 正式追加を別途承認した場合のみ変更
+ hidden_id text;
+BEGIN
+ IF NOT run_prepare THEN RAISE EXCEPTION 'NOT APPROVED'; END IF;
+ BEGIN
+  EXECUTE $nested$DO $oneblock$
+DECLARE old record; videos int; invalid int; public_count int; private_count int; keys text[];
+BEGIN
+ IF current_user <> 'postgres' OR EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.pulse_matches') AND conname='admin_lab_id_matches') THEN RAISE EXCEPTION 'Production context guard failed'; END IF;
+ LOCK TABLE public.pulse_matches IN SHARE MODE;
 SELECT
- (SELECT md5(coalesce(string_agg(id||chr(31)||updated_at::text||chr(31)||data::text,chr(30) ORDER BY id),'')) FROM public.pulse_matches) AS data_hash,
+(SELECT md5(coalesce(string_agg(id||chr(31)||updated_at::text||chr(31)||data::text,chr(30) ORDER BY id),'')) FROM public.pulse_matches) AS data_hash,
  (SELECT md5(coalesce(jsonb_agg(to_jsonb(p) ORDER BY p.oid)::text,'')) FROM pg_policy p WHERE p.polrelid='public.pulse_matches'::regclass) AS policy_hash,
  (SELECT md5(coalesce(jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type)::text,'')) FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='public.pulse_matches'::regclass) AS acl_hash,
  (SELECT md5(coalesce(jsonb_agg(to_jsonb(m) ORDER BY m.roleid,m.member,m.grantor)::text,'')) FROM pg_auth_members m) AS membership_hash,
- (SELECT md5(jsonb_build_object('rls',relrowsecurity,'force',relforcerowsecurity)::text) FROM pg_class WHERE oid='public.pulse_matches'::regclass) AS rls_hash;
-
-DO $$ BEGIN
+ (SELECT md5(jsonb_build_object('rls',relrowsecurity,'force',relforcerowsecurity)::text) FROM pg_class WHERE oid='public.pulse_matches'::regclass) AS rls_hash INTO old;
+ EXECUTE $cmd$DO $$ BEGIN
  IF current_user<>'postgres' OR to_regclass('public.pulse_matches') IS NULL
  OR NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.pulse_matches'::regclass)
  THEN RAISE EXCEPTION 'Expected RLS-enabled original table and postgres; STOP'; END IF;
@@ -28,22 +25,22 @@ DO $$ BEGIN
  OR EXISTS (SELECT 1 FROM pg_proc q JOIN pg_namespace n ON n.oid=q.pronamespace WHERE n.nspname='public' AND q.proname IN ('pulse_public_matches_v1','pulse_public_video_id_v1','pulse_public_video_audit_v1'))
  OR EXISTS (SELECT 1 FROM pg_policy WHERE polrelid='public.pulse_matches'::regclass AND polname='pulse_public_reader_v1')
  THEN RAISE EXCEPTION 'Candidate objects already exist; do not overwrite'; END IF;
-END $$;
-CREATE ROLE pulse_public_reader_v1 NOLOGIN NOSUPERUSER NOBYPASSRLS NOINHERIT;
-GRANT pulse_public_reader_v1 TO postgres;
-GRANT USAGE ON SCHEMA public TO pulse_public_reader_v1;
-GRANT SELECT ON TABLE public.pulse_matches TO pulse_public_reader_v1;
-CREATE POLICY pulse_public_reader_v1 ON public.pulse_matches FOR SELECT TO pulse_public_reader_v1
- USING(data @> '{"published":true}'::jsonb);
-CREATE FUNCTION public.pulse_public_video_id_v1(value jsonb) RETURNS text
+END $$;$cmd$;
+ EXECUTE $cmd$CREATE ROLE pulse_public_reader_v1 NOLOGIN NOSUPERUSER NOBYPASSRLS NOINHERIT;$cmd$;
+ EXECUTE $cmd$GRANT pulse_public_reader_v1 TO postgres;$cmd$;
+ EXECUTE $cmd$GRANT USAGE ON SCHEMA public TO pulse_public_reader_v1;$cmd$;
+ EXECUTE $cmd$GRANT SELECT ON TABLE public.pulse_matches TO pulse_public_reader_v1;$cmd$;
+ EXECUTE $cmd$CREATE POLICY pulse_public_reader_v1 ON public.pulse_matches FOR SELECT TO pulse_public_reader_v1
+ USING(data @> '{"published":true}'::jsonb);$cmd$;
+ EXECUTE $cmd$CREATE FUNCTION public.pulse_public_video_id_v1(value jsonb) RETURNS text
 LANGUAGE sql IMMUTABLE PARALLEL SAFE SECURITY INVOKER SET search_path = '' AS $h$
  WITH input AS (SELECT CASE WHEN jsonb_typeof(value)='string' THEN btrim(value #>> '{}') END v)
  SELECT CASE WHEN length(v)>2048 THEN NULL WHEN v ~ '^[A-Za-z0-9_-]{11}$' THEN v
  ELSE (regexp_match(CASE WHEN v LIKE 'https://www.youtu.be/%' THEN 'https://youtu.be/' || substring(v FROM 22) ELSE v END,'^https://youtu[.]be/([A-Za-z0-9_-]{11})([?][^[:space:]#]*)?(#[^[:space:]]*)?$'))[1] END FROM input
-$h$;
-REVOKE ALL ON FUNCTION public.pulse_public_video_id_v1(jsonb) FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.pulse_public_video_id_v1(jsonb) TO pulse_public_reader_v1;
-CREATE FUNCTION public.pulse_public_matches_v1(requested_id text DEFAULT NULL)
+$h$;$cmd$;
+ EXECUTE $cmd$REVOKE ALL ON FUNCTION public.pulse_public_video_id_v1(jsonb) FROM PUBLIC,anon,authenticated;$cmd$;
+ EXECUTE $cmd$GRANT EXECUTE ON FUNCTION public.pulse_public_video_id_v1(jsonb) TO pulse_public_reader_v1;$cmd$;
+ EXECUTE $cmd$CREATE FUNCTION public.pulse_public_matches_v1(requested_id text DEFAULT NULL)
 RETURNS TABLE(id text,date text,competition text,round text,home text,away text,
  "homeScore" integer,"awayScore" integer,"firstHalfVideo" text,"secondHalfVideo" text,"highlightVideo" text,published boolean)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $f$
@@ -53,13 +50,13 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $f$
  public.pulse_public_video_id_v1(m.data->'firstHalfVideo'),public.pulse_public_video_id_v1(m.data->'secondHalfVideo'),public.pulse_public_video_id_v1(m.data->'highlightVideo'),true
  FROM public.pulse_matches m WHERE m.data @> '{"published":true}'::jsonb
  AND (requested_id IS NULL OR m.id=requested_id) ORDER BY m.id
-$f$;
-GRANT CREATE ON SCHEMA public TO pulse_public_reader_v1;
-ALTER FUNCTION public.pulse_public_matches_v1(text) OWNER TO pulse_public_reader_v1;
-REVOKE CREATE ON SCHEMA public FROM pulse_public_reader_v1;
-REVOKE ALL ON FUNCTION public.pulse_public_matches_v1(text) FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.pulse_public_matches_v1(text) TO anon,authenticated;
-CREATE FUNCTION public.pulse_public_video_audit_v1() RETURNS TABLE(video_field text,total bigint,empty bigint,converted bigint,invalid bigint)
+$f$;$cmd$;
+ EXECUTE $cmd$GRANT CREATE ON SCHEMA public TO pulse_public_reader_v1;$cmd$;
+ EXECUTE $cmd$ALTER FUNCTION public.pulse_public_matches_v1(text) OWNER TO pulse_public_reader_v1;$cmd$;
+ EXECUTE $cmd$REVOKE CREATE ON SCHEMA public FROM pulse_public_reader_v1;$cmd$;
+ EXECUTE $cmd$REVOKE ALL ON FUNCTION public.pulse_public_matches_v1(text) FROM PUBLIC,anon,authenticated;$cmd$;
+ EXECUTE $cmd$GRANT EXECUTE ON FUNCTION public.pulse_public_matches_v1(text) TO anon,authenticated;$cmd$;
+ EXECUTE $cmd$CREATE FUNCTION public.pulse_public_video_audit_v1() RETURNS TABLE(video_field text,total bigint,empty bigint,converted bigint,invalid bigint)
 LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $a$
  WITH values_by_field AS (
  SELECT f.field,m.data->f.field value FROM public.pulse_matches m
@@ -69,15 +66,11 @@ LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $a$
  public.pulse_public_video_id_v1(value) video_id FROM values_by_field)
  SELECT field,count(*),count(*) FILTER(WHERE is_empty),count(*) FILTER(WHERE NOT is_empty AND video_id IS NOT NULL),
  count(*) FILTER(WHERE NOT is_empty AND video_id IS NULL) FROM classified GROUP BY field ORDER BY field
-$a$;
-REVOKE ALL ON FUNCTION public.pulse_public_video_audit_v1() FROM PUBLIC,anon,authenticated,pulse_public_reader_v1;
-COMMENT ON FUNCTION public.pulse_public_matches_v1(text) IS 'pulse-echo-public-read/v1 candidate';
-REVOKE pulse_public_reader_v1 FROM postgres;
+$a$;$cmd$;
+ EXECUTE $cmd$REVOKE ALL ON FUNCTION public.pulse_public_video_audit_v1() FROM PUBLIC,anon,authenticated,pulse_public_reader_v1;$cmd$;
+ EXECUTE $cmd$COMMENT ON FUNCTION public.pulse_public_matches_v1(text) IS 'pulse-echo-public-read/v1 candidate';$cmd$;
+ EXECUTE $cmd$REVOKE pulse_public_reader_v1 FROM postgres;$cmd$;
 
-DO $verify$
-DECLARE old prepare_safety_snapshot%ROWTYPE; videos int; invalid int; public_count int; private_count int; keys text[];
-BEGIN
- SELECT * INTO STRICT old FROM prepare_safety_snapshot;
  IF old.data_hash IS DISTINCT FROM (SELECT md5(coalesce(string_agg(id||chr(31)||updated_at::text||chr(31)||data::text,chr(30) ORDER BY id),'')) FROM public.pulse_matches)
  OR old.policy_hash IS DISTINCT FROM (SELECT md5(coalesce(jsonb_agg(to_jsonb(q) ORDER BY q.oid)::text,'')) FROM pg_policy q WHERE q.polrelid='public.pulse_matches'::regclass AND q.polname<>'pulse_public_reader_v1')
  OR old.acl_hash IS DISTINCT FROM (SELECT md5(coalesce(jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type)::text,'')) FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='public.pulse_matches'::regclass AND a.grantee<>'pulse_public_reader_v1'::regrole::oid)
@@ -94,7 +87,22 @@ BEGIN
  IF keys IS DISTINCT FROM ARRAY['away','awayScore','competition','date','firstHalfVideo','highlightVideo','home','homeScore','id','published','round','secondHalfVideo']::text[] THEN RAISE EXCEPTION 'Public fields differ'; END IF;
  SELECT count(*),count(*) FILTER(WHERE public.pulse_public_video_id_v1(value) IS NULL) INTO videos,invalid FROM public.pulse_matches m CROSS JOIN LATERAL (VALUES(m.data->'firstHalfVideo'),(m.data->'secondHalfVideo'),(m.data->'highlightVideo')) v(value) WHERE value IS NOT NULL AND value<>'null'::jsonb AND value<>'""'::jsonb;
  IF videos<>21 OR invalid<>0 THEN RAISE EXCEPTION 'Video validation failed'; END IF;
-END $verify$;
-DROP TABLE prepare_safety_snapshot;
-NOTIFY pgrst,'reload schema';
-COMMIT;
+
+END $oneblock$;$nested$;
+  SELECT id INTO STRICT hidden_id FROM public.pulse_matches WHERE data @> '{"published":false}'::jsonb;
+  PERFORM set_config('pulse_echo.audit_hidden_id',hidden_id,true);
+  EXECUTE 'SET LOCAL ROLE anon';
+  EXECUTE $anonymous$DO $check$ DECLARE allowed text[] := ARRAY['away','awayScore','competition','date','firstHalfVideo','highlightVideo','home','homeScore','id','published','round','secondHalfVideo']::text[]; BEGIN
+   IF (SELECT count(*) FROM public.pulse_public_matches_v1())<>17 OR EXISTS(SELECT 1 FROM public.pulse_public_matches_v1(current_setting('pulse_echo.audit_hidden_id',true))) OR EXISTS(SELECT 1 FROM public.pulse_public_matches_v1() x WHERE (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(to_jsonb(x)) k) IS DISTINCT FROM allowed) THEN RAISE EXCEPTION 'Anonymous public projection failed'; END IF;
+  END $check$;$anonymous$;
+  EXECUTE 'RESET ROLE';
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  EXECUTE $auth$DO $check$ DECLARE allowed text[] := ARRAY['away','awayScore','competition','date','firstHalfVideo','highlightVideo','home','homeScore','id','published','round','secondHalfVideo']::text[]; BEGIN
+   IF (SELECT count(*) FROM public.pulse_public_matches_v1())<>17 OR EXISTS(SELECT 1 FROM public.pulse_public_matches_v1(current_setting('pulse_echo.audit_hidden_id',true))) OR EXISTS(SELECT 1 FROM public.pulse_public_matches_v1() x WHERE (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(to_jsonb(x)) k) IS DISTINCT FROM allowed) THEN RAISE EXCEPTION 'Authenticated public projection failed'; END IF;
+   IF NOT has_table_privilege('authenticated','public.pulse_matches','SELECT') OR EXISTS(SELECT 1 FROM unnest(ARRAY['INSERT','UPDATE','DELETE']) p WHERE NOT has_table_privilege('authenticated','public.pulse_matches',p)) THEN RAISE EXCEPTION 'Authenticated baseline grants differ'; END IF;
+  END $check$;$auth$;
+  EXECUTE 'RESET ROLE';
+ END;
+ PERFORM pg_notify('pgrst','reload schema');
+ RAISE NOTICE 'PREPARE_COMPLETED';
+END $prepare$;
