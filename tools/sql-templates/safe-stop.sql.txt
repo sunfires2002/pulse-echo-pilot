@@ -4,7 +4,8 @@ DECLARE run_stop boolean := false; orig_acl text; orig_rls text; orig_policies t
 BEGIN
  IF NOT run_stop THEN RAISE EXCEPTION 'NOT APPROVED'; END IF;
  PERFORM set_config('lock_timeout','5s',true);
- PERFORM set_config('statement_timeout','30s',true);
+ -- The timeout must be active before this DO statement starts.
+ IF NOT EXISTS (SELECT 1 FROM pg_settings WHERE name='statement_timeout' AND unit='ms' AND setting::bigint BETWEEN 1 AND 30000) THEN RAISE EXCEPTION 'STATEMENT TIMEOUT MUST BE SET BEFORE EXECUTION'; END IF;
  IF current_user <> 'postgres' OR EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.pulse_matches') AND conname='admin_lab_id_matches') THEN RAISE EXCEPTION 'Production context guard failed'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner WHERE p.oid=to_regprocedure('public.pulse_public_matches_v1(text)') AND r.rolname='pulse_public_reader_v1' AND p.prosecdef AND NOT r.rolcanlogin AND NOT r.rolbypassrls) THEN RAISE EXCEPTION 'Unexpected function owner or reader; STOP'; END IF;
  SELECT md5(coalesce(jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type)::text,'')) INTO orig_acl FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='public.pulse_matches'::regclass AND a.grantee<>'pulse_public_reader_v1'::regrole::oid;

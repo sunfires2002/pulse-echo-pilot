@@ -4,7 +4,8 @@ DECLARE run_cutover boolean := false; before_acl jsonb; after_acl jsonb; column_
 BEGIN
  IF NOT run_cutover THEN RAISE EXCEPTION 'NOT APPROVED'; END IF;
  PERFORM set_config('lock_timeout','5s',true);
- PERFORM set_config('statement_timeout','30s',true);
+ -- The timeout must be active before this DO statement starts.
+ IF NOT EXISTS (SELECT 1 FROM pg_settings WHERE name='statement_timeout' AND unit='ms' AND setting::bigint BETWEEN 1 AND 30000) THEN RAISE EXCEPTION 'STATEMENT TIMEOUT MUST BE SET BEFORE EXECUTION'; END IF;
  IF EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.pulse_matches') AND conname='admin_lab_id_matches') THEN RAISE EXCEPTION 'Security LAB context; STOP'; END IF;
  IF current_user<>'postgres' OR obj_description(to_regprocedure('public.pulse_public_matches_v1(text)'),'pg_proc') IS DISTINCT FROM 'pulse-echo-public-read/v1 candidate'
  THEN RAISE EXCEPTION 'Reviewed public RPC missing; STOP'; END IF;

@@ -120,13 +120,16 @@ CREATE TEMP TABLE privacy_cutover_membership_state AS SELECT
  coalesce((SELECT jsonb_agg(jsonb_build_object('grantor',m.grantor,'admin',m.admin_option,'inherit',to_jsonb(m)->'inherit_option','set',to_jsonb(m)->'set_option') ORDER BY m.grantor)
  FROM pg_auth_members m WHERE m.roleid='pulse_privacy_cutover_reader'::regrole AND m.member='postgres'::regrole),'[]'::jsonb) AS membership;
 
+
+SET LOCAL statement_timeout = '30s';
 -- DRAFT ONLY: formal cutover persists changes. Separate production approval required.
 DO $cutover$
 DECLARE run_cutover boolean := false; before_acl jsonb; after_acl jsonb; column_acl text; policies text; goods text;
 BEGIN
  IF NOT run_cutover THEN RAISE EXCEPTION 'NOT APPROVED'; END IF;
  PERFORM set_config('lock_timeout','5s',true);
- PERFORM set_config('statement_timeout','30s',true);
+ -- The timeout must be active before this DO statement starts.
+ IF NOT EXISTS (SELECT 1 FROM pg_settings WHERE name='statement_timeout' AND unit='ms' AND setting::bigint BETWEEN 1 AND 30000) THEN RAISE EXCEPTION 'STATEMENT TIMEOUT MUST BE SET BEFORE EXECUTION'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.pulse_matches') AND conname='admin_lab_id_matches') THEN RAISE EXCEPTION 'LAB marker missing'; END IF;
  IF current_user<>'postgres' OR obj_description(to_regprocedure('public.privacy_cutover_public_matches_v1(text)'),'pg_proc') IS DISTINCT FROM 'pulse-echo-public-read/v1 candidate'
  THEN RAISE EXCEPTION 'Reviewed public RPC missing; STOP'; END IF;

@@ -120,13 +120,16 @@ CREATE TEMP TABLE privacy_cutover_membership_state AS SELECT
  coalesce((SELECT jsonb_agg(jsonb_build_object('grantor',m.grantor,'admin',m.admin_option,'inherit',to_jsonb(m)->'inherit_option','set',to_jsonb(m)->'set_option') ORDER BY m.grantor)
  FROM pg_auth_members m WHERE m.roleid='pulse_privacy_cutover_reader'::regrole AND m.member='postgres'::regrole),'[]'::jsonb) AS membership;
 
+
+SET LOCAL statement_timeout = '30s';
 -- DRAFT ONLY: formal cutover persists changes. Separate production approval required.
 DO $cutover$
 DECLARE run_cutover boolean := true; before_acl jsonb; after_acl jsonb; column_acl text; policies text; goods text;
 BEGIN
  IF NOT run_cutover THEN RAISE EXCEPTION 'NOT APPROVED'; END IF;
  PERFORM set_config('lock_timeout','5s',true);
- PERFORM set_config('statement_timeout','30s',true);
+ -- The timeout must be active before this DO statement starts.
+ IF NOT EXISTS (SELECT 1 FROM pg_settings WHERE name='statement_timeout' AND unit='ms' AND setting::bigint BETWEEN 1 AND 30000) THEN RAISE EXCEPTION 'STATEMENT TIMEOUT MUST BE SET BEFORE EXECUTION'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.pulse_matches') AND conname='admin_lab_id_matches') THEN RAISE EXCEPTION 'LAB marker missing'; END IF;
  IF current_user<>'postgres' OR obj_description(to_regprocedure('public.privacy_cutover_public_matches_v1(text)'),'pg_proc') IS DISTINCT FROM 'pulse-echo-public-read/v1 candidate'
  THEN RAISE EXCEPTION 'Reviewed public RPC missing; STOP'; END IF;
@@ -174,7 +177,8 @@ DECLARE run_stop boolean := true; orig_acl text; orig_rls text; orig_policies te
 BEGIN
  IF NOT run_stop THEN RAISE EXCEPTION 'NOT APPROVED'; END IF;
  PERFORM set_config('lock_timeout','5s',true);
- PERFORM set_config('statement_timeout','30s',true);
+ -- The timeout must be active before this DO statement starts.
+ IF NOT EXISTS (SELECT 1 FROM pg_settings WHERE name='statement_timeout' AND unit='ms' AND setting::bigint BETWEEN 1 AND 30000) THEN RAISE EXCEPTION 'STATEMENT TIMEOUT MUST BE SET BEFORE EXECUTION'; END IF;
  IF current_user <> 'postgres' OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.pulse_matches') AND conname='admin_lab_id_matches') THEN RAISE EXCEPTION 'Production context guard failed'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner WHERE p.oid=to_regprocedure('public.privacy_cutover_public_matches_v1(text)') AND r.rolname='pulse_privacy_cutover_reader' AND p.prosecdef AND NOT r.rolcanlogin AND NOT r.rolbypassrls) THEN RAISE EXCEPTION 'Unexpected function owner or reader; STOP'; END IF;
  SELECT md5(coalesce(jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type)::text,'')) INTO orig_acl FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='public.privacy_cutover_matches'::regclass AND a.grantee<>'pulse_privacy_cutover_reader'::regrole::oid;

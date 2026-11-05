@@ -14,6 +14,9 @@ class MigrationDraft(unittest.TestCase):
     self.assertRegex(text,r'run_(cutover|stop) boolean := false')
     self.assertEqual(len(re.findall(r'(?m)^DO \$\w+\$',text)),1)
     self.assertLess(text.index("RAISE EXCEPTION 'NOT APPROVED'"),text.index('REVOKE '))
+    self.assertIn('STATEMENT TIMEOUT MUST BE SET BEFORE EXECUTION',text)
+    self.assertNotIn("set_config('statement_timeout'",text)
+    self.assertLess(text.index('STATEMENT TIMEOUT MUST BE SET BEFORE EXECUTION'),text.index('REVOKE '))
    self.assertNotRegex(text,r'(?i)\b(?:INSERT INTO|UPDATE|DELETE FROM)\s+public\.pulse_matches')
    self.assertNotIn('auth.uid',text);self.assertNotIn('CASCADE',text)
  def test_safe_stop_never_restores_original_access(self):

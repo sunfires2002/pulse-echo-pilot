@@ -3,6 +3,7 @@ root=Path(__file__).resolve().parents[1]
 out=root/'sql/cutover-single-review'
 source=(root/'sql/public-read-cutover-rehearsal.sql').read_text()
 prefix=source[:source.index('DO $$\nDECLARE before_acl jsonb;')]
+prefix += "\nSET LOCAL statement_timeout = '30s';\n"
 def lab(sql):
  s=sql.replace('public.pulse_matches','public.privacy_cutover_matches').replace('pulse_public_reader_v1','pulse_privacy_cutover_reader').replace('pulse_public_matches_v1','privacy_cutover_public_matches_v1')
  s=s.replace("IF EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.privacy_cutover_matches') AND conname='admin_lab_id_matches') THEN RAISE EXCEPTION 'Security LAB context; STOP'; END IF;", "IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.pulse_matches') AND conname='admin_lab_id_matches') THEN RAISE EXCEPTION 'LAB marker missing'; END IF;")
@@ -18,3 +19,6 @@ for label,stmt,var in [('cutover',cut,'run_cutover'),('stop',stop,'run_stop')]:
  (out/f'lab-{label}-guard.sql').write_text(prefix+(cut if label=='stop' else '')+blocked+'\nROLLBACK;\n')
  fail=stmt.replace('END $cutover$;'," RAISE EXCEPTION 'INTENTIONAL_CUTOVER_FAILURE';\nEND $cutover$;").replace('END $stop$;'," RAISE EXCEPTION 'INTENTIONAL_STOP_FAILURE';\nEND $stop$;")
  (out/f'lab-{label}-failure.sql').write_text(prefix+(cut if label=='stop' else '')+fail+'\nROLLBACK;\n')
+
+(out/'lab-cutover-timeout-unset.sql').write_text(prefix+"\nSET LOCAL statement_timeout = 0;\n"+cut+'\nROLLBACK;\n')
+(out/'lab-stop-timeout-unset.sql').write_text(prefix+cut+"\nSET LOCAL statement_timeout = 0;\n"+stop+'\nROLLBACK;\n')
