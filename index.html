@@ -75,9 +75,9 @@ function renderMatches(matches){
  grid.querySelectorAll(".match-thumbnail").forEach(image=>image.addEventListener("error",()=>{image.parentElement.classList.remove("has-thumbnail");image.remove()},{once:true}));
 }
 async function refreshPublicMatches(){
- const grid=document.getElementById('matchGrid');grid.textContent='試合を読み込み中…';
- try{renderMatches(await window.PULSE_PUBLIC_MATCHES.load())}
- catch{grid.innerHTML='<div class="empty" role="status">試合一覧を読み込めませんでした。<br><button class="btn" id="publicRetry" type="button">再試行</button></div>';document.getElementById('publicRetry').onclick=refreshPublicMatches}
+ const grid=document.getElementById('matchGrid');
+ grid.innerHTML='<div class="empty" role="status">試合一覧を一時停止しています。復旧をお待ちください。<br><button class="btn" id="publicRetry" type="button">再読み込み</button></div>';
+ document.getElementById('publicRetry').onclick=()=>location.reload();
 }
 refreshPublicMatches();
 </script>

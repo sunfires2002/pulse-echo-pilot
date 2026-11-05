@@ -1,0 +1,24 @@
+name: Public screen recovery checks (NO DEPLOY)
+on:
+  push:
+    branches: [codex/public-screen-recovery]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/check-public-backups.cjs
+      - run: node --test tests/public-backup-boundary.cjs
+      - run: node tests/release-scope.cjs
+      - run: node tests/public-screen-boundary.cjs
+      - run: node tests/public-read-contract.cjs
+      - run: node tests/public-recovery-boundary.cjs
+      - run: node tests/realtime.cjs

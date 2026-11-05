@@ -118,20 +118,7 @@ function syncTacticsAccess(){const enabled=tacticsEnabled();document.body.classL
 document.addEventListener("pulse-view-mode",syncTacticsAccess);
 const videoId=v=>{if(!v)return"";let s=String(v);try{let u=new URL(s);return u.hostname.includes("youtu.be")?u.pathname.slice(1):u.searchParams.get("v")||s}catch{return s}};
 async function initMatch(){
- let allMatches;
- try{allMatches=await window.PULSE_PUBLIC_MATCHES.load(id||null)}
- catch{showPublicFailure('試合を読み込めませんでした。通信状態を確認して再試行してください。');return}
- match=id?allMatches.find(x=>x.id===id):allMatches[0];
- if(!match){showPublicFailure('この試合は現在表示できません。');return}
- document.body.classList.remove('public-blocked');document.getElementById('publicLoadStatus').hidden=true;
- document.title=`${match.home} vs ${match.away} | PULSE ECHO`;
- document.getElementById("scoreboard").innerHTML=`<div class="match-meta">${esc(match.competition||"MATCH")} ${esc((match.date||"").replaceAll("-","."))}</div><div class="scoreline"><div class="club">${esc(match.home)}</div><span class="match-versus">VS</span><div class="club">${esc(match.away)}</div></div>`;
- videos=[["前半",match.firstHalfVideo],["後半",match.secondHalfVideo],["ハイライト",match.highlightVideo]].filter(x=>x[1]);
- currentPart=videos[0]?.[0]||"前半";
- document.getElementById("tabs").innerHTML=videos.map((v,i)=>`<button class="tab ${i===0?"active":""}" data-label="${esc(v[0])}" data-video="${esc(videoId(v[1]))}">${esc(v[0])}</button>`).join("");
- document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");currentPart=b.dataset.label;closeTactics();loadVideo(b.dataset.video);loadEvents(true)});
- if(youtubeReady&&videos[0])loadVideo(videoId(videos[0][1]));
- loadEvents(true);
+ showPublicFailure('現在、試合の視聴を一時停止しています。復旧をお待ちください。');
 }
 function onYouTubeIframeAPIReady(){
  window.__PULSE_YT_API_READY__=true;
