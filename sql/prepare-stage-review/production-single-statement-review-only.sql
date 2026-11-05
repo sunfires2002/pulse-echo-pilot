@@ -1,6 +1,6 @@
 -- REVIEW ONLY: single-statement production rehearsal; separate approval required.
 DO $rehearsal$
-DECLARE expected boolean:=false; caught_message text;
+DECLARE expected boolean:=false; caught_message text; hidden_id text;
 BEGIN
  IF 'NOT_APPROVED' <> 'APPROVED_PREPARE_ROLLBACK' THEN RAISE EXCEPTION 'NOT APPROVED'; END IF;
  BEGIN
@@ -87,6 +87,14 @@ $a$;$cmd$;
  IF videos<>21 OR invalid<>0 THEN RAISE EXCEPTION 'Video validation failed'; END IF;
 
 END $oneblock$;$nested$;
+  SELECT id INTO STRICT hidden_id FROM public.pulse_matches WHERE data @> '{"published":false}'::jsonb;
+  PERFORM set_config('pulse_echo.audit_hidden_id',hidden_id,true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  EXECUTE $auth$DO $check$ DECLARE allowed text[] := ARRAY['away','awayScore','competition','date','firstHalfVideo','highlightVideo','home','homeScore','id','published','round','secondHalfVideo']::text[]; BEGIN
+   IF (SELECT count(*) FROM public.pulse_public_matches_v1())<>17 OR EXISTS(SELECT 1 FROM public.pulse_public_matches_v1(current_setting('pulse_echo.audit_hidden_id',true))) OR EXISTS(SELECT 1 FROM public.pulse_public_matches_v1() x WHERE (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(to_jsonb(x)) k) IS DISTINCT FROM allowed) THEN RAISE EXCEPTION 'Authenticated public projection failed'; END IF;
+   IF NOT has_table_privilege('authenticated','public.pulse_matches','SELECT') OR EXISTS(SELECT 1 FROM unnest(ARRAY['INSERT','UPDATE','DELETE']) p WHERE NOT has_table_privilege('authenticated','public.pulse_matches',p)) THEN RAISE EXCEPTION 'Authenticated baseline grants differ'; END IF;
+  END $check$;$auth$;
+  EXECUTE 'RESET ROLE';
   RAISE EXCEPTION USING ERRCODE='P9001', MESSAGE='EXPECTED_ROLLBACK';
  EXCEPTION WHEN SQLSTATE 'P9001' THEN
   GET STACKED DIAGNOSTICS caught_message = MESSAGE_TEXT;

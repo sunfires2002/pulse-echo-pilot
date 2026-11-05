@@ -106,6 +106,12 @@ $a$;$cmd$;
  IF videos<>21 OR invalid<>0 THEN RAISE EXCEPTION 'Video validation failed'; END IF;
 
 END $oneblock$;$nested$;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  EXECUTE $auth$DO $check$ BEGIN
+   IF (SELECT count(*) FROM public.privacy_cutover_public_matches_v1()) <> 17 OR EXISTS(SELECT 1 FROM public.privacy_cutover_public_matches_v1('public-cutover-fixture-18')) OR EXISTS(SELECT 1 FROM public.privacy_cutover_public_matches_v1() x WHERE to_jsonb(x)::text LIKE '%PRIVATE_FIXTURE%') THEN RAISE EXCEPTION 'Authenticated projection failed'; END IF;
+   IF NOT has_table_privilege('authenticated','public.privacy_cutover_matches','SELECT') OR EXISTS(SELECT 1 FROM unnest(ARRAY['INSERT','UPDATE','DELETE']) p WHERE NOT has_table_privilege('authenticated','public.privacy_cutover_matches',p)) THEN RAISE EXCEPTION 'Existing authenticated grants differ'; END IF;
+  END $check$;$auth$;
+  EXECUTE 'RESET ROLE';
   RAISE EXCEPTION 'INTENTIONAL_SUBTRANSACTION_FAILURE';
   RAISE EXCEPTION USING ERRCODE='P9001', MESSAGE='EXPECTED_ROLLBACK';
  EXCEPTION WHEN SQLSTATE 'P9001' THEN GET STACKED DIAGNOSTICS caught_message = MESSAGE_TEXT; IF caught_message <> 'EXPECTED_ROLLBACK' THEN RAISE; END IF; expected:=true;
