@@ -11,8 +11,8 @@ LAB: `codex/tv-layout-db2004-lab`
 | 匿名の原本SELECT | TV LABはDB権限を変更しない。 | 公開画面コードはRPCを使う。一方、`supabase-schema.sql` には匿名権限を広く許可する既存ポリシーが残る。ソース上のSQLと本番状態を同一視しない。 | **未確認**。12:47の利用者報告は原本SELECTが401。今回の `00-preflight.sql` 実行なし。 | 対象外 | 2026-11-05（ソース）。DBは報告時刻のみ。 | `supabase-schema.sql`、12:47利用者報告、`codex/public-information-protection-lab` の読み取り専用preflight案 |
 | RLS・管理者認証 | 今回は変更なし。 | RPC導入後も `admin.html` は現状の直接接続方式。管理者認証・本番管理RLSの統合を示すmainコードは未確認。 | **未確認**。管理者認証LABの検証結果は専用テストプロジェクトのもの。 | 対象外 | 2026-11-05 | `admin.html`、`supabase-schema.sql`、`codex/admin-safety-lab` のテスト記録 |
 | バックアップ削除・再混入検査 | db2004の保護ファイルと検査を保持。リリース範囲チェックで差分を監視。 | c34608eで公開ルートのバックアップを削除。mainに再混入検査とCIがある。 | 対象外。Git履歴上の過去ファイル消去は別確認。 | 対象外 | 2026-11-05 | `tools/check-public-backups.cjs`、`.github/workflows/public-backup-check.yml`、`BACKUP-REMOVAL.md` |
-| TV操作・REACT一覧 | コード移植済み。Fire TV実機についてユーザーから「大丈夫」との確認報告あり。個別操作の確認範囲は**未確認**。 | db2004にはこのTVレイアウト差分なし。mainへ反映していない。 | 変更なし | 新LABの実機確認はユーザー報告として記録。8項目すべての再確認済みとは扱わない。旧TV LABの8項目合格は旧LABの証拠として別記録。 | ユーザー報告: 2026-11-05。個別項目・機種・Silk版: 未確認。 | ユーザーの「大丈夫」との報告。旧LABの8項目一覧は `codex/tv-layout-c34608e` の報告。今後の確認用 [FIRE-TV-RECHECK.md](FIRE-TV-RECHECK.md) |
-| ブラウザー回帰（PC・スマホ・TV相当） | 合成データのローカルfixtureで検証済み。 | 対象外（LAB差分）。 | 接続なし。 | Fire TV実機の全項目確認とは区別。 | 2026-11-05 | `tests/tv-layout-regression.cjs`（390×844、800×1000、1440×900）、`tests/tv-react-list.cjs`（960×540、1280×720）、`tests/tv-react-load-failure.cjs`、`tests/tv-seconds-axis.cjs` |
+| TV操作・REACT一覧 | コード移植済み。Fire TV実機で対象の個別8項目を確認済みとのユーザー報告あり。 | db2004にはこのTVレイアウト差分なし。mainへ反映していない。 | 変更なし | 新LABで8項目確認済み（ユーザー報告）。独立した端末ログ・機種情報は未取得。旧TV LABの8項目結果も別途存在。 | ユーザー報告: 2026-11-05。端末ログ・機種・Silk版: 未確認。 | ユーザーの訂正報告「個別の8項目は確認済み」。項目一覧と記録欄は [FIRE-TV-RECHECK.md](FIRE-TV-RECHECK.md) |
+| ブラウザー回帰（PC・スマホ・TV相当） | 合成データのローカルfixtureで検証済み。 | 対象外（LAB差分）。 | 接続なし。 | Fire TV実機8項目はユーザー報告で確認済みとして上段に記録。 | 2026-11-05 | `tests/tv-layout-regression.cjs`（390×844、800×1000、1440×900）、`tests/tv-react-list.cjs`（960×540、1280×720）、`tests/tv-react-load-failure.cjs`、`tests/tv-seconds-axis.cjs` |
 
 ## 参照先の混同防止
 
