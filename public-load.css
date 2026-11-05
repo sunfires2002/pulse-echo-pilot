@@ -1,4 +1,3 @@
-body.public-blocked > :not(#publicLoadStatus):not(#publicLabBanner){visibility:hidden!important}
+body.public-blocked > :not(#publicLoadStatus){visibility:hidden!important}
 #publicLoadStatus{position:fixed;inset:0;z-index:2147483000;background:#080a10;color:#eef6ff;display:grid;place-content:center;gap:18px;padding:32px;text-align:center}
 #publicLoadStatus[hidden]{display:none}
-#publicLabBanner{position:fixed;left:8px;bottom:8px;background:#153344;color:#a4eeff;padding:4px 10px;z-index:2147483647;font:12px sans-serif;pointer-events:none}
