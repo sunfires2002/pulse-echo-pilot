@@ -1,0 +1,4 @@
+const fs=require('node:fs'),assert=require('node:assert/strict');
+for(const n of ['index.html','match.html']){const s=fs.readFileSync(n,'utf8');assert(s.includes('public-matches.js'));assert(!/src=["']data\.js/.test(s));assert(!s.includes('localMatches('));assert(!s.includes('cloudMatches('));assert(!s.includes('pulse_echo_workflow_v3'));assert(!s.includes('window.PULSE_MATCHES'));assert(!s.includes('PULSE_REACTIONS_LAB'));}
+const reader=fs.readFileSync('public-matches.js','utf8');assert(reader.includes("const rpc='pulse_public_matches_v1'"));assert(!reader.includes('public_privacy_matches'));assert(!reader.includes('privacy_cutover_public_matches_v1'));assert(!reader.includes('localStorage'));
+console.log('PASS public screen reads only the production public RPC; no stale fallback or LAB adapter');
