@@ -1,6 +1,6 @@
 -- TEST PROJECT ONLY: execute the entire single DO statement; no production access.
 DO $experiment$
-DECLARE initial_data text; initial_meta text; initial_members text; expected boolean:=false; caught_message text;
+DECLARE initial_data text; initial_meta text; initial_members text; expected boolean:=false; caught_message text; hidden_id text;
 BEGIN
  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.pulse_matches') AND conname='admin_lab_id_matches') THEN RAISE EXCEPTION 'Security LAB marker missing'; END IF;
  IF to_regclass('public.privacy_cutover_matches') IS NOT NULL OR EXISTS(SELECT 1 FROM pg_roles WHERE rolname='pulse_privacy_cutover_reader') THEN RAISE EXCEPTION 'Fixture collision'; END IF;
@@ -106,14 +106,16 @@ $a$;$cmd$;
  IF videos<>21 OR invalid<>0 THEN RAISE EXCEPTION 'Video validation failed'; END IF;
 
 END $oneblock$;$nested$;
+  SELECT id INTO STRICT hidden_id FROM public.privacy_cutover_matches WHERE data @> '{"published":false}'::jsonb;
+  PERFORM set_config('pulse_echo.audit_hidden_id',hidden_id,true);
   EXECUTE 'SET LOCAL ROLE anon';
   EXECUTE $anonymous$DO $check$ DECLARE allowed text[] := ARRAY['away','awayScore','competition','date','firstHalfVideo','highlightVideo','home','homeScore','id','published','round','secondHalfVideo']::text[]; BEGIN
-   IF (SELECT count(*) FROM public.privacy_cutover_public_matches_v1()) <> 17 OR EXISTS(SELECT 1 FROM public.privacy_cutover_public_matches_v1('public-cutover-fixture-18')) OR EXISTS(SELECT 1 FROM public.privacy_cutover_public_matches_v1() x WHERE (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(to_jsonb(x)) k) IS DISTINCT FROM allowed OR to_jsonb(x)::text LIKE '%PRIVATE_FIXTURE%') THEN RAISE EXCEPTION 'Anonymous projection failed'; END IF;
+   IF (SELECT count(*) FROM public.privacy_cutover_public_matches_v1()) <> 17 OR EXISTS(SELECT 1 FROM public.privacy_cutover_public_matches_v1(current_setting('pulse_echo.audit_hidden_id',true))) OR EXISTS(SELECT 1 FROM public.privacy_cutover_public_matches_v1() x WHERE (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(to_jsonb(x)) k) IS DISTINCT FROM allowed OR to_jsonb(x)::text LIKE '%PRIVATE_FIXTURE%') THEN RAISE EXCEPTION 'Anonymous projection failed'; END IF;
   END $check$;$anonymous$;
   EXECUTE 'RESET ROLE';
   EXECUTE 'SET LOCAL ROLE authenticated';
-  EXECUTE $auth$DO $check$ BEGIN
-   IF (SELECT count(*) FROM public.privacy_cutover_public_matches_v1()) <> 17 OR EXISTS(SELECT 1 FROM public.privacy_cutover_public_matches_v1('public-cutover-fixture-18')) OR EXISTS(SELECT 1 FROM public.privacy_cutover_public_matches_v1() x WHERE to_jsonb(x)::text LIKE '%PRIVATE_FIXTURE%') THEN RAISE EXCEPTION 'Authenticated projection failed'; END IF;
+  EXECUTE $auth$DO $check$ DECLARE allowed text[] := ARRAY['away','awayScore','competition','date','firstHalfVideo','highlightVideo','home','homeScore','id','published','round','secondHalfVideo']::text[]; BEGIN
+   IF (SELECT count(*) FROM public.privacy_cutover_public_matches_v1()) <> 17 OR EXISTS(SELECT 1 FROM public.privacy_cutover_public_matches_v1(current_setting('pulse_echo.audit_hidden_id',true))) OR EXISTS(SELECT 1 FROM public.privacy_cutover_public_matches_v1() x WHERE (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(to_jsonb(x)) k) IS DISTINCT FROM allowed OR to_jsonb(x)::text LIKE '%PRIVATE_FIXTURE%') THEN RAISE EXCEPTION 'Authenticated projection failed'; END IF;
    IF NOT has_table_privilege('authenticated','public.privacy_cutover_matches','SELECT') OR EXISTS(SELECT 1 FROM unnest(ARRAY['INSERT','UPDATE','DELETE']) p WHERE NOT has_table_privilege('authenticated','public.privacy_cutover_matches',p)) THEN RAISE EXCEPTION 'Existing authenticated grants differ'; END IF;
   END $check$;$auth$;
   EXECUTE 'RESET ROLE';
