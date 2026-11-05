@@ -1,13 +1,13 @@
 # 単一SQL文の本番予行演習：レビュー用チェック表
 
-**本番実行は別途承認が必要。** `production-single-statement-review-only.sql`には`NOT_APPROVED`ガードがあり、このままでは停止する。内部例外で処理中の変更を取り消す。`ROLLBACK`の行を別途実行する方式ではない。旧原本SELECTは維持するため、非公開情報の保護は完了しない。
+**本番実行は別途承認が必要。** `production-single-statement-review-only.sql`には`run_rehearsal := false`ガードがあり、このままでは停止する。内部例外で処理中の変更を取り消す。`ROLLBACK`の行を別途実行する方式ではない。旧原本SELECTは維持するため、非公開情報の保護は完了しない。
 
 | 順 | 確認・操作 | 期待値／中止条件 | 判定 |
 |---|---|---|---|
 | 1 | Supabase画面で本番プロジェクト名と参照IDを、運営者が保管する情報と照合 | 一致しなければ中止 | □ OK □ NG |
 | 2 | 既存`00-preflight.sql`の記録を保管し、直前に再実行。`00-name-residue.sql`も実行 | 公開17・非公開1、異常0、既存の権限条件一致、候補の名前・残留が全て0。異常時中止 | □ OK □ NG |
 | 3 | `01-baseline.sql`の比較値を保存 | 既存データ・RLS・ACL・所属とfutsal_goodsメタデータの比較値が取得できなければ中止 | □ OK □ NG |
-| 4 | 別途承認後、新規SQL Editorに単一文の全文を貼る。エディタ内に旧SQLが残っていないことを確認し、⌘Aで全文選択してRun | 途中の文字列だけを選択しない。エラー・不明な結果は中止。NOTICEが見えないUIもあるため、成功表示だけで完了判定しない | □ OK □ NG |
+| 4 | 別途承認後、新規SQL Editorに単一文の全文を貼る。エディタ内に旧SQLが残っていないことを確認。別途承認後、冒頭の `run_rehearsal boolean := false;` だけの `false` を `true` にし、⌘Aで全文選択してRun | 途中の文字列だけを選択しない。エラー・不明な結果は中止。NOTICEが見えないUIもあるため、成功表示だけで完了判定しない | □ OK □ NG |
 | 5 | 新しいSQL Editorで`00-name-residue.sql`・`00-preflight.sql`・`01-baseline.sql`を実行 | 対象残留0、公開件数・権限条件と手順3の比較値一致。差やエラーは中止 | □ OK □ NG |
 | 6 | 旧ホーム・試合・動画・PULSE・REACTと既存反応の読取りを確認 | 不具合時は中止。テスト投稿なし | □ OK □ NG |
 

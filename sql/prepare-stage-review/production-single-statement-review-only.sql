@@ -1,8 +1,10 @@
 -- REVIEW ONLY: single-statement production rehearsal; separate approval required.
 DO $rehearsal$
-DECLARE expected boolean:=false; caught_message text; hidden_id text;
+DECLARE
+ run_rehearsal boolean := false; -- 実行する場合だけこの行の false を true に変更
+ expected boolean:=false; caught_message text; hidden_id text;
 BEGIN
- IF 'NOT_APPROVED' <> 'APPROVED_PREPARE_ROLLBACK' THEN RAISE EXCEPTION 'NOT APPROVED'; END IF;
+ IF NOT run_rehearsal THEN RAISE EXCEPTION 'NOT APPROVED'; END IF;
  BEGIN
   EXECUTE $nested$DO $oneblock$
 DECLARE old record; videos int; invalid int; public_count int; private_count int; keys text[];
