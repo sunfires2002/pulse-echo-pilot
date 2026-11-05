@@ -216,7 +216,8 @@ ROLLBACK;
  return s
 
 def rendered():
- v=spec();from render_formal_prepare import render;return {'01-prepare.sql':render(),'02-cutover.sql':guard('CUTOVER')+cutover(v)+'COMMIT;\n','03-safe-stop.sql':'-- AFTER CUTOVER ONLY: closes original SELECT; NOT the prepare-stage stop.\n'+guard('SAFE_STOP')+stop(v)+'COMMIT;\n'}
+ from render_formal_prepare import render
+ return {'01-prepare.sql':render(),'02-cutover.sql':(ROOT/'tools/sql-templates/cutover.sql.txt').read_text(),'03-safe-stop.sql':(ROOT/'tools/sql-templates/safe-stop.sql.txt').read_text()}
 if __name__=='__main__':
  target=ROOT/'sql/production-public-read';target.mkdir(parents=True,exist_ok=True)
  files={target/k:v for k,v in rendered().items()};files[ROOT/'sql/public-read-cutover-rehearsal.sql']=rehearsal()

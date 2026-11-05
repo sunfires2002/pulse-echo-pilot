@@ -1,0 +1,20 @@
+from pathlib import Path
+root=Path(__file__).resolve().parents[1]
+out=root/'sql/cutover-single-review'
+source=(root/'sql/public-read-cutover-rehearsal.sql').read_text()
+prefix=source[:source.index('DO $$\nDECLARE before_acl jsonb;')]
+def lab(sql):
+ s=sql.replace('public.pulse_matches','public.privacy_cutover_matches').replace('pulse_public_reader_v1','pulse_privacy_cutover_reader').replace('pulse_public_matches_v1','privacy_cutover_public_matches_v1')
+ s=s.replace("IF EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.privacy_cutover_matches') AND conname='admin_lab_id_matches') THEN RAISE EXCEPTION 'Security LAB context; STOP'; END IF;", "IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.pulse_matches') AND conname='admin_lab_id_matches') THEN RAISE EXCEPTION 'LAB marker missing'; END IF;")
+ s=s.replace("current_user <> 'postgres' OR EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.privacy_cutover_matches') AND conname='admin_lab_id_matches')", "current_user <> 'postgres' OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.pulse_matches') AND conname='admin_lab_id_matches')")
+ return s
+cut=lab((root/'sql/production-public-read/02-cutover.sql').read_text()).replace('run_cutover boolean := false','run_cutover boolean := true')
+stop=lab((root/'sql/production-public-read/03-safe-stop.sql').read_text()).replace('run_stop boolean := false','run_stop boolean := true')
+checks='''\nSET LOCAL ROLE anon;\nDO $$ BEGIN IF (SELECT count(*) FROM public.privacy_cutover_public_matches_v1())<>17 OR EXISTS(SELECT 1 FROM public.privacy_cutover_public_matches_v1('public-cutover-fixture-18')) THEN RAISE EXCEPTION 'Public projection failed'; END IF; BEGIN PERFORM * FROM public.privacy_cutover_matches; RAISE EXCEPTION 'Original read allowed'; EXCEPTION WHEN insufficient_privilege THEN NULL; END; END $$;\nRESET ROLE;\nSET LOCAL ROLE authenticated;\nDO $$ BEGIN IF (SELECT count(*) FROM public.privacy_cutover_public_matches_v1())<>17 THEN RAISE EXCEPTION 'Authenticated projection failed'; END IF; BEGIN PERFORM * FROM public.privacy_cutover_matches; RAISE EXCEPTION 'Original read allowed'; EXCEPTION WHEN insufficient_privilege THEN NULL; END; END $$;\nRESET ROLE;\n'''
+verify='''\nDO $$ BEGIN IF has_function_privilege('anon','public.privacy_cutover_public_matches_v1(text)','EXECUTE') OR has_function_privilege('authenticated','public.privacy_cutover_public_matches_v1(text)','EXECUTE') OR has_table_privilege('anon','public.privacy_cutover_matches','SELECT') OR has_table_privilege('authenticated','public.privacy_cutover_matches','SELECT') THEN RAISE EXCEPTION 'Stop failed'; END IF; IF (SELECT data_hash FROM privacy_cutover_state) IS DISTINCT FROM (SELECT md5(string_agg(id||data::text||updated_at::text,',' ORDER BY id)) FROM public.privacy_cutover_matches) OR (SELECT original_metadata FROM privacy_cutover_state) IS DISTINCT FROM (SELECT md5(jsonb_build_object('acl',relacl,'rls',relrowsecurity,'force',relforcerowsecurity,'policies',(SELECT jsonb_agg(to_jsonb(p) ORDER BY oid) FROM pg_policy p WHERE polrelid=c.oid))::text) FROM pg_class c WHERE oid='public.pulse_matches'::regclass) THEN RAISE EXCEPTION 'Data or original metadata changed'; END IF; END $$;\nSELECT jsonb_build_object('cutover_passed',true,'both_roles_checked',true,'safe_stop_passed',true,'data_and_original_metadata_unchanged',true,'rollback_follows',true) AS single_cutover_review;\nROLLBACK;\n'''
+(out/'lab-normal.sql').write_text(prefix+cut+checks+stop+verify)
+for label,stmt,var in [('cutover',cut,'run_cutover'),('stop',stop,'run_stop')]:
+ blocked=stmt.replace(f'{var} boolean := true',f'{var} boolean := false')
+ (out/f'lab-{label}-guard.sql').write_text(prefix+(cut if label=='stop' else '')+blocked+'\nROLLBACK;\n')
+ fail=stmt.replace('END $cutover$;'," RAISE EXCEPTION 'INTENTIONAL_CUTOVER_FAILURE';\nEND $cutover$;").replace('END $stop$;'," RAISE EXCEPTION 'INTENTIONAL_STOP_FAILURE';\nEND $stop$;")
+ (out/f'lab-{label}-failure.sql').write_text(prefix+(cut if label=='stop' else '')+fail+'\nROLLBACK;\n')

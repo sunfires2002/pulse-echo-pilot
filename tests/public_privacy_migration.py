@@ -9,11 +9,15 @@ class MigrationDraft(unittest.TestCase):
  def test_production_scripts_default_to_stop(self):
   for name,text in rendered().items():
    if name == '01-prepare.sql': self.assertIn('run_prepare boolean := false',text); self.assertIn("RAISE EXCEPTION 'NOT APPROVED'",text)
-   else: self.assertIn("'NOT_APPROVED'",text); self.assertIn('Production change NOT APPROVED; STOP',text)
+   else:
+    self.assertIn("RAISE EXCEPTION 'NOT APPROVED'",text)
+    self.assertRegex(text,r'run_(cutover|stop) boolean := false')
+    self.assertEqual(len(re.findall(r'(?m)^DO \$\w+\$',text)),1)
+    self.assertLess(text.index("RAISE EXCEPTION 'NOT APPROVED'"),text.index('REVOKE '))
    self.assertNotRegex(text,r'(?i)\b(?:INSERT INTO|UPDATE|DELETE FROM)\s+public\.pulse_matches')
    self.assertNotIn('auth.uid',text);self.assertNotIn('CASCADE',text)
  def test_safe_stop_never_restores_original_access(self):
-  text=rendered()['03-safe-stop.sql'];self.assertIn('REVOKE SELECT ON TABLE public.pulse_matches FROM PUBLIC,anon,authenticated RESTRICT',text);self.assertNotRegex(text,r'GRANT\s+SELECT');self.assertNotRegex(text,r'GRANT\s+EXECUTE')
+  text=rendered()['03-safe-stop.sql'];self.assertIn("Original SELECT still open; STOP",text);self.assertNotRegex(text,r'GRANT\s+SELECT');self.assertNotRegex(text,r'GRANT\s+EXECUTE')
  def test_rehearsal_is_fictional_and_rollback_only(self):
   text=rehearsal();self.assertTrue(text.rstrip().endswith('ROLLBACK;'));self.assertNotIn('COMMIT;',text)
   self.assertIn('public.privacy_cutover_matches',text);self.assertIn('existing_lab_metadata_unchanged',text)

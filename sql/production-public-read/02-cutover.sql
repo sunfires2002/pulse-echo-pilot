@@ -1,19 +1,11 @@
--- DRAFT ONLY. No production execution is authorized. Review every precondition first.
-BEGIN;
-SET LOCAL lock_timeout='5s';
-SET LOCAL statement_timeout='30s';
--- Replace this literal ONLY after separate explicit production approval.
-SELECT set_config('pulse_echo.public_read_approval','NOT_APPROVED',true);
-DO $$ BEGIN
- IF current_setting('pulse_echo.public_read_approval',true)<>'APPROVED_CUTOVER'
- THEN RAISE EXCEPTION 'Production change NOT APPROVED; STOP'; END IF;
- IF EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.pulse_matches') AND conname='admin_lab_id_matches')
- THEN RAISE EXCEPTION 'This is the security LAB; do not apply production SQL'; END IF;
-END $$;
-
-DO $$
-DECLARE before_acl jsonb; after_acl jsonb; column_acl text; policies text; goods text;
+-- DRAFT ONLY: formal cutover persists changes. Separate production approval required.
+DO $cutover$
+DECLARE run_cutover boolean := false; before_acl jsonb; after_acl jsonb; column_acl text; policies text; goods text;
 BEGIN
+ IF NOT run_cutover THEN RAISE EXCEPTION 'NOT APPROVED'; END IF;
+ PERFORM set_config('lock_timeout','5s',true);
+ PERFORM set_config('statement_timeout','30s',true);
+ IF EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.pulse_matches') AND conname='admin_lab_id_matches') THEN RAISE EXCEPTION 'Security LAB context; STOP'; END IF;
  IF current_user<>'postgres' OR obj_description(to_regprocedure('public.pulse_public_matches_v1(text)'),'pg_proc') IS DISTINCT FROM 'pulse-echo-public-read/v1 candidate'
  THEN RAISE EXCEPTION 'Reviewed public RPC missing; STOP'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_roles r ON p.proowner=r.oid WHERE p.oid='public.pulse_public_matches_v1(text)'::regprocedure AND r.rolname='pulse_public_reader_v1' AND NOT r.rolcanlogin AND NOT r.rolbypassrls AND p.prosecdef AND p.provolatile='s' AND p.proconfig=ARRAY['search_path=""']::text[])
@@ -46,5 +38,4 @@ BEGIN
  OR policies IS DISTINCT FROM (SELECT md5(coalesce(string_agg(to_jsonb(p)::text,',' ORDER BY oid),'')) FROM pg_policy p WHERE polrelid='public.pulse_matches'::regclass)
  OR goods IS DISTINCT FROM (SELECT md5(coalesce((SELECT jsonb_build_object('acl',relacl,'rls',relrowsecurity,'force',relforcerowsecurity)::text FROM pg_class WHERE oid=to_regclass('public.futsal_goods')),'')))
  THEN RAISE EXCEPTION 'Unrelated grants/policies/columns/reactions changed; rollback'; END IF;
-END $$;
-COMMIT;
+END $cutover$;
