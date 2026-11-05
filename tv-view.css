@@ -23,7 +23,7 @@ body.tv-mode .tv-toolbar{position:absolute;left:3%;right:auto;top:auto;bottom:20
 body.tv-mode .tv-toolbar .btn{background:rgba(8,10,16,.7)}
 body.tv-mode .tv-reactions{display:flex;gap:10px;align-items:stretch;justify-content:center;margin-bottom:8px;pointer-events:auto}
 body.tv-mode .tv-react{flex:1;min-width:0;min-height:48px;border:2px solid var(--reaction-color);background:rgba(8,10,16,.86);border-radius:10px;padding:8px;color:#fff;font-size:16px;font-weight:900;cursor:pointer;overflow-wrap:anywhere}
-body.tv-mode .tv-react[data-tv-kind="🤖 AIにお任せ"]{display:none!important}
+body.tv-mode.lab-mode .tv-react[data-tv-kind="🤖 AIにお任せ"]{display:none!important}
 .tv-react:focus-visible,.tv-toolbar .btn:focus-visible{outline:4px solid #fff;outline-offset:2px}
 .tv-react:hover{background:var(--reaction-color)!important;color:#080a10!important}
 .tv-react:active{filter:brightness(1.25)}
@@ -64,8 +64,15 @@ body.tv-mode[data-tv-layout="large"] .tv-reactions .tv-react{flex:1 1 0;width:0}
 /* Display only: keep internal playback time and map playhead calculations. */
 body.tv-mode .tv-map-time{display:none!important}
 
-/* TV-only home link, below the video title overlay. */
+/* TV-only balanced bar: identical end controls and a centered reaction group. */
 #tvHome{display:none}
-body.tv-mode:not(.lab-mode) #tvHome{position:fixed;left:24px;top:80px;z-index:90;display:inline-flex;align-items:center;justify-content:center;min-width:120px;min-height:48px;padding:8px 16px;border:1px solid rgba(255,255,255,.55);border-radius:10px;background:rgba(8,10,16,.55);color:#fff;font-size:16px;font-weight:800;text-decoration:none}
-body.tv-mode:not(.lab-mode) #tvHome:focus{outline:4px solid #fff;outline-offset:3px;background:#006e73;border-color:#fff}
-@media(max-height:420px){body.tv-mode:not(.lab-mode) #tvHome{top:60px;left:12px}}
+body.tv-mode:not(.lab-mode) #tvHome{position:static;flex:0 0 96px;align-self:center;margin:0;z-index:90;display:inline-flex;align-items:center;justify-content:center;min-width:96px;height:40px;min-height:40px;padding:4px 12px;border:1px solid rgba(255,255,255,.55);border-radius:10px;background:rgba(8,10,16,.55);color:#fff;font-size:16px;font-weight:800;text-decoration:none}
+body.tv-mode:not(.lab-mode) #tvHome:is(:hover,:focus){outline:3px solid #fff;outline-offset:-3px;background:#006e73;border-color:#fff}
+/* Use equal 12px outer gaps; retain the existing 6px gaps within reactions. */
+body.tv-mode:not(.lab-mode) .tv-reactions{gap:12px}
+.tv-reaction-group{display:contents}
+.tv-react-planned{display:none}
+body.tv-mode:not(.lab-mode) .tv-reaction-group{display:flex;flex:1 1 0;min-width:0;gap:6px}
+body.tv-mode:not(.lab-mode) .tv-react-planned{display:flex;flex:0 0 96px;align-items:center;justify-content:center;padding:4px 8px;width:96px;min-width:96px;height:40px;min-height:40px;border:1px solid #657087;border-radius:10px;background:rgba(8,10,16,.5);color:#aab4c7;font-size:14px;cursor:default;pointer-events:none;user-select:none}
+/* Keep the shared identity control for PC, but remove it from standalone TV. */
+body.tv-mode:not(.lab-mode) #tvNameOpen{display:none!important}
