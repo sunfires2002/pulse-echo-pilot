@@ -106,6 +106,11 @@ $a$;$cmd$;
  IF videos<>21 OR invalid<>0 THEN RAISE EXCEPTION 'Video validation failed'; END IF;
 
 END $oneblock$;$nested$;
+  EXECUTE 'SET LOCAL ROLE anon';
+  EXECUTE $anonymous$DO $check$ DECLARE allowed text[] := ARRAY['away','awayScore','competition','date','firstHalfVideo','highlightVideo','home','homeScore','id','published','round','secondHalfVideo']::text[]; BEGIN
+   IF (SELECT count(*) FROM public.privacy_cutover_public_matches_v1()) <> 17 OR EXISTS(SELECT 1 FROM public.privacy_cutover_public_matches_v1('public-cutover-fixture-18')) OR EXISTS(SELECT 1 FROM public.privacy_cutover_public_matches_v1() x WHERE (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(to_jsonb(x)) k) IS DISTINCT FROM allowed OR to_jsonb(x)::text LIKE '%PRIVATE_FIXTURE%') THEN RAISE EXCEPTION 'Anonymous projection failed'; END IF;
+  END $check$;$anonymous$;
+  EXECUTE 'RESET ROLE';
   EXECUTE 'SET LOCAL ROLE authenticated';
   EXECUTE $auth$DO $check$ BEGIN
    IF (SELECT count(*) FROM public.privacy_cutover_public_matches_v1()) <> 17 OR EXISTS(SELECT 1 FROM public.privacy_cutover_public_matches_v1('public-cutover-fixture-18')) OR EXISTS(SELECT 1 FROM public.privacy_cutover_public_matches_v1() x WHERE to_jsonb(x)::text LIKE '%PRIVATE_FIXTURE%') THEN RAISE EXCEPTION 'Authenticated projection failed'; END IF;

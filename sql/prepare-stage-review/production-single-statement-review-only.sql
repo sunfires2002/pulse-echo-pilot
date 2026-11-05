@@ -89,6 +89,11 @@ $a$;$cmd$;
 END $oneblock$;$nested$;
   SELECT id INTO STRICT hidden_id FROM public.pulse_matches WHERE data @> '{"published":false}'::jsonb;
   PERFORM set_config('pulse_echo.audit_hidden_id',hidden_id,true);
+  EXECUTE 'SET LOCAL ROLE anon';
+  EXECUTE $anonymous$DO $check$ DECLARE allowed text[] := ARRAY['away','awayScore','competition','date','firstHalfVideo','highlightVideo','home','homeScore','id','published','round','secondHalfVideo']::text[]; BEGIN
+   IF (SELECT count(*) FROM public.pulse_public_matches_v1())<>17 OR EXISTS(SELECT 1 FROM public.pulse_public_matches_v1(current_setting('pulse_echo.audit_hidden_id',true))) OR EXISTS(SELECT 1 FROM public.pulse_public_matches_v1() x WHERE (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(to_jsonb(x)) k) IS DISTINCT FROM allowed) THEN RAISE EXCEPTION 'Anonymous public projection failed'; END IF;
+  END $check$;$anonymous$;
+  EXECUTE 'RESET ROLE';
   EXECUTE 'SET LOCAL ROLE authenticated';
   EXECUTE $auth$DO $check$ DECLARE allowed text[] := ARRAY['away','awayScore','competition','date','firstHalfVideo','highlightVideo','home','homeScore','id','published','round','secondHalfVideo']::text[]; BEGIN
    IF (SELECT count(*) FROM public.pulse_public_matches_v1())<>17 OR EXISTS(SELECT 1 FROM public.pulse_public_matches_v1(current_setting('pulse_echo.audit_hidden_id',true))) OR EXISTS(SELECT 1 FROM public.pulse_public_matches_v1() x WHERE (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(to_jsonb(x)) k) IS DISTINCT FROM allowed) THEN RAISE EXCEPTION 'Authenticated public projection failed'; END IF;
