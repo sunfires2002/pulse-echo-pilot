@@ -1,10 +1,10 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
-const html=fs.readFileSync('match.html','utf8'),base=require('child_process').execFileSync('git',['show','6dda028:match.html'],{encoding:'utf8'});
-const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].filter(s=>s[1].trim()).at(-1)[1];new vm.Script(script);
+const html=fs.readFileSync('match.html','utf8'),base=require('child_process').execFileSync('git',['show','c34608e:match.html'],{encoding:'utf8'});
+const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].find(s=>s[1].includes('let realtimeChannel='))[1];new vm.Script(script);
 const section=(s,a,b)=>s.slice(s.indexOf(a),s.indexOf(b,s.indexOf(a)));
 for(const [a,b] of [['function loadVideo(', 'function tacticLayer('],['let realtimeChannel=', 'const tactic=']]) assert.equal(section(html,a,b),section(base,a,b),a+' unchanged');
-const beforeDraw=section(base,'function draw(','window.deleteEvent='),afterDraw=section(html,'function draw(','function displayEchoKind(');
-assert.equal(afterDraw.replace('label:"🎙 その他"','label:"🤖 AIにお任せ"').replace(',maintainAspectRatio:false',''),beforeDraw,'heatmap category matching and data aggregation unchanged');
+const beforeDraw=section(base,'function draw(','function displayEchoKind('),afterDraw=section(html,'function draw(','function displayEchoKind(');
+assert.equal(afterDraw,beforeDraw,'heatmap category matching and data aggregation unchanged');
 assert(html.includes('function displayEchoKind(kind){return kind==="🤖 AIにお任せ"?"🎙 その他":kind}'),'stored AI kind is display-mapped only');
 // Desktop/legacy voice preservation is verified separately in pc-voice.cjs.
 let channels=[],removed=[],queries=[],flown=[],renders=0,insertResolve;
