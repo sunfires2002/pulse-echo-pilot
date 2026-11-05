@@ -24,4 +24,14 @@ class MigrationDraft(unittest.TestCase):
   self.assertLess(text.index('GRANT pulse_public_reader_v1 TO postgres'),text.index('REVOKE EXECUTE'))
   self.assertGreater(text.index('REVOKE pulse_public_reader_v1 FROM postgres'),text.index('REVOKE EXECUTE'))
   self.assertIn('runtime_membership_restored',rehearsal())
+ def test_formal_lock_timeout_and_single_guarded_stop(self):
+  from render_prepare_stage import guarded_stop
+  formal=rendered()['01-prepare.sql']
+  self.assertIn("set_config('lock_timeout','5s',true)",formal)
+  self.assertLess(formal.index("set_config('lock_timeout'"),formal.index('LOCK TABLE'))
+  stopped=guarded_stop('pulse_matches','pulse_public_reader_v1','pulse_public_matches_v1')
+  self.assertEqual(stopped.count('DO $stop$'),1)
+  self.assertIn('run_stop boolean := false',stopped)
+  self.assertLess(stopped.index("RAISE EXCEPTION 'NOT APPROVED'"),stopped.index('REVOKE EXECUTE'))
+  self.assertNotIn('REVOKE SELECT ON public.pulse_matches FROM PUBLIC',stopped)
 if __name__=='__main__':unittest.main()

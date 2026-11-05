@@ -11,5 +11,6 @@ def render():
  start=s.index(' IF NOT expected OR EXISTS(');end=s.index('END $prepare$;',start)
  s=s[:start]+" PERFORM pg_notify('pgrst','reload schema');\n RAISE NOTICE 'PREPARE_COMPLETED';\n"+s[end:]
  s=s.replace(' expected boolean:=false; caught_message text; hidden_id text;',' hidden_id text;')
+ s=s.replace(" IF NOT run_prepare THEN RAISE EXCEPTION 'NOT APPROVED'; END IF;"," IF NOT run_prepare THEN RAISE EXCEPTION 'NOT APPROVED'; END IF;\n PERFORM set_config('lock_timeout','5s',true);")
  assert 'prepare_safety_snapshot' not in s and 'EXPECTED_ROLLBACK' not in s and 'run_prepare boolean := false' in s
  return '-- FORMAL ADDITION: successful execution persists changes. NOT A ROLLBACK OR SAFE STOP. Separate approval required.\n'+s

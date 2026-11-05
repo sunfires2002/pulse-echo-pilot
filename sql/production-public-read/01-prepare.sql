@@ -5,6 +5,7 @@ DECLARE
  hidden_id text;
 BEGIN
  IF NOT run_prepare THEN RAISE EXCEPTION 'NOT APPROVED'; END IF;
+ PERFORM set_config('lock_timeout','5s',true);
  BEGIN
   EXECUTE $nested$DO $oneblock$
 DECLARE old record; videos int; invalid int; public_count int; private_count int; keys text[];

@@ -25,6 +25,12 @@ BEGIN
  THEN RAISE EXCEPTION 'Existing permissions, policies or memberships changed; STOP'; END IF;
 END $stop$;
 '''
+def guarded_stop(table,role,fn,enabled=False):
+ s=stop(table,role,fn)
+ s=s.replace('DECLARE orig_acl text;', 'DECLARE run_stop boolean := '+('true' if enabled else 'false')+'; orig_acl text;')
+ s=s.replace("BEGIN\n IF NOT EXISTS", "BEGIN\n IF NOT run_stop THEN RAISE EXCEPTION 'NOT APPROVED'; END IF;\n PERFORM set_config('lock_timeout','5s',true);\n IF NOT EXISTS",1)
+ s=s.replace('END $stop$;', "PERFORM pg_notify('pgrst','reload schema');\nEND $stop$;")
+ return s
 if __name__=='__main__':
- s="-- DRAFT: DO NOT RUN IN PRODUCTION WITHOUT SEPARATE APPROVAL\nBEGIN;\nSET LOCAL lock_timeout='5s';\nSET LOCAL statement_timeout='30s';\nDO $$ BEGIN RAISE EXCEPTION 'NOT APPROVED'; END $$;\n"+stop('pulse_matches','pulse_public_reader_v1','pulse_public_matches_v1')+"NOTIFY pgrst,'reload schema';\nCOMMIT;\n"
+ s='-- PREPARE STAGE ONLY: single-statement stop, preserves old SELECT. Separate approval required.\n'+guarded_stop('pulse_matches','pulse_public_reader_v1','pulse_public_matches_v1')
  (R/'sql/prepare-stage-review/03-prepare-safe-stop.sql').write_text(s)
