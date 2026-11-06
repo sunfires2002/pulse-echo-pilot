@@ -1,14 +1,15 @@
 # Fire TV 新LAB再確認手順
 
-目的: `codex/tv-layout-db2004-lab` のTV操作バーとREACT一覧を、実機で新たに確認する。旧TV LABの合格記録は引き継がず、新LAB結果を別に記録する。
+目的: `codex/tv-goal-db2004-lab`（基準 `0f75be65`、GitHub main `db2004f8`）のTV操作バー・REACT一覧・GOAL試作を実機で確認する。既存TV LABの実機報告は、新GOAL機能の確認結果として扱わない。
 
 ## 安全なテスト環境
 
-1. 新LABのブランチと基準コミットを確認する。対象は `codex/tv-layout-db2004-lab` / `db2004f8`。
+1. 新LABのブランチと基準コミットを確認する。対象は `codex/tv-goal-db2004-lab` / `0f75be65`。
 2. Mac上で `python3 tools/serve-tv-local-fixtures.py --host <MacのLANアドレス> --port 8076` を起動する。Fire TVとMacは同じLANに接続する。
-3. Fire TVのSilkで `http://<MacのLANアドレス>:8076/match.html?id=tv-layout-demo&mode=tv` を開く。
-4. 画面に `TV LAB SAMPLE`、`SAMPLE A`、`SAMPLE B` が出ることを確認する。実試合名・実データが出たらテストを中止する。
-5. 名前変更は試合一覧の「名前設定・変更」から行い、設定後にサンプル反応へ反映されることを確認する。TV再生バー内に名前編集ボタンがないのは現行の画面仕様。
+3. TV操作バーとREACT一覧だけを見る場合は `http://<MacのLANアドレス>:8076/match.html?id=tv-layout-demo&mode=tv` を開く。GOALは追加されない。
+4. GOAL試作を見る場合は `http://<MacのLANアドレス>:8076/match.html?id=tv-goal-a&mode=tv&goalLab=1` を開く。近接GOALは `id=tv-goal-b` にする。
+5. `TV LAB SAMPLE` / `TV GOAL SAMPLE`、`SAMPLE A`、`SAMPLE B` が表示されることを確認する。実試合名・実データが出たら中止する。
+6. 名前変更は試合一覧の「名前設定・変更」から行い、設定後にサンプル反応へ反映されることを確認する。TV再生バー内に名前編集ボタンがないのは現行の画面仕様。
 
 このサーバーは架空の公開RPC応答を返し、Supabase SDKを試験用HTMLから除外し、DBへのPOST/PUT/PATCH/DELETEを拒否する構成。サンプル反応はブラウザー内だけに保存する。動画はテスト用の公開YouTube IDを使用する。終了後、Fire TVの試験サイトデータを消去してサーバーを停止する。
 
@@ -23,6 +24,11 @@
 - [ ] 再生中に一覧の対象時刻が現在時刻に追従することを確認
 - [ ] 一覧の反応を選び、その時刻へジャンプして再生が続くことを確認
 - [ ] 一覧からREACTボタンへフォーカスを戻し、再度開閉できることを確認
+- [ ] `goalLab=1`なしではGOALボールが表示されないことを確認
+- [ ] `tv-goal-a`で再生を進め、単独GOALのボールが16pxで、クリック後に10秒前へジャンプすることを確認
+- [ ] `tv-goal-b`で近接GOALを表示し、ポップアップなしでグループ先頭の10秒前へジャンプすることを確認
+- [ ] 再生位置より未来のGOALが非表示で、時刻到達後に表示されることを確認
+- [ ] GOALボールをフォーカスし、リモコン上下・決定で選択とジャンプができることを確認
 - [ ] ホームを選び、TVモードの試合一覧へ戻ることを確認
 - [ ] 画面端・文字・操作ボタンに見切れがなく、意図しないページスクロールがないことを確認
 

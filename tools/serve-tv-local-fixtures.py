@@ -26,6 +26,14 @@ SAMPLE_MATCH = {
     "highlightVideo": "",
     "published": True,
 }
+GOAL_SAMPLE_MATCHES = {
+    sample_id: {**SAMPLE_MATCH, "id": sample_id, "competition": "TV GOAL SAMPLE"}
+    for sample_id in ("tv-goal-a", "tv-goal-b")
+}
+GOAL_FIXTURES = {
+    "fixtures/tv-goals/tv-goal-a.json",
+    "fixtures/tv-goals/tv-goal-b.json",
+}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -69,7 +77,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "rest/v1/rpc/pulse_public_matches_v1":
             query = parse_qs(request.query)
             requested = query.get("requested_id", [None])[0]
-            rows = [SAMPLE_MATCH] if requested in (None, SAMPLE_ID) else []
+            rows = ([GOAL_SAMPLE_MATCHES[requested]] if requested in GOAL_SAMPLE_MATCHES
+                    else [SAMPLE_MATCH] if requested in (None, SAMPLE_ID) else [])
             return self.send_bytes(200, json.dumps(rows).encode(), "application/json; charset=utf-8")
         if path.startswith("rest/"):
             return self.send_bytes(404, b"FIXTURE_ROUTE_NOT_FOUND")
@@ -80,6 +89,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_bytes(404, b"NOT_FOUND")
         allowed = (
             relative.as_posix() in ALLOWED_PAGES
+            or relative.as_posix() in GOAL_FIXTURES
             or relative.name not in BLOCKED_ASSETS and relative.suffix.lower() in ALLOWED_EXTENSIONS
         )
         if not allowed or not target.is_file():
