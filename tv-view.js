@@ -45,6 +45,7 @@
   if(instance.canvas.id==="chart"){
    const active=body.classList.contains("tv-mode");
    instance.options.plugins.legend.display=!active;
+   instance.options.plugins.tooltip.enabled=!active;
    // Linear TV seconds and desktop seconds both use exact plot endpoints.
    instance.options.scales.x.offset=false;
   }

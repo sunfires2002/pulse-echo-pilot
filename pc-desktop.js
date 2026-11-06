@@ -13,7 +13,7 @@
  const styles=Promise.all((desktop?['pc-base.css','tv-view.css','pc-lab.css']:['tv-view.css']).map(path=>new Promise((resolve,reject)=>{
   const link=document.createElement('link');link.rel='stylesheet';link.href=path+(path==='tv-view.css'?'?v=1.2.5':path==='pc-lab.css'?'?v=1.2.5':'?v=1.2.0');link.onload=resolve;link.onerror=()=>reject(new Error('PC stylesheet unavailable: '+path));document.head.append(link);
  })));
- function script(path){return new Promise((resolve,reject)=>{const node=document.createElement('script');node.src=path+(path==='tv-goals.js'?'?v=0.1.4':path==='prism-goals-core.js'?'?v=1.0.0':path==='tv-view.js'?'?v=1.2.7':path==='tv-react-list.js'?'?v=0.1.2':path==='pc-lab.js'?'?v=1.2.4':'?v=1.2.0');node.onload=resolve;node.onerror=()=>reject(new Error('PC script unavailable: '+path));document.body.append(node)})}
+ function script(path){return new Promise((resolve,reject)=>{const node=document.createElement('script');node.src=path+(path==='tv-goals.js'?'?v=0.1.4':path==='prism-goals-core.js'?'?v=1.0.0':path==='tv-view.js'?'?v=1.2.8':path==='tv-react-list.js'?'?v=0.1.2':path==='pc-lab.js'?'?v=1.2.4':'?v=1.2.0');node.onload=resolve;node.onerror=()=>reject(new Error('PC script unavailable: '+path));document.body.append(node)})}
  function loadTvReact(){return new Promise(resolve=>{
   const link=document.createElement('link');link.rel='stylesheet';link.href='tv-react-list.css?v=0.1.3';
   link.onload=()=>{script('tv-react-list.js').then(resolve).catch(()=>{link.remove();console.warn('[PULSE TV] REACT list unavailable');resolve()})};
